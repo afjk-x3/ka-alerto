@@ -1,0 +1,148 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 880px; height: 1370px; background: #F7F5F2; color: #14171A; padding: 36px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 22px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px; border-bottom: 2px solid #14171A; padding-bottom: 14px;">
+    <div style="font-size: 30px; font-weight: 700; letter-spacing: -0.4px;">KaAlerto — Mode Palettes</div>
+    <div style="font-size: 15px; color: #5C666F;">PRD section 5.6. One palette per operating mode. The palette gets smaller as the mode degrades — that is the design, not an omission.</div>
+  </div>
+
+  <!-- severity constant -->
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Severity — identical in all three modes, because it carries safety information</div>
+    <div style="display: flex; gap: 8px;">
+      <div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 8px 10px; display: flex; align-items: center; gap: 9px;"><div style="width: 22px; height: 22px; background: #F2A93B; flex-shrink: 0;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px;">S1 #F2A93B</span></div>
+      <div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 8px 10px; display: flex; align-items: center; gap: 9px;"><div style="width: 22px; height: 22px; background: #E4682B; flex-shrink: 0;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px;">S2 #E4682B</span></div>
+      <div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 8px 10px; display: flex; align-items: center; gap: 9px;"><div style="width: 22px; height: 22px; background: #C42B2B; flex-shrink: 0;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px;">S3 #C42B2B</span></div>
+      <div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 8px 10px; display: flex; align-items: center; gap: 9px;"><div style="width: 22px; height: 22px; background: #FFFFFF; border: 2px solid #2F7FBF; box-sizing: border-box; flex-shrink: 0;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px;">S0 #2F7FBF</span></div>
+      <div style="flex-grow: 1; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 8px 10px; display: flex; align-items: center; gap: 9px;"><div style="width: 22px; height: 22px; background: repeating-linear-gradient(45deg, #C42B2B 0 5px, #F2A93B 5px 10px); flex-shrink: 0;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px;">SX hatch</span></div>
+    </div>
+  </div>
+
+  <!-- three palettes -->
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+
+    <!-- NORMAL -->
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: baseline; gap: 8px; border-bottom: 1px solid #E3E7EB; padding-bottom: 8px;">
+        <span style="font-size: 17px; font-weight: 700;">Normal</span>
+        <span style="font-size: 12px; color: #5C666F;">12 tokens · base mode</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #FFFFFF; border: 1px solid #D8DEE3; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Background</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#FFFFFF</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #F7F5F2; border: 1px solid #D8DEE3; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Canvas</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#F7F5F2</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #F2F4F6; border: 1px solid #D8DEE3; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Recessed surface</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#F2F4F6</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #14171A; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Primary text</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#14171A · 18:1</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #5C666F; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Secondary text</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#5C666F · 5.8:1</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #8A939B; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Disabled text</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#8A939B</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #E3E7EB; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Border</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#E3E7EB</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #D8DEE3; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Border, emphasis</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#D8DEE3</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #14171A; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="font-size: 9px; color: #FFFFFF; font-weight: 700;">A</span></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Primary action</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#14171A / #FFF</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #E4F1E9; border: 2px solid #2E7D4F; box-sizing: border-box; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Safe</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#2E7D4F on #E4F1E9</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #FFF8E8; border: 2px solid #A3791A; box-sizing: border-box; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Warning</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#A3791A on #FFF8E8</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #FBEBE9; border: 2px solid #A32020; box-sizing: border-box; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500;">Critical</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #5C666F;">#A32020 on #FBEBE9</span></div></div>
+    </div>
+
+    <!-- STORM -->
+    <div style="background: #0D0F12; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: baseline; gap: 8px; border-bottom: 1px solid #23272C; padding-bottom: 8px;">
+        <span style="font-size: 17px; font-weight: 700; color: #F2F4F7;">Storm</span>
+        <span style="font-size: 12px; color: #A8B0BA;">6 tokens</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #0D0F12; border: 1px solid #3A4149; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #F2F4F7;">Background</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #A8B0BA;">#0D0F12</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #1A1D21; border: 1px solid #3A4149; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #F2F4F7;">Elevated surface</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #A8B0BA;">#1A1D21</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #F2F4F7; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #F2F4F7;">Primary text</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #A8B0BA;">#F2F4F7 · 7:1 min</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #A8B0BA; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #F2F4F7;">Secondary text</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #A8B0BA;">#A8B0BA · 4.5:1 min</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #FF5A4E; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #F2F4F7;">Critical accent</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #A8B0BA;">#FF5A4E</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #4FA3E3; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #F2F4F7;">Safe accent</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #A8B0BA;">#4FA3E3</span></div></div>
+      <div style="flex-grow: 1;"></div>
+      <div style="font-size: 12px; color: #A8B0BA; line-height: 1.45; border-top: 1px solid #23272C; padding-top: 9px;">Dark is not a preference here. It saves OLED power during an outage and stays readable at minimum brightness.</div>
+    </div>
+
+    <!-- SURVIVAL -->
+    <div style="background: #000000; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: baseline; gap: 8px; border-bottom: 1px solid #2A2A2A; padding-bottom: 8px;">
+        <span style="font-size: 17px; font-weight: 700; color: #FFFFFF;">Survival</span>
+        <span style="font-size: 12px; color: #FFFFFF;">4 tokens</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #000000; border: 1px solid #3A3A3A; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #FFFFFF;">Background</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #FFFFFF;">#000000 true black</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #FFFFFF; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #FFFFFF;">Text</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #FFFFFF;">#FFFFFF · one tone only</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: #FF5A4E; flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #FFFFFF;">Critical accent</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #FFFFFF;">#FF5A4E · rescue only</span></div></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 24px; height: 24px; background: repeating-linear-gradient(45deg, #C42B2B 0 5px, #F2A93B 5px 10px); flex-shrink: 0;"></div><div style="display: flex; flex-direction: column;"><span style="font-size: 12px; font-weight: 500; color: #FFFFFF;">Severity</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #FFFFFF;">as section 5.2</span></div></div>
+      <div style="flex-grow: 1;"></div>
+      <div style="font-size: 12px; color: #FFFFFF; line-height: 1.45; border-top: 1px solid #2A2A2A; padding-top: 9px;">No elevation, no surfaces, no imagery, no decorative colour. Close to a text display with a map on it, which is the point.</div>
+    </div>
+
+  </div>
+
+  <!-- map surfaces -->
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Map surfaces — severity is drawn over these and never changes</div>
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB;">
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; background: #F2F4F6; border-bottom: 1px solid #E3E7EB;">
+        <div style="padding: 7px 12px; font-size: 12px; font-weight: 600;">Map element</div>
+        <div style="padding: 7px 12px; font-size: 12px; font-weight: 600;">Normal</div>
+        <div style="padding: 7px 12px; font-size: 12px; font-weight: 600;">Storm</div>
+        <div style="padding: 7px 12px; font-size: 12px; font-weight: 600;">Survival</div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Land</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #E9E5DE; border: 1px solid #D8DEE3;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#E9E5DE</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #12151A;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#12151A</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #000000;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#000000</span></div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Building blocks</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #F6F3EE; border: 1px solid #D8DEE3;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#F6F3EE</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #1A1D21;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#1A1D21</span></div><div style="padding: 5px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">not drawn</div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Road fill</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #FFFFFF; border: 1px solid #D8DEE3;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#FFFFFF</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #2E343B;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#2E343B</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #3A3A3A;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#3A3A3A</span></div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Road casing</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #DBD5CB;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#DBD5CB</span></div><div style="padding: 5px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">none</div><div style="padding: 5px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">none</div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Water and creeks</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #A9C6D6;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#A9C6D6</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #16323F;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#16323F</span></div><div style="padding: 5px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">not drawn</div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Open space and parks</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #D7E3CC;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#D7E3CC</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #16241C;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#16241C</span></div><div style="padding: 5px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">not drawn</div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Street labels</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #8A8478;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#8A8478</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #7C858E;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#7C858E</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #8A8A8A;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#8A8A8A</span></div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; border-bottom: 1px solid #EFF2F4;"><div style="padding: 5px 12px; font-size: 12px;">Your location</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #2F7FBF;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#2F7FBF</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #4FA3E3;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#4FA3E3</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: #FFFFFF; border: 1px solid #D8DEE3;"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#FFFFFF</span></div></div>
+      <div style="display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr;"><div style="padding: 5px 12px; font-size: 12px;">Stale segment</div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: repeating-linear-gradient(90deg, #B9A98F 0 4px, transparent 4px 7px);"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#B9A98F dash</span></div><div style="padding: 5px 12px; display: flex; align-items: center; gap: 7px;"><div style="width: 15px; height: 15px; background: repeating-linear-gradient(90deg, #B9A98F 0 4px, transparent 4px 7px);"></div><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px;">#B9A98F dash</span></div><div style="padding: 5px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">not drawn</div></div>
+    </div>
+  </div>
+
+  <!-- the two exceptions -->
+  <div style="display: flex; flex-direction: column; gap: 9px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Two exceptions — the only places mode does not govern appearance</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px;">
+
+      <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #C42B2B; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div style="background: #C42B2B; padding: 4px 8px;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #FFFFFF;">EXCEPTION 1</span></div>
+          <span style="font-size: 15px; font-weight: 700;">SOS chrome is always urgent</span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.5;">Every screen on the rescue path — press-and-hold, context, status, rescue card — is drawn in identical urgent chrome in all three modes. It does not follow the theme and does not dim in Survival.</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.45;">Rescue is not a theme. A person calling for help must recognise these screens instantly, with no &ldquo;which mode am I in?&rdquo; ambiguity at the worst possible moment. Mode still governs radios and background activity — only appearance is held constant.</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">PRD §5.5</div>
+      </div>
+
+      <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #14171A; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 9px;">
+          <div style="background: #14171A; padding: 4px 8px;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #FFFFFF;">EXCEPTION 2</span></div>
+          <span style="font-size: 15px; font-weight: 700;">Rescue card stays white</span>
+        </div>
+        <div style="font-size: 13px; line-height: 1.5;">White surface, black text, maximum brightness in every mode including Survival. The only screen in Survival Mode that raises brightness rather than lowering it.</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.45;">Its purpose is not to be read by its owner but seen by someone else — a rescuer at a window, a boat crew across a flooded street. A black screen cannot do that. Shown on demand, never left open by default.</div>
+        <div style="display: flex; align-items: center; gap: 7px; background: #FFF8E8; padding: 7px 10px;">
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="#A3791A" stroke-width="1.8" style="flex-shrink: 0;"><path d="M9 2.4L16.2 15H1.8z"/><path d="M9 7.2v3.3"/><circle cx="9" cy="12.7" r="0.8" fill="#A3791A" stroke="none"/></svg>
+          <span style="font-size: 12px; color: #7A5A12; line-height: 1.35;">The battery cost is stated to the user on the card itself.</span>
+        </div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #8A939B;">PRD §5.6</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

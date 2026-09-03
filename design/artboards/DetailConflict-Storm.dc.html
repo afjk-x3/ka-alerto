@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #FF5A4E; } a:hover { color: #E04036; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #0D0F12; color: #F2F4F7; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- map behind -->
+  <div style="height: 218px; position: relative; background: #12151A;">
+    <svg width="360" height="218" viewBox="0 0 360 218" style="display: block; opacity: 0.55;">
+      <defs>
+        <pattern id="cx" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="10" height="10" fill="#C42B2B"/><rect width="5" height="10" fill="#F2A93B"/>
+        </pattern>
+      </defs>
+      <rect width="360" height="218" fill="#12151A"/>
+      <g fill="#1A1D21">
+        <rect x="8" y="8" width="70" height="86"/><rect x="104" y="8" width="92" height="86"/>
+        <rect x="8" y="146" width="70" height="64"/><rect x="104" y="146" width="92" height="64"/>
+      </g>
+      <g stroke="#2E343B" stroke-width="9" stroke-linecap="round">
+        <path d="M0 120 L360 120"/><path d="M90 0 L90 218"/><path d="M208 0 L208 218"/>
+      </g>
+      <path d="M90 120 L208 120" stroke="url(#cx)" stroke-width="13" stroke-linecap="butt" fill="none"/>
+      <circle cx="149" cy="120" r="15" fill="#0D0F12" stroke="#F2A93B" stroke-width="2.8"/>
+      <text x="149" y="126" text-anchor="middle" fill="#F2F4F7" style="font-family: 'IBM Plex Sans'; font-size: 17px; font-weight: 700;">?</text>
+      <text x="96" y="113" fill="#7C858E" style="font-family: 'IBM Plex Sans'; font-size: 10px; font-weight: 500;">DEL PILAR ST</text>
+    </svg>
+    <div style="position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(13,15,18,0.1), rgba(13,15,18,0.9));"></div>
+  </div>
+
+  <!-- sheet -->
+  <div style="flex-grow: 1; background: #1A1D21; margin-top: -22px; display: flex; flex-direction: column; padding: 0 16px 22px 16px;">
+
+    <div style="display: flex; justify-content: center; padding: 10px 0 14px 0;">
+      <div style="width: 44px; height: 4px; background: #3A4149;"></div>
+    </div>
+
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding-bottom: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex-grow: 1;">
+        <div style="font-size: 24px; font-weight: 700; line-height: 1.1;">Del Pilar St</div>
+        <div style="font-size: 14px; color: #A8B0BA;">Brgy. Concepcion Uno · 260 m E</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; background: repeating-linear-gradient(45deg, #C42B2B 0 6px, #F2A93B 6px 12px); padding: 8px 11px; flex-shrink: 0;">
+        <span style="font-size: 13px; font-weight: 700; color: #FFFFFF;">SX</span>
+      </div>
+    </div>
+
+    <!-- the ruling -->
+    <div style="background: #2A1A18; border: 1.5px solid #6B3530; padding: 16px; display: flex; gap: 12px; margin-bottom: 16px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FF9A92" stroke-width="2" style="flex-shrink: 0;">
+        <path d="M12 3.2L21.5 20H2.5z"/><path d="M12 9.6v4.4"/><circle cx="12" cy="16.9" r="1.05" fill="#FF9A92" stroke="none"/>
+      </svg>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <div style="font-size: 19px; font-weight: 700; color: #FF9A92; line-height: 1.2;">Magkaibang ulat</div>
+        <div style="font-size: 16px; line-height: 1.4;">Ituring na <strong>hindi madaanan</strong> hangga't walang nakakumpirma.</div>
+        <div style="font-size: 13px; color: #A8B0BA; line-height: 1.4;">Conflicting reports — treat as impassable.</div>
+      </div>
+    </div>
+
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7C858E; padding-bottom: 10px;">Ang dalawang ulat</div>
+
+    <!-- report A -->
+    <div style="background: #0D0F12; border-left: 3px solid #C42B2B; padding: 13px 14px; display: flex; align-items: center; gap: 13px; margin-bottom: 8px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #A8B0BA; flex-shrink: 0;">8:00</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+        <div style="font-size: 16px; font-weight: 600;">Hanggang baywang</div>
+        <div style="font-size: 13px; color: #A8B0BA;">Hindi madaanan · nasa lugar</div>
+      </div>
+      <div style="width: 10px; height: 34px; background: #C42B2B; flex-shrink: 0;"></div>
+    </div>
+
+    <!-- report B -->
+    <div style="background: #0D0F12; border-left: 3px solid #F2A93B; padding: 13px 14px; display: flex; align-items: center; gap: 13px; margin-bottom: 14px;">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #A8B0BA; flex-shrink: 0;">8:10</div>
+      <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+        <div style="font-size: 16px; font-weight: 600;">Hanggang bukong-bukong</div>
+        <div style="font-size: 13px; color: #A8B0BA;">Madaanan, mag-ingat · nasa lugar</div>
+      </div>
+      <div style="width: 10px; height: 34px; background: #F2A93B; flex-shrink: 0;"></div>
+    </div>
+
+    <div style="font-size: 14px; color: #A8B0BA; line-height: 1.5; padding-bottom: 4px;">
+      Hindi namin pinipili kung sino ang tama, at hindi rin namin pinagsasama. Ipinapakita namin ang hindi pagkakasundo.
+    </div>
+
+    <div style="flex-grow: 1;"></div>
+
+    <!-- re-verify -->
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 15px; font-weight: 600; text-align: center;">Malapit ka ba? Tulungan mo kaming i-check.</div>
+      <div style="height: 64px; background: #F2F4F7; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0D0F12" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2L21 21"/></svg>
+        <span style="font-size: 18px; font-weight: 700; color: #0D0F12;">I-check ko ngayon</span>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

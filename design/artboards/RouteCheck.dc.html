@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #FFFFFF; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 38px 16px 10px 16px; border-bottom: 1px solid #E3E7EB;">
+    <div style="font-size: 22px; font-weight: 700; line-height: 1.1;">Tsek ang ruta</div>
+    <div style="font-size: 13px; color: #5C666F; padding-top: 3px;">Bahay &rarr; Palengke · 2.4 km</div>
+  </div>
+
+  <!-- saved routes -->
+  <div style="padding: 9px 16px; display: flex; gap: 7px; border-bottom: 1px solid #E3E7EB; flex-shrink: 0;">
+    <div style="background: #14171A; padding: 7px 11px;"><span style="font-size: 13px; font-weight: 600; color: #FFFFFF;">Palengke</span></div>
+    <div style="border: 1.5px solid #D8DEE3; padding: 7px 11px; box-sizing: border-box;"><span style="font-size: 13px; color: #5C666F;">Paaralan</span></div>
+    <div style="border: 1.5px solid #D8DEE3; padding: 7px 11px; box-sizing: border-box;"><span style="font-size: 13px; color: #5C666F;">Evac centre</span></div>
+  </div>
+
+  <!-- route on the map, offenders highlighted -->
+  <div style="height: 236px; position: relative; background: #E9E5DE; flex-shrink: 0;">
+    <svg width="360" height="236" viewBox="0 0 360 236" style="display: block;">
+      <rect width="360" height="236" fill="#E9E5DE"/>
+      <g fill="#F6F3EE">
+        <rect x="12" y="16" width="72" height="62"/><rect x="118" y="16" width="88" height="62"/>
+        <rect x="240" y="16" width="62" height="62"/>
+        <rect x="12" y="152" width="72" height="70"/><rect x="118" y="152" width="88" height="70"/>
+        <rect x="240" y="152" width="62" height="70"/>
+      </g>
+      <g stroke="#DBD5CB" stroke-width="11" stroke-linecap="round">
+        <path d="M0 116 L360 116"/><path d="M104 0 L104 236"/><path d="M222 0 L222 236"/>
+      </g>
+      <g stroke="#FFFFFF" stroke-width="9" stroke-linecap="round">
+        <path d="M0 116 L360 116"/><path d="M104 0 L104 236"/><path d="M222 0 L222 236"/>
+      </g>
+
+      <!-- the route itself -->
+      <path d="M34 196 L104 196 L104 116 L330 116" stroke="#14171A" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 0"/>
+
+      <!-- flooded segments along it -->
+      <path d="M104 172 L104 128" stroke="#F2A93B" stroke-width="11" fill="none" stroke-linecap="butt"/>
+      <path d="M196 116 L268 116" stroke="#C42B2B" stroke-width="11" fill="none" stroke-linecap="butt"/>
+
+      <circle cx="34" cy="196" r="8" fill="#2F7FBF" stroke="#FFFFFF" stroke-width="2.5"/>
+      <circle cx="330" cy="116" r="8" fill="#14171A" stroke="#FFFFFF" stroke-width="2.5"/>
+      <text x="34" y="220" text-anchor="middle" fill="#5C666F" style="font-family: 'IBM Plex Sans'; font-size: 11px; font-weight: 600;">bahay</text>
+      <text x="330" y="140" text-anchor="middle" fill="#5C666F" style="font-family: 'IBM Plex Sans'; font-size: 11px; font-weight: 600;">palengke</text>
+    </svg>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 11px 16px 0 16px; background: #F7F5F2;">
+
+    <!-- the verdict: count plus worst severity -->
+    <div style="background: #FBEBE9; border-left: 4px solid #C42B2B; padding: 12px 13px; display: flex; gap: 11px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#A32020" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3.2L21.5 20H2.5z"/><path d="M12 9.6v4.4"/><circle cx="12" cy="16.9" r="1.05" fill="#A32020" stroke="none"/></svg>
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-size: 17px; font-weight: 700; color: #8E2020; line-height: 1.25;">2 baha sa ruta — 1 hindi madaanan</div>
+        <div style="font-size: 13px; color: #5C666F; line-height: 1.35;">Pinakamalala: S3 sa Sampaloc St</div>
+      </div>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #C42B2B; padding: 9px 12px; display: flex; align-items: center; gap: 11px;">
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+        <span style="font-size: 15px; font-weight: 600;">Sampaloc St</span>
+        <span style="font-size: 12px; color: #5C666F;">Hanggang baywang · 22 min ang tanda</span>
+      </div>
+      <span style="font-size: 13px; font-weight: 700; color: #C42B2B; flex-shrink: 0;">S3</span>
+    </div>
+
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #F2A93B; padding: 9px 12px; display: flex; align-items: center; gap: 11px;">
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+        <span style="font-size: 15px; font-weight: 600;">Del Pilar St</span>
+        <span style="font-size: 12px; color: #5C666F;">Bukong-bukong · 1 h ang tanda</span>
+      </div>
+      <span style="font-size: 13px; font-weight: 700; color: #C08416; flex-shrink: 0;">S1</span>
+    </div>
+
+    <!-- honest about what this is based on -->
+    <div style="display: flex; align-items: center; gap: 9px; background: #FFF8E8; padding: 9px 12px;">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#A3791A" stroke-width="1.8" style="flex-shrink: 0;"><circle cx="9" cy="9" r="7"/><path d="M9 5.4V9l2.4 1.6"/></svg>
+      <span style="font-size: 12px; color: #7A5A12; line-height: 1.4;">Base sa ulat ng residente, hindi sa sensor. Maaaring may bahang hindi pa naiuulat.</span>
+    </div>
+
+  </div>
+
+  <div style="padding: 10px 16px 20px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+    <div style="height: 54px; border: 1.5px solid #14171A; box-sizing: border-box; display: flex; align-items: center; justify-content: center; gap: 9px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="2"><path d="M4 18c0-6 5-9 9-9h6"/><path d="M15.5 5.5L19.5 9l-4 3.5"/></svg>
+      <span style="font-size: 16px; font-weight: 700;">Maghanap ng ibang ruta</span>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 7px;">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#8A939B" stroke-width="1.6"><path d="M8 1.6l5.4 2.3v4.2c0 3.1-2.3 5.5-5.4 6.4-3.1-.9-5.4-3.3-5.4-6.4V3.9z"/></svg>
+      <span style="font-size: 12px; color: #8A939B;">Nakompyut sa phone mo — walang internet na kailangan</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

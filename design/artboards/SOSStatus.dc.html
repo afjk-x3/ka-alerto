@@ -1,0 +1,113 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #FF5A4E; } a:hover { color: #E04036; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #0D0F12; color: #F2F4F7; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- live banner -->
+  <div style="background: #C42B2B; padding: 44px 16px 14px 16px; display: flex; align-items: center; gap: 11px;">
+    <div style="width: 11px; height: 11px; border-radius: 50%; background: #FFFFFF; flex-shrink: 0;"></div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 18px; font-weight: 700; color: #FFFFFF;">Aktibo ang SOS mo</div>
+      <div style="font-size: 13px; color: #FFD9D6; font-family: 'IBM Plex Mono', monospace;">6 min · 3:41 AM</div>
+    </div>
+  </div>
+
+  <!-- THE honest line -->
+  <div style="background: #1A1D21; padding: 15px 16px; display: flex; gap: 13px; border-bottom: 1px solid #23272C;">
+    <svg width="30" height="30" viewBox="0 0 30 30" fill="none" style="flex-shrink: 0; margin-top: 2px;">
+      <circle cx="15" cy="22" r="3.4" fill="#4FA3E3"/>
+      <path d="M8.5 17.5a9 9 0 0 1 13 0" stroke="#4FA3E3" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.75"/>
+      <path d="M4 12.6a15 15 0 0 1 22 0" stroke="#4FA3E3" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.4"/>
+    </svg>
+    <div style="display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 20px; font-weight: 700; line-height: 1.25;">Walang signal. Tumatawag ang phone mo sa mga kalapit na phone.</div>
+      <div style="font-size: 14px; color: #A8B0BA; line-height: 1.4;">No signal. Your phone is calling out to nearby phones.</div>
+    </div>
+  </div>
+
+  <!-- per-channel -->
+  <div style="padding: 12px 16px 0 16px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7C858E; padding-bottom: 11px;">Bawat daan</div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+
+      <div style="background: #1A1D21; padding: 11px 14px; display: flex; align-items: center; gap: 12px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C858E" stroke-width="1.9" style="flex-shrink: 0;"><rect x="3" y="4" width="18" height="7"/><rect x="3" y="14" width="18" height="7"/><path d="M6.6 7.5h.01M6.6 17.5h.01"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <div style="font-size: 16px; font-weight: 600;">Rescue centre</div>
+          <div style="font-size: 13px; color: #A8B0BA;">Sinusubukan pa rin · walang internet</div>
+        </div>
+        <div style="font-size: 13px; font-weight: 600; color: #E0A93B; flex-shrink: 0;">Sinusubukan</div>
+      </div>
+
+      <div style="background: #1A1D21; padding: 11px 14px; display: flex; align-items: center; gap: 12px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4FA3E3" stroke-width="1.9" style="flex-shrink: 0;"><rect x="3" y="5" width="18" height="14"/><path d="M3 6.5l9 6 9-6"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <div style="font-size: 16px; font-weight: 600;">SMS</div>
+          <div style="font-size: 13px; color: #A8B0BA;">Naipadala 4 min ang nakaraan · 29 letra</div>
+        </div>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#5FBF7F" stroke-width="2.2" style="flex-shrink: 0;"><path d="M4 10.4l4 4 8-8.6"/></svg>
+      </div>
+
+      <div style="background: #1A1D21; border-left: 3px solid #4FA3E3; padding: 11px 14px; display: flex; align-items: center; gap: 12px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4FA3E3" stroke-width="1.9" style="flex-shrink: 0;"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7.2 10.8l9.6-3.6M7.2 13.2l9.6 3.6"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+          <div style="font-size: 16px; font-weight: 600;">Mga kalapit na phone</div>
+          <div style="font-size: 13px; color: #A8B0BA;">3 phone ang may dala ng SOS mo</div>
+        </div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: #4FA3E3; flex-shrink: 0;">3</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- payload -->
+  <div style="margin: 12px 16px 0 16px; background: #1A1D21; padding: 12px 15px; display: flex; flex-direction: column; gap: 9px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7C858E;">Ipinadala</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 13px; color: #A8B0BA;">Tao</div>
+        <div style="font-size: 17px; font-weight: 600;">5 · 2 bata</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 13px; color: #A8B0BA;">Tubig</div>
+        <div style="font-size: 17px; font-weight: 600;">Dibdib, tumataas</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 13px; color: #A8B0BA;">Medikal</div>
+        <div style="font-size: 17px; font-weight: 600; color: #FF9A92;">Gamot sa puso</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="font-size: 13px; color: #A8B0BA;">Lokasyon</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500;">14.6412<br>121.1033</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="padding: 10px 16px 18px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+    <div style="height: 56px; flex-shrink: 0; background: #1A1D21; border: 1.5px solid #4A525A; display: flex; align-items: center; justify-content: center; gap: 9px; box-sizing: border-box;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F2F4F7" stroke-width="2"><path d="M12 3.2l7.6 3.2v5.8c0 4.3-3.2 7.6-7.6 8.6-4.4-1-7.6-4.3-7.6-8.6V6.4z"/><path d="M8.8 11.9l2.4 2.4 4.2-4.8"/></svg>
+      <span style="font-size: 17px; font-weight: 600;">Ligtas na ako</span>
+    </div>
+    <div style="font-size: 13px; color: #7C858E; text-align: center; line-height: 1.4;">Patuloy ang pag-broadcast hangga't hindi mo ito isinasara.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

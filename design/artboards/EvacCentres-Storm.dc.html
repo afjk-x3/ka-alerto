@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #FF5A4E; } a:hover { color: #E04036; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #0D0F12; color: #F2F4F7; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 44px 16px 12px 16px; border-bottom: 1px solid #23272C;">
+    <div style="font-size: 24px; font-weight: 700; line-height: 1.1;">Evacuation centre</div>
+    <div style="display: flex; align-items: center; gap: 7px; padding-top: 5px;">
+      <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="#A8B0BA" stroke-width="1.7"><path d="M9 15.5s5-4.6 5-8a5 5 0 1 0-10 0c0 3.4 5 8 5 8z"/><circle cx="9" cy="7.4" r="1.9"/></svg>
+      <span style="font-size: 14px; color: #A8B0BA;">Pinakamalapit muna · nasa phone mo na ito</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; overflow: hidden;">
+
+    <!-- accepting -->
+    <div style="background: #1A1D21; border-left: 4px solid #4FA3E3; padding: 15px;">
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 9px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+          <div style="font-size: 19px; font-weight: 700; line-height: 1.2;">Concepcion Uno Elem. School</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #A8B0BA;">650 m · 9 min lakad</div>
+        </div>
+        <div style="background: #12313F; padding: 6px 10px; flex-shrink: 0;"><span style="font-size: 13px; font-weight: 700; color: #4FA3E3;">Tumatanggap</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 11px;">
+        <div style="flex-grow: 1; height: 8px; background: #23272C; display: flex;">
+          <div style="width: 46%; background: #4FA3E3;"></div>
+        </div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A8B0BA; flex-shrink: 0;">138 / 300</span>
+      </div>
+      <div style="display: flex; gap: 7px; flex-wrap: wrap; padding-bottom: 12px;">
+        <div style="border: 1px solid #3A4149; padding: 5px 9px;"><span style="font-size: 13px;">Kuryente</span></div>
+        <div style="border: 1px solid #3A4149; padding: 5px 9px;"><span style="font-size: 13px;">Tubig</span></div>
+        <div style="border: 1px solid #3A4149; padding: 5px 9px;"><span style="font-size: 13px;">PWD access</span></div>
+      </div>
+      <div style="height: 56px; background: #F2F4F7; display: flex; align-items: center; justify-content: center; gap: 9px;">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#0D0F12" stroke-width="2"><path d="M10 2.5l7 14-7-3.4-7 3.4z"/></svg>
+        <span style="font-size: 17px; font-weight: 700; color: #0D0F12;">Ituro ang daan</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 7px; padding-top: 9px;">
+        <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="#FF5A4E" stroke-width="1.8"><path d="M9 2.4L16.2 15H1.8z"/><path d="M9 7.2v3.3"/><circle cx="9" cy="12.7" r="0.8" fill="#FF5A4E" stroke="none"/></svg>
+        <span style="font-size: 13px; color: #FF9A92;">1 baha sa ruta — may alternatibo</span>
+      </div>
+    </div>
+
+    <!-- near full -->
+    <div style="background: #1A1D21; border-left: 4px solid #E4682B; padding: 15px;">
+      <div style="display: flex; align-items: flex-start; gap: 10px; padding-bottom: 9px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+          <div style="font-size: 19px; font-weight: 700; line-height: 1.2;">Barangay Covered Court</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #A8B0BA;">1.1 km · 14 min lakad</div>
+        </div>
+        <div style="background: #3A2214; padding: 6px 10px; flex-shrink: 0;"><span style="font-size: 13px; font-weight: 700; color: #F0965C;">Halos puno</span></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="flex-grow: 1; height: 8px; background: #23272C; display: flex;">
+          <div style="width: 89%; background: #E4682B;"></div>
+        </div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #A8B0BA; flex-shrink: 0;">178 / 200</span>
+      </div>
+    </div>
+
+    <!-- not activated -->
+    <div style="background: #1A1D21; border-left: 4px solid #3A4149; padding: 15px;">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+          <div style="font-size: 19px; font-weight: 600; line-height: 1.2; color: #A8B0BA;">San Roque Chapel Hall</div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #7C858E;">1.8 km</div>
+        </div>
+        <div style="background: #23272C; padding: 6px 10px; flex-shrink: 0;"><span style="font-size: 13px; font-weight: 600; color: #A8B0BA;">Hindi pa bukas</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="padding: 12px 16px 26px 16px; border-top: 1px solid #23272C; display: flex; align-items: center; gap: 10px;">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#E0A93B" stroke-width="1.7" style="flex-shrink: 0;"><circle cx="9" cy="9" r="7"/><path d="M9 5.4V9l2.4 1.6"/></svg>
+    <span style="font-size: 13px; color: #E0A93B; line-height: 1.4;">Kapasidad: 47 min ang tanda · huling dumating via mesh, walang signal ngayon</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

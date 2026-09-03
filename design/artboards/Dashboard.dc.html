@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 1440px; height: 900px; background: #F7F5F2; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- header -->
+  <div style="background: #14171A; padding: 16px 28px; display: flex; align-items: center; gap: 20px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <div style="font-size: 19px; font-weight: 700; color: #FFFFFF;">KaAlerto · DRRMO Marikina</div>
+      <div style="font-size: 13px; color: #A8B0BA;">Brgy. Concepcion Uno · Signal No. 2</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; background: #2A1A18; padding: 9px 14px;">
+      <div style="width: 8px; height: 8px; border-radius: 50%; background: #FF5A4E;"></div>
+      <span style="font-size: 14px; font-weight: 600; color: #FF9A92;">4 na SOS na aktibo</span>
+    </div>
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; color: #A8B0BA;">03:47</div>
+  </div>
+
+  <!-- stat strip -->
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: #E3E7EB;">
+    <div style="background: #FFFFFF; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Ulat ngayong gabi</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600; line-height: 1;">147</div>
+    </div>
+    <div style="background: #FFFFFF; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Hindi madaanan</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600; line-height: 1; color: #C42B2B;">23</div>
+    </div>
+    <div style="background: #FFFFFF; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Magkaibang ulat</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600; line-height: 1; color: #E4682B;">3</div>
+    </div>
+    <div style="background: #FFFFFF; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Dumating via mesh</div>
+      <div style="display: flex; align-items: baseline; gap: 7px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600; line-height: 1; color: #2F7FBF;">61</span>
+        <span style="font-size: 14px; color: #5C666F;">41%</span>
+      </div>
+    </div>
+    <div style="background: #FFFFFF; padding: 16px 20px; display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Via SMS</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 30px; font-weight: 600; line-height: 1;">12</div>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div style="flex-grow: 1; display: flex; gap: 1px; background: #E3E7EB;">
+
+    <!-- map -->
+    <div style="flex-grow: 1; background: #E9E5DE; position: relative;">
+      <svg width="1000" height="700" viewBox="0 0 1000 700" style="display: block;">
+        <defs>
+          <pattern id="cdash" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <rect width="12" height="12" fill="#C42B2B"/><rect width="6" height="12" fill="#F2A93B"/>
+          </pattern>
+        </defs>
+        <rect width="1000" height="700" fill="#E9E5DE"/>
+        <g fill="#F6F3EE">
+          <rect x="30" y="30" width="180" height="140"/><rect x="250" y="30" width="220" height="140"/><rect x="510" y="30" width="190" height="140"/><rect x="740" y="30" width="230" height="140"/>
+          <rect x="30" y="220" width="180" height="180"/><rect x="250" y="220" width="220" height="180"/><rect x="740" y="220" width="230" height="180"/>
+          <rect x="30" y="450" width="180" height="220"/><rect x="250" y="450" width="220" height="220"/><rect x="510" y="450" width="190" height="220"/><rect x="740" y="450" width="230" height="220"/>
+        </g>
+        <rect x="510" y="220" width="190" height="180" fill="#D7E3CC"/>
+        <path d="M960 0 C 900 180, 880 300, 830 460 C 800 560, 810 640, 780 700" stroke="#A9C6D6" stroke-width="34" fill="none"/>
+        <g stroke="#DBD5CB" stroke-width="26" stroke-linecap="round"><path d="M0 195 L1000 195"/><path d="M0 425 L1000 425"/><path d="M230 0 L230 700"/><path d="M490 0 L490 700"/><path d="M720 0 L720 700"/></g>
+        <g stroke="#FFFFFF" stroke-width="19" stroke-linecap="round"><path d="M0 195 L1000 195"/><path d="M0 425 L1000 425"/><path d="M230 0 L230 700"/><path d="M490 0 L490 700"/><path d="M720 0 L720 700"/></g>
+
+        <path d="M20 425 L340 425" stroke="#C42B2B" stroke-width="21" stroke-linecap="round" fill="none"/>
+        <path d="M490 425 L490 680" stroke="#C42B2B" stroke-width="21" stroke-linecap="round" fill="none"/>
+        <path d="M720 195 L720 425" stroke="#E4682B" stroke-width="18" stroke-linecap="round" fill="none"/>
+        <path d="M720 425 L980 425" stroke="#F2A93B" stroke-width="15" stroke-linecap="round" fill="none"/>
+        <path d="M230 195 L490 195" stroke="url(#cdash)" stroke-width="21" stroke-linecap="butt" fill="none"/>
+        <path d="M230 425 L230 660" stroke="#2F7FBF" stroke-width="7" stroke-linecap="round" fill="none"/>
+
+        <g>
+          <circle cx="180" cy="425" r="26" fill="#C42B2B" stroke="#FFFFFF" stroke-width="3.5"/>
+          <g stroke="#FFFFFF" stroke-width="3" fill="none"><circle cx="180" cy="418" r="4.4"/><path d="M180 423v10M175.2 437l4.8-4.8 4.8 4.8"/><path d="M169 437l22-22" stroke-width="3.4"/></g>
+          <circle cx="360" cy="425" r="21" fill="#FFFFFF" stroke="#C42B2B" stroke-width="4"/>
+          <text x="360" y="433" text-anchor="middle" fill="#C42B2B" style="font-family: 'IBM Plex Sans'; font-size: 21px; font-weight: 700;">4</text>
+          <circle cx="360" cy="425" r="34" fill="none" stroke="#C42B2B" stroke-width="2" opacity="0.4"/>
+          <circle cx="360" cy="425" r="46" fill="none" stroke="#C42B2B" stroke-width="1.5" opacity="0.2"/>
+          <circle cx="360" cy="195" r="24" fill="#FFFFFF" stroke="#E4682B" stroke-width="4"/>
+          <text x="360" y="204" text-anchor="middle" fill="#14171A" style="font-family: 'IBM Plex Sans'; font-size: 24px; font-weight: 700;">?</text>
+        </g>
+
+        <text x="40" y="185" fill="#8A8478" style="font-family: 'IBM Plex Sans'; font-size: 14px; font-weight: 600;">DEL PILAR ST</text>
+        <text x="40" y="415" fill="#8A8478" style="font-family: 'IBM Plex Sans'; font-size: 14px; font-weight: 600;">SAMPALOC ST</text>
+        <text x="740" y="415" fill="#8A8478" style="font-family: 'IBM Plex Sans'; font-size: 14px; font-weight: 600;">RIZAL AVE</text>
+      </svg>
+
+      <div style="position: absolute; left: 22px; bottom: 22px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px;">
+        <div style="display: flex; align-items: center; gap: 10px;"><div style="width: 22px; height: 7px; background: #C42B2B;"></div><span style="font-size: 13px;">Hindi madaanan</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><div style="width: 22px; height: 6px; background: #E4682B;"></div><span style="font-size: 13px;">Hindi madaanan ng sasakyan</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><div style="width: 22px; height: 5px; background: #F2A93B;"></div><span style="font-size: 13px;">Madaanan, mag-ingat</span></div>
+        <div style="display: flex; align-items: center; gap: 10px;"><div style="width: 22px; height: 7px; background: repeating-linear-gradient(45deg, #C42B2B 0 4px, #F2A93B 4px 8px);"></div><span style="font-size: 13px;">Magkaibang ulat</span></div>
+      </div>
+    </div>
+
+    <!-- sidebar -->
+    <div style="width: 420px; background: #FFFFFF; display: flex; flex-direction: column; flex-shrink: 0;">
+
+      <div style="padding: 18px 20px 14px 20px; border-bottom: 1px solid #E3E7EB;">
+        <div style="font-size: 18px; font-weight: 700;">Mga humihingi ng tulong</div>
+      </div>
+
+      <div style="padding: 14px 20px; border-bottom: 1px solid #E3E7EB; border-left: 4px solid #C42B2B;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; padding-bottom: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+            <div style="font-size: 17px; font-weight: 700;">Sampaloc St 44</div>
+            <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F;">14.6412, 121.1033 · 6 min · 2 hops</div>
+          </div>
+          <div style="background: #C42B2B; padding: 5px 9px; flex-shrink: 0;"><span style="font-size: 12px; font-weight: 700; color: #FFFFFF;">BAGO</span></div>
+        </div>
+        <div style="display: flex; gap: 7px; flex-wrap: wrap; padding-bottom: 11px;">
+          <div style="background: #F2F4F6; padding: 5px 9px;"><span style="font-size: 13px;">5 tao · 2 bata</span></div>
+          <div style="background: #FBEBE9; padding: 5px 9px;"><span style="font-size: 13px; color: #A32020;">Gamot sa puso</span></div>
+          <div style="background: #F2F4F6; padding: 5px 9px;"><span style="font-size: 13px;">Dibdib</span></div>
+        </div>
+        <div style="display: flex; gap: 9px;">
+          <div style="flex-grow: 1; height: 46px; background: #14171A; display: flex; align-items: center; justify-content: center;"><span style="font-size: 15px; font-weight: 700; color: #FFFFFF;">I-assign</span></div>
+          <div style="width: 46px; height: 46px; border: 1px solid #D8DEE3; display: flex; align-items: center; justify-content: center;">
+            <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#5C666F" stroke-width="1.9"><circle cx="10" cy="10" r="7.4"/><path d="M10 6.4v4.2l2.8 1.8"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 14px 20px; border-bottom: 1px solid #E3E7EB; border-left: 4px solid #2E7D4F; display: flex; align-items: center; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+          <div style="font-size: 16px; font-weight: 600;">Rizal Ave 8</div>
+          <div style="font-size: 13px; color: #2E7D4F;">Papunta na si B. Ramos · 4 min</div>
+        </div>
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="#2E7D4F" stroke-width="2.1" style="flex-shrink: 0;"><path d="M4 10.4l4 4 8-8.6"/></svg>
+      </div>
+
+      <!-- discrepancy -->
+      <div style="margin: 16px 20px; background: #FFF8E8; border-left: 4px solid #E0A93B; padding: 15px;">
+        <div style="display: flex; align-items: center; gap: 9px; padding-bottom: 7px;">
+          <svg width="19" height="19" viewBox="0 0 18 18" fill="none" stroke="#A3791A" stroke-width="1.9" style="flex-shrink: 0;"><path d="M9 2.4L16.2 15H1.8z"/><path d="M9 7.2v3.3"/><circle cx="9" cy="12.7" r="0.8" fill="#A3791A" stroke="none"/></svg>
+          <span style="font-size: 16px; font-weight: 700; color: #7A5A11;">Kailangan ng desisyon</span>
+        </div>
+        <div style="font-size: 14px; color: #7A5A11; line-height: 1.45;">3 residente ang nag-uulat ng mas malala kaysa sa opisyal na status sa <strong>Del Pilar St</strong>. Magpadala ng tao para i-verify.</div>
+      </div>
+
+      <div style="flex-grow: 1;"></div>
+
+      <div style="padding: 16px 20px; border-top: 1px solid #E3E7EB; display: flex; align-items: center; gap: 11px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5C666F" stroke-width="1.9" style="flex-shrink: 0;"><path d="M12 3.5v11M8 11l4 4 4-4M4 19.5h16"/></svg>
+        <span style="font-size: 14px; color: #5C666F;">I-export ang datos ng gabing ito</span>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

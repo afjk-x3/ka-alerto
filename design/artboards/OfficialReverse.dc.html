@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #FFFFFF; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 38px 16px 11px 16px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid #E3E7EB;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="2" style="flex-shrink: 0; margin-left: -3px;"><path d="M15 5l-7 7 7 7"/></svg>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <div style="font-size: 21px; font-weight: 700; line-height: 1.1;">Opisyal na status</div>
+      <div style="font-size: 13px; color: #5C666F;">Del Pilar St · Brgy. Concepcion Uno</div>
+    </div>
+    <div style="background: #14171A; padding: 5px 9px; flex-shrink: 0;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #FFFFFF;">KAGAWAD</span></div>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 10px; padding: 11px 16px 0 16px;">
+
+    <!-- a status already exists, issued by someone else -->
+    <div style="border: 1px solid #E3E7EB; border-left: 4px solid #2F7FBF; padding: 11px 13px; display: flex; flex-direction: column; gap: 5px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: #5C666F;">Kasalukuyang opisyal na status</div>
+      <div style="font-size: 17px; font-weight: 700;">Humupa na · malinaw</div>
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="#5C666F" stroke-width="1.8" style="flex-shrink: 0;"><path d="M9 2.4l5.8 2.4v4.4c0 3.3-2.4 5.8-5.8 6.5-3.4-.7-5.8-3.2-5.8-6.5V4.8z"/></svg>
+        <span style="font-size: 12px; color: #5C666F;">Kagawad R. Cruz · 40 min ang nakaraan</span>
+      </div>
+    </div>
+
+    <!-- the crowd disagrees with it -->
+    <div style="background: #FBEBE9; border-left: 4px solid #C42B2B; padding: 11px 13px; display: flex; gap: 11px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A32020" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 3.2L21.5 20H2.5z"/><path d="M12 9.6v4.4"/><circle cx="12" cy="16.9" r="1.05" fill="#A32020" stroke="none"/></svg>
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-size: 15px; font-weight: 700; color: #8E2020; line-height: 1.25;">3 residente ang salungat dito</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Hanggang tuhod pa rin daw · pinakabago 6 min ang nakaraan · 2 ang napatunayan ng kalapit na phone</div>
+      </div>
+    </div>
+
+    <!-- the second-official gate -->
+    <div style="background: #FFF8E8; border: 1.5px solid #E8D7A8; padding: 11px 13px; display: flex; gap: 11px;">
+      <svg width="20" height="20" viewBox="0 0 18 18" fill="none" stroke="#A3791A" stroke-width="1.8" style="flex-shrink: 0; margin-top: 1px;"><rect x="3.5" y="7.5" width="11" height="7.5"/><path d="M6 7.5V5.4a3 3 0 0 1 6 0v2.1"/></svg>
+      <div style="display: flex; flex-direction: column; gap: 3px;">
+        <div style="font-size: 14px; font-weight: 700; color: #7A5A12; line-height: 1.3;">Kailangan ng pangalawang opisyal</div>
+        <div style="font-size: 12px; color: #7A5A12; line-height: 1.35;">Magkasalungat ang lugar na ito, kaya hindi kayang ibaba ng iisang opisyal ang severity. Puwede mong baliktarin ang clearance ngayon; ang pagbaba naman ay maghihintay ng pangalawang opisyal.</div>
+      </div>
+    </div>
+
+    <!-- what you can do -->
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Ang magagawa mo ngayon</div>
+
+      <div style="border: 2px solid #C42B2B; background: #FBEBE9; padding: 10px 12px; display: flex; align-items: center; gap: 11px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; background: #C42B2B; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#FFFFFF" stroke-width="2.6"><path d="M4.5 10.4l3.6 3.6L15.5 6.4"/></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+          <span style="font-size: 15px; font-weight: 700; color: #8E2020;">Baliktarin ang clearance</span>
+          <span style="font-size: 12px; color: #8E2020;">Babalik sa ulat ng residente</span>
+        </div>
+      </div>
+
+      <div style="border: 1.5px solid #E3E7EB; background: #F2F4F6; padding: 10px 12px; display: flex; align-items: center; gap: 11px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #C9D0D6; box-sizing: border-box; flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+          <span style="font-size: 15px; font-weight: 600; color: #8A939B;">Ibaba ang severity</span>
+          <span style="font-size: 12px; color: #8A939B;">Naghihintay ng pangalawang opisyal</span>
+        </div>
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#8A939B" stroke-width="1.8" style="flex-shrink: 0;"><rect x="3.5" y="7.5" width="11" height="7.5"/><path d="M6 7.5V5.4a3 3 0 0 1 6 0v2.1"/></svg>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="margin: 11px 16px 0 16px; background: #14171A; padding: 10px 13px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.9" style="flex-shrink: 0;"><path d="M12 3.2l7.6 3.2v5.8c0 4.3-3.2 7.6-7.6 8.6-4.4-1-7.6-4.3-7.6-8.6V6.4z"/><path d="M8.8 11.9l2.4 2.4 4.2-4.8"/></svg>
+    <div style="display: flex; flex-direction: column; gap: 1px;">
+      <span style="font-size: 13px; font-weight: 700; color: #FFFFFF; line-height: 1.3;">Mananatili ang dalawang aksyon</span>
+      <span style="font-size: 11px; color: #A8B0BA; line-height: 1.3;">Makikita kung sino ang nag-post at kung sino ang bumaliktad</span>
+    </div>
+  </div>
+
+  <div style="padding: 10px 16px 20px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+    <div style="height: 56px; background: #14171A; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 17px; font-weight: 700; color: #FFFFFF;">I-post ang pagbaliktad</span>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 7px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FBF" stroke-width="2.2" style="flex-shrink: 0;"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7.2 10.8l9.6-3.6M7.2 13.2l9.6 3.6"/></svg>
+      <span style="font-size: 12px; color: #5C666F; line-height: 1.4;">Gumagana kahit walang signal — nilalagdaan sa phone, kumakalat sa mesh</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

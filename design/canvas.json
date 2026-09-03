@@ -1,0 +1,355 @@
+{
+  "artboards": [
+    {
+      "file": "Map-Normal.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 360,
+      "h": 800,
+      "title": "Map — Normal"
+    },
+    {
+      "file": "Report-Normal.dc.html",
+      "x": 440,
+      "y": 0,
+      "w": 360,
+      "h": 800,
+      "title": "Report water level — Normal",
+      "is_interactive": true
+    },
+    {
+      "file": "DetailConfirmed-Normal.dc.html",
+      "x": 880,
+      "y": 0,
+      "w": 360,
+      "h": 800,
+      "title": "Detail, confirmed — Normal"
+    },
+    {
+      "file": "DetailConflict-Normal.dc.html",
+      "x": 1320,
+      "y": 0,
+      "w": 360,
+      "h": 800,
+      "title": "Detail, conflicting — Normal"
+    },
+    {
+      "file": "Notifications-Normal.dc.html",
+      "x": 1760,
+      "y": 0,
+      "w": 360,
+      "h": 800,
+      "title": "Notifications — Normal"
+    },
+    {
+      "file": "EvacCentres-Normal.dc.html",
+      "x": 2200,
+      "y": 0,
+      "w": 360,
+      "h": 800,
+      "title": "Evacuation centres — Normal"
+    },
+    {
+      "file": "Map-Storm.dc.html",
+      "x": 0,
+      "y": 1120,
+      "w": 360,
+      "h": 800,
+      "title": "Map — Storm"
+    },
+    {
+      "file": "Report-Storm.dc.html",
+      "x": 440,
+      "y": 1120,
+      "w": 360,
+      "h": 800,
+      "title": "Report water level — Storm",
+      "is_interactive": true
+    },
+    {
+      "file": "DetailConfirmed-Storm.dc.html",
+      "x": 880,
+      "y": 1120,
+      "w": 360,
+      "h": 800,
+      "title": "Detail, confirmed — Storm"
+    },
+    {
+      "file": "DetailConflict-Storm.dc.html",
+      "x": 1320,
+      "y": 1120,
+      "w": 360,
+      "h": 800,
+      "title": "Detail, conflicting — Storm"
+    },
+    {
+      "file": "Notifications-Storm.dc.html",
+      "x": 1760,
+      "y": 1120,
+      "w": 360,
+      "h": 800,
+      "title": "Notifications — Storm"
+    },
+    {
+      "file": "EvacCentres-Storm.dc.html",
+      "x": 2200,
+      "y": 1120,
+      "w": 360,
+      "h": 800,
+      "title": "Evacuation centres — Storm"
+    },
+    {
+      "file": "Map-Survival.dc.html",
+      "x": 0,
+      "y": 2240,
+      "w": 360,
+      "h": 800,
+      "title": "Map — Survival"
+    },
+    {
+      "file": "Onboarding.dc.html",
+      "x": 0,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Onboarding — permissions"
+    },
+    {
+      "file": "FamilyCheckin.dc.html",
+      "x": 440,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Family check-in"
+    },
+    {
+      "file": "VolunteerRegister.dc.html",
+      "x": 880,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Responder registration"
+    },
+    {
+      "file": "SOSNearby.dc.html",
+      "x": 1320,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Tier 1 — resident sees an SOS nearby"
+    },
+    {
+      "file": "QueueVolunteer.dc.html",
+      "x": 1760,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Tier 2 — volunteer queue, no medical"
+    },
+    {
+      "file": "QueueOfficial.dc.html",
+      "x": 2200,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Tier 3 — barangay official queue"
+    },
+    {
+      "file": "RouteCheck.dc.html",
+      "x": 2640,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Route check — feature 6.9"
+    },
+    {
+      "file": "OfficialVerify.dc.html",
+      "x": 3080,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Official verification — feature 6.6"
+    },
+    {
+      "file": "OfficialReverse.dc.html",
+      "x": 3520,
+      "y": 3520,
+      "w": 360,
+      "h": 800,
+      "title": "Official reversal — FR-6.9 / 6.10"
+    },
+    {
+      "file": "SOSHold.dc.html",
+      "x": 0,
+      "y": 4800,
+      "w": 360,
+      "h": 800,
+      "title": "SOS — press and hold"
+    },
+    {
+      "file": "SOSContext.dc.html",
+      "x": 440,
+      "y": 4800,
+      "w": 360,
+      "h": 800,
+      "title": "SOS — context while sending"
+    },
+    {
+      "file": "SOSStatus.dc.html",
+      "x": 880,
+      "y": 4800,
+      "w": 360,
+      "h": 800,
+      "title": "SOS — honest status"
+    },
+    {
+      "file": "RescueCard.dc.html",
+      "x": 1320,
+      "y": 4800,
+      "w": 360,
+      "h": 800,
+      "title": "SOS — rescue card, no signal"
+    },
+    {
+      "file": "Dashboard.dc.html",
+      "x": 0,
+      "y": 5920,
+      "w": 1440,
+      "h": 900,
+      "title": "LGU dashboard (web)"
+    },
+    {
+      "file": "Foundations.dc.html",
+      "x": 0,
+      "y": 7100,
+      "w": 880,
+      "h": 1040,
+      "title": "Foundations"
+    },
+    {
+      "file": "Palettes.dc.html",
+      "x": 980,
+      "y": 7100,
+      "w": 880,
+      "h": 1370,
+      "title": "Palettes"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "overview",
+      "x": -300,
+      "y": -620,
+      "w": 1500,
+      "text": "KaAlerto — 29 artboards, built against PRD section 5.\n\nThe top three rows are a matrix. Columns are screens, rows are operating modes, so mode is the only variable that changes across a row. The six columns are the screens where a mode change alters something real, not just colour.\n\nBelow the matrix: the supporting screens, the SOS path, the LGU dashboard, and the two reference sheets.\n\nAll five core features are drawn, and so are all four additional features from PRD 6.6 to 6.9 — see the coverage note below the supporting row."
+    },
+    {
+      "id": "columns",
+      "x": 0,
+      "y": -150,
+      "w": 2000,
+      "text": "Columns, left to right: Map · Report water level · Detail confirmed · Detail conflicting · Notifications · Evacuation centres."
+    },
+    {
+      "id": "row-normal",
+      "x": -300,
+      "y": 0,
+      "w": 260,
+      "text": "NORMAL\n\nThe base mode. Light theme, full sync, every feature available. Everything else is a deliberate departure from this row."
+    },
+    {
+      "id": "row-storm",
+      "x": -300,
+      "y": 1120,
+      "w": 260,
+      "text": "STORM\n\nHigh-contrast dark. Duty-cycled radios, coarse position, non-essential features hidden. Dark is for OLED power and low-light legibility, not taste."
+    },
+    {
+      "id": "row-survival",
+      "x": -300,
+      "y": 2240,
+      "w": 260,
+      "text": "SURVIVAL\n\nTrue black, minimum chrome. A reduction in function, not only in brightness."
+    },
+    {
+      "id": "row-supporting",
+      "x": -300,
+      "y": 3520,
+      "w": 260,
+      "text": "SUPPORTING\n\nScreens where mode changes only the palette, so they are drawn in Normal only — one clean rule, and no artboard spent on a swatch swap."
+    },
+    {
+      "id": "row-sos",
+      "x": -300,
+      "y": 4800,
+      "w": 260,
+      "text": "SOS PATH\n\nThe requester's own rescue path. Identical urgent chrome in all three modes — it never follows the theme."
+    },
+    {
+      "id": "row-dashboard",
+      "x": -300,
+      "y": 5920,
+      "w": 260,
+      "text": "DASHBOARD\n\nLight only. A mains-powered operations console — battery modes do not apply to it. Built last."
+    },
+    {
+      "id": "row-sheets",
+      "x": -300,
+      "y": 7100,
+      "w": 260,
+      "text": "REFERENCE\n\nFoundations fixes severity, confidence, type and targets. Palettes fixes the three modes, the map surfaces and both exceptions."
+    },
+    {
+      "id": "interactive-note",
+      "x": 440,
+      "y": 1970,
+      "w": 800,
+      "text": "The only working controls in the set — in both modes. Tap the four depth options and the figure, severity and colour all follow. Everything else is a static mockup."
+    },
+    {
+      "id": "conflict-note",
+      "x": 1320,
+      "y": 1970,
+      "w": 800,
+      "text": "The screen no other flood app has: two neighbours disagree, so we show the disagreement and default to the dangerous reading rather than averaging or picking a winner."
+    },
+    {
+      "id": "survival-note",
+      "x": 440,
+      "y": 2380,
+      "w": 1000,
+      "text": "This row is empty on purpose — it is the argument.\n\nReport, both detail sheets, Notifications and Evacuation centres are all suspended in Survival Mode (PRD §5.5). The last hours of battery go to two things only: holding the data already collected, and being able to call for help. So Survival has one cell and no twins to show.\n\nInside the running app those features are marked unavailable and explained, never quietly removed. Here on the canvas there is simply nothing to draw."
+    },
+    {
+      "id": "tier-note",
+      "x": 880,
+      "y": 3120,
+      "w": 1680,
+      "text": "The disclosure tiers, drawn so they can be checked rather than taken on trust (PRD §4.5, §8.4, FR-4.15).\n\nOne rescue request, three audiences. A resident sees a dashed area and a distance — no address, no names. A registered volunteer sees the exact address, how many people, whether any are children or elderly, and the water level: everything needed to bring the right boat. A barangay official additionally sees the medical context.\n\nThe medical chip is simply absent from the volunteer's cards, not greyed out or marked hidden (AC-4.13) — a locked row advertises that there is something worth taking. Because this data crosses the offline relay, the tier is cryptographic and not a display rule: the medical context travels as a separate envelope encrypted to official keys alone (§8.3), so a volunteer's phone can carry it without being able to open it.\n\nRegistration is the hinge. Anyone can apply, offline; only a barangay official can activate."
+    },
+    {
+      "id": "sos-exception-note",
+      "x": 0,
+      "y": 4400,
+      "w": 1150,
+      "text": "EXCEPTION 1 — the SOS path is always urgent (PRD §5.5).\n\nThese four screens are drawn identically in all three modes. They do not follow the theme and do not dim in Survival. Rescue is not a theme: a person calling for help must recognise them instantly, with no \"which mode am I in?\" ambiguity at the worst possible moment. Mode still governs radios and background activity — only appearance is held constant.\n\nSOS context is the only place FR-4.3 is visible: the banner shows transmission already under way, so collecting detail never blocks sending."
+    },
+    {
+      "id": "rescue-card-note",
+      "x": 1760,
+      "y": 4800,
+      "w": 760,
+      "text": "EXCEPTION 2 — the rescue card stays white (PRD §5.6).\n\nWhite surface, black text, maximum brightness in every mode including Survival. It is the one screen in Survival that raises brightness instead of lowering it, because its job is to be seen by someone else — a rescuer at a window, a boat crew across a flooded street.\n\nIt shows medical needs, but sits outside the disclosure tiers (AC-4.9): this is the requester holding up their own screen, not the app disclosing anything.\n\nBeing found outweighs the battery cost, and the cost is stated on the card itself rather than hidden."
+    },
+    {
+      "id": "additional-features-note",
+      "x": 2640,
+      "y": 4400,
+      "w": 800,
+      "text": "The four additional features (PRD 6.6 to 6.9) and where they live.\n\n6.6 Official verification — these two artboards: issuing a status, and reversing one another official issued. The one place an official status is issued rather than merely displayed: the crowd reports are kept visible beside it, the action is signed and attributed to a named kagawad, and it works with no signal.\n\n6.7 Evacuation centres — a full matrix column, Normal and Storm.\n\n6.8 Family check-in — in the supporting row.\n\n6.9 Route check — this artboard. States the count and the worst severity, highlights the offending segments, and is honest that it rests on resident reports rather than sensors."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

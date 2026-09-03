@@ -1,0 +1,48 @@
+# ---------- Android / Gradle ----------
+*.iml
+.gradle/
+local.properties
+.idea/
+!.idea/codeStyles/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+output-metadata.json
+
+# keystores — never commit signing material
+*.jks
+*.keystore
+keystore.properties
+
+# ---------- Node ----------
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.env
+.env.local
+
+# ---------- Server data ----------
+server/*.db
+server/*.sqlite
+server/*.sqlite3
+
+# ---------- Windows / Office ----------
+Thumbs.db
+Desktop.ini
+~$*
+*.tmp
+docs
+docs/*
+
+# ---------- macOS ----------
+.DS_Store
+
+# ---------- Scratch ----------
+/tmp/
+/scratch/
+*.log

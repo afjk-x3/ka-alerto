@@ -1,0 +1,106 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #FFFFFF; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 38px 16px 11px 16px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid #E3E7EB;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="2" style="flex-shrink: 0; margin-left: -3px;"><path d="M15 5l-7 7 7 7"/></svg>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <div style="font-size: 21px; font-weight: 700; line-height: 1.1;">Opisyal na status</div>
+      <div style="font-size: 13px; color: #5C666F;">Sampaloc St · Brgy. Concepcion Uno</div>
+    </div>
+    <div style="background: #14171A; padding: 5px 9px; flex-shrink: 0;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.5px; color: #FFFFFF;">KAGAWAD</span></div>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 10px; padding: 11px 16px 0 16px;">
+
+    <!-- what the crowd currently says -->
+    <div style="background: #F2F4F6; padding: 11px 13px; display: flex; align-items: center; gap: 12px;">
+      <div style="width: 10px; height: 40px; background: #C42B2B; flex-shrink: 0;"></div>
+      <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+        <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.7px; text-transform: uppercase; color: #5C666F;">Ngayon sa mapa</div>
+        <div style="font-size: 16px; font-weight: 700;">S3 · Hindi madaanan</div>
+        <div style="font-size: 12px; color: #5C666F;">Galing sa residente · 4 nagkumpirma</div>
+      </div>
+    </div>
+
+    <!-- crowd reports are retained, including the one that disagrees -->
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Mananatili ang ulat ng residente</div>
+      <div style="border: 1px solid #E3E7EB; border-left: 3px solid #C42B2B; padding: 8px 11px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F; flex-shrink: 0;">8:00</span>
+        <span style="font-size: 14px; flex-grow: 1;">Hanggang baywang · 4 ulat</span>
+      </div>
+      <div style="border: 1px solid #E3E7EB; border-left: 3px solid #F2A93B; padding: 8px 11px; display: flex; align-items: center; gap: 10px;">
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F; flex-shrink: 0;">8:40</span>
+        <span style="font-size: 14px; flex-grow: 1;">Bukong-bukong na · 1 ulat</span>
+      </div>
+      <span style="font-size: 12px; color: #8A939B; line-height: 1.4;">Hindi binubura ng opisyal na status ang mga ito. Makikita pa rin ng residente ang dalawa.</span>
+    </div>
+
+    <!-- the official ruling -->
+    <div style="display: flex; flex-direction: column; gap: 7px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.9px; text-transform: uppercase; color: #5C666F;">Ano ang opisyal na sasabihin mo?</div>
+      <div style="border: 2px solid #C42B2B; background: #FBEBE9; padding: 10px 12px; display: flex; align-items: center; gap: 11px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; background: #C42B2B; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#FFFFFF" stroke-width="2.6"><path d="M4.5 10.4l3.6 3.6L15.5 6.4"/></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+          <span style="font-size: 15px; font-weight: 700; color: #8E2020;">Hindi madaanan</span>
+          <span style="font-size: 12px; color: #8E2020;">Officially impassable</span>
+        </div>
+      </div>
+      <div style="border: 1.5px solid #D8DEE3; padding: 10px 12px; display: flex; align-items: center; gap: 11px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #D8DEE3; box-sizing: border-box; flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+          <span style="font-size: 15px; font-weight: 600; color: #5C666F;">Madaanan, mag-ingat</span>
+          <span style="font-size: 12px; color: #8A939B;">Passable with caution</span>
+        </div>
+      </div>
+      <div style="border: 1.5px solid #D8DEE3; padding: 10px 12px; display: flex; align-items: center; gap: 11px;">
+        <div style="width: 22px; height: 22px; border-radius: 50%; border: 2px solid #D8DEE3; box-sizing: border-box; flex-shrink: 0;"></div>
+        <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+          <span style="font-size: 15px; font-weight: 600; color: #5C666F;">Humupa na · malinaw</span>
+          <span style="font-size: 12px; color: #8A939B;">Officially cleared</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- attribution: an official action is never anonymous -->
+  <div style="margin: 11px 16px 0 16px; background: #14171A; padding: 10px 13px; display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="1.9" style="flex-shrink: 0;"><path d="M12 3.2l7.6 3.2v5.8c0 4.3-3.2 7.6-7.6 8.6-4.4-1-7.6-4.3-7.6-8.6V6.4z"/><path d="M8.8 11.9l2.4 2.4 4.2-4.8"/></svg>
+    <div style="display: flex; flex-direction: column; gap: 1px;">
+      <span style="font-size: 13px; font-weight: 700; color: #FFFFFF; line-height: 1.3;">Mapipirmahan bilang M. Reyes, Kagawad</span>
+      <span style="font-size: 11px; color: #A8B0BA; line-height: 1.3;">Brgy. Concepcion Uno · makikita ng lahat kung sino ang nag-post</span>
+    </div>
+  </div>
+
+  <div style="padding: 10px 16px 20px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+    <div style="height: 56px; background: #14171A; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 17px; font-weight: 700; color: #FFFFFF;">I-post ang opisyal na status</span>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 7px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FBF" stroke-width="2.2" style="flex-shrink: 0;"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7.2 10.8l9.6-3.6M7.2 13.2l9.6 3.6"/></svg>
+      <span style="font-size: 12px; color: #5C666F; line-height: 1.4;">Gumagana kahit walang signal — nilalagdaan sa phone, kumakalat sa mesh</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 880px; height: 1040px; background: #F7F5F2; color: #14171A; padding: 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 34px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px; border-bottom: 2px solid #14171A; padding-bottom: 18px;">
+    <div style="font-size: 30px; font-weight: 700; letter-spacing: -0.4px;">KaAlerto — Design Foundations</div>
+    <div style="font-size: 15px; color: #5C666F;">Every value here is fixed in the PRD, section 5. Screens inherit from this sheet; change it here first. The three mode palettes are on the Palettes sheet to the right.</div>
+  </div>
+
+  <!-- SEVERITY -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Severity encoding — colour, shape and text together, never colour alone</div>
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;">
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px;">
+        <div style="height: 8px; background: #F2A93B;"></div>
+        <div style="font-size: 15px; font-weight: 700;">S1</div>
+        <div style="font-size: 13px; line-height: 1.35;">Passable with caution</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Madaanan, mag-ingat</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">#F2A93B</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px;">
+        <div style="height: 8px; background: #E4682B;"></div>
+        <div style="font-size: 15px; font-weight: 700;">S2</div>
+        <div style="font-size: 13px; line-height: 1.35;">Impassable for cars</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Hindi madaanan ng sasakyan</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">#E4682B</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px;">
+        <div style="height: 8px; background: #C42B2B;"></div>
+        <div style="font-size: 15px; font-weight: 700;">S3</div>
+        <div style="font-size: 13px; line-height: 1.35;">Impassable for all</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Hindi madaanan</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">#C42B2B</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px;">
+        <div style="height: 8px; background: #FFFFFF; border: 2px solid #2F7FBF; box-sizing: border-box;"></div>
+        <div style="font-size: 15px; font-weight: 700;">S0</div>
+        <div style="font-size: 13px; line-height: 1.35;">Reported cleared</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Humupa na</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">#2F7FBF</div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 14px;">
+        <div style="height: 8px; background: repeating-linear-gradient(45deg, #C42B2B 0 5px, #F2A93B 5px 10px);"></div>
+        <div style="font-size: 15px; font-weight: 700;">SX</div>
+        <div style="font-size: 13px; line-height: 1.35;">Conflicting reports</div>
+        <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Magkaibang ulat</div>
+        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">hatch</div>
+      </div>
+
+    </div>
+    <div style="font-size: 13px; color: #5C666F; line-height: 1.5;">Greyscale check: line weight increases with severity (2px / 3px / 5px) and each carries a distinct icon, so the three tiers stay separable with all colour removed.</div>
+  </div>
+
+  <!-- CONFIDENCE -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Confidence — a second, independent dimension. Never confused with severity.</div>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+
+      <div style="display: flex; align-items: center; gap: 7px; background: #FFFFFF; border: 1px dashed #9BA5AE; padding: 8px 12px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#5C666F" stroke-width="1.6"><circle cx="8" cy="8" r="6.2"/><path d="M8 5v3.5"/><circle cx="8" cy="11" r="0.9" fill="#5C666F" stroke="none"/></svg>
+        <span style="font-size: 13px; font-weight: 500; color: #5C666F;">Unverified · 1 report</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 7px; background: #FFFFFF; border: 1px solid #C9D0D6; padding: 8px 12px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#14171A" stroke-width="1.6"><circle cx="8" cy="8" r="6.2"/><path d="M8 2v6"/></svg>
+        <span style="font-size: 13px; font-weight: 500;">Likely</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 7px; background: #FFFFFF; border: 1px solid #14171A; padding: 8px 12px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#14171A" stroke-width="1.8"><circle cx="8" cy="8" r="6.2"/><path d="M5.2 8.2l2 2 3.6-4"/></svg>
+        <span style="font-size: 13px; font-weight: 600;">Confirmed</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 7px; background: #14171A; padding: 8px 12px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#FFFFFF" stroke-width="1.8"><path d="M8 1.8l5.2 2.2v4c0 3-2.2 5.3-5.2 6.2-3-0.9-5.2-3.2-5.2-6.2V4z"/><path d="M5.6 7.9l1.7 1.7 3.1-3.4"/></svg>
+        <span style="font-size: 13px; font-weight: 600; color: #FFFFFF;">Official · Barangay</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 7px; background: #EFEDEA; border: 1px dashed #9BA5AE; padding: 8px 12px;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#8A939B" stroke-width="1.6"><circle cx="8" cy="8" r="6.2"/><path d="M8 4.4V8l2.4 1.6"/></svg>
+        <span style="font-size: 13px; font-weight: 500; color: #8A939B;">Stale · last confirmed 3h ago</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TYPE + TARGETS -->
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px;">
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Type scale</div>
+      <div style="display: flex; flex-direction: column; gap: 10px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 18px;">
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="font-size: 32px; font-weight: 700; line-height: 1;">14.6412</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">32 · Display</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="font-size: 24px; font-weight: 700; line-height: 1;">Hindi madaanan</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">24 · Headline</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="font-size: 20px; font-weight: 600; line-height: 1;">Sampaloc Street</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">20 · Title</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="font-size: 16px; line-height: 1;">Waist-deep, impassable</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">16 · Body — floor</span></div>
+        <div style="display: flex; align-items: baseline; gap: 14px;"><span style="font-size: 14px; font-weight: 500; line-height: 1; color: #5C666F;">22 min ago · via mesh</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">14 · Label only</span></div>
+      </div>
+      <div style="font-size: 13px; color: #5C666F; line-height: 1.5;">Body never below 16. Coordinates and counts set in IBM Plex Mono so digits align and cannot be misread.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Tap targets — wet hands, one-handed</div>
+      <div style="display: flex; gap: 14px; align-items: flex-end; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+          <div style="width: 48px; height: 48px; background: #E8EBEE; border: 1px solid #C9D0D6;"></div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">48 min</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+          <div style="width: 64px; height: 64px; background: #DDE2E7; border: 1px solid #C9D0D6;"></div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">64 crisis</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: center;">
+          <div style="width: 88px; height: 88px; background: #C42B2B; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <span style="color: #FFFFFF; font-size: 17px; font-weight: 700; letter-spacing: 0.5px;">SOS</span>
+          </div>
+          <div style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5C666F;">88 SOS</div>
+        </div>
+      </div>
+      <div style="font-size: 13px; color: #5C666F; line-height: 1.5;">8&nbsp;dp spacing grid. Tap only on critical paths — no precise drag, no multi-finger, no long-press except SOS.</div>
+    </div>
+
+  </div>
+
+  <!-- HONEST COPY -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div style="font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: #5C666F;">Honest copy — binding</div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+
+      <div style="display: flex; gap: 10px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 13px;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2E7D4F" stroke-width="1.8" style="flex-shrink: 0; margin-top: 1px;"><circle cx="9" cy="9" r="7"/><path d="M6 9.2l2.2 2.2 4-4.4"/></svg>
+        <div style="font-size: 14px; line-height: 1.45;">&ldquo;Saved on your phone. Will send when there is signal.&rdquo;</div>
+      </div>
+      <div style="display: flex; gap: 10px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 13px;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#2E7D4F" stroke-width="1.8" style="flex-shrink: 0; margin-top: 1px;"><circle cx="9" cy="9" r="7"/><path d="M6 9.2l2.2 2.2 4-4.4"/></svg>
+        <div style="font-size: 14px; line-height: 1.45;">&ldquo;No signal. Your phone is calling out to nearby phones.&rdquo;</div>
+      </div>
+      <div style="display: flex; gap: 10px; background: #FBF0EF; border: 1px solid #E8C6C3; padding: 13px;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#C42B2B" stroke-width="1.8" style="flex-shrink: 0; margin-top: 1px;"><circle cx="9" cy="9" r="7"/><path d="M6.4 6.4l5.2 5.2M11.6 6.4l-5.2 5.2"/></svg>
+        <div style="font-size: 14px; line-height: 1.45; color: #7A1F1F;">Prohibited: an indefinite &ldquo;Sending&hellip;&rdquo; spinner. &ldquo;Sent&rdquo;, when nothing was delivered. &ldquo;Failed&rdquo;, when the phone is still broadcasting.</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

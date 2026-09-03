@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #FF5A4E; } a:hover { color: #E04036; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #000000; color: #FFFFFF; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- mode header -->
+  <div style="padding: 34px 16px 12px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #FFFFFF;">
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" style="flex-shrink: 0;">
+      <rect x="2" y="7" width="19" height="12" stroke="#FFFFFF" stroke-width="2"/>
+      <rect x="22.5" y="10.5" width="2.5" height="5" fill="#FFFFFF"/>
+      <rect x="4.5" y="9.5" width="3" height="7" fill="#FF5A4E"/>
+    </svg>
+    <div style="display: flex; flex-direction: column; gap: 2px; flex-grow: 1;">
+      <div style="font-size: 17px; font-weight: 700; letter-spacing: 0.6px;">SURVIVAL MODE</div>
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 14px;">8% baterya</div>
+    </div>
+  </div>
+
+  <!-- why -->
+  <div style="padding: 9px 16px; border-bottom: 1px solid #333333;">
+    <div style="font-size: 17px; line-height: 1.4;">Mababa na ang baterya. Naiwan lang ang <strong>mapa</strong> at ang <strong>SOS</strong>.</div>
+    <div style="font-size: 14px; color: #FFFFFF; opacity: 0.6; line-height: 1.4; padding-top: 6px;">Battery low. Only the map and rescue request are still running.</div>
+  </div>
+
+  <!-- last known map -->
+  <div style="padding: 7px 16px 0 16px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; padding-bottom: 9px;">Huling nakuhang mapa · 4h 12m</div>
+    <svg width="328" height="228" viewBox="0 0 328 228" style="display: block;">
+      <rect width="328" height="228" fill="#000000" stroke="#333333" stroke-width="1"/>
+      <g stroke="#3A3A3A" stroke-width="7" stroke-linecap="round">
+        <path d="M0 62 L328 62"/><path d="M0 132 L328 132"/><path d="M84 0 L84 228"/><path d="M196 0 L196 228"/>
+      </g>
+      <path d="M8 132 L140 132" stroke="#C42B2B" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M196 132 L196 210" stroke="#E4682B" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M196 62 L320 62" stroke="#F2A93B" stroke-width="6" stroke-linecap="round" fill="none"/>
+      <circle cx="74" cy="132" r="11" fill="#C42B2B"/>
+      <g stroke="#000000" stroke-width="1.6" fill="none"><circle cx="74" cy="129" r="1.9"/><path d="M74 131v4M71.9 136.4L74 134.3l2.1 2.1"/><path d="M69.4 136.4l9.2-9.2" stroke-width="1.7"/></g>
+      <text x="12" y="126" fill="#8A8A8A" style="font-family: 'IBM Plex Sans'; font-size: 10px; font-weight: 500;">SAMPALOC ST</text>
+      <circle cx="140" cy="182" r="7" fill="#FFFFFF"/>
+    </svg>
+    <div style="font-size: 13px; opacity: 0.6; padding-top: 8px; line-height: 1.4;">Hindi na ito nag-a-update. Ito ang huling alam ng phone mo.</div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <!-- suspended, shown not hidden -->
+  <div style="padding: 0 16px 14px 16px;">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; opacity: 0.55; padding-bottom: 10px;">Naka-pause para makatipid</div>
+    <div style="display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 11px; padding: 5px 0; border-top: 1px solid #262626;">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="#666666" stroke-width="1.8" style="flex-shrink: 0;"><rect x="3.5" y="7.5" width="11" height="7.5"/><path d="M6 7.5V5.4a3 3 0 0 1 6 0v2.1"/></svg>
+        <span style="font-size: 16px; color: #808080; flex-grow: 1;">Mag-ulat ng baha</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 11px; padding: 5px 0; border-top: 1px solid #262626;">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="#666666" stroke-width="1.8" style="flex-shrink: 0;"><rect x="3.5" y="7.5" width="11" height="7.5"/><path d="M6 7.5V5.4a3 3 0 0 1 6 0v2.1"/></svg>
+        <span style="font-size: 16px; color: #808080; flex-grow: 1;">Mga abiso</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 11px; padding: 5px 0; border-top: 1px solid #262626; border-bottom: 1px solid #262626;">
+        <svg width="17" height="17" viewBox="0 0 18 18" fill="none" stroke="#666666" stroke-width="1.8" style="flex-shrink: 0;"><rect x="3.5" y="7.5" width="11" height="7.5"/><path d="M6 7.5V5.4a3 3 0 0 1 6 0v2.1"/></svg>
+        <span style="font-size: 16px; color: #808080; flex-grow: 1;">Evacuation centre · check-in</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FR-1.12 guidance disclaimer: safety copy survives minimum chrome -->
+  <div style="padding: 4px 16px 6px 16px; flex-shrink: 0;">
+    <span style="font-size: 11px; color: #8A8A8A; line-height: 1.3;">Galing sa ulat ng residente. Luma na ito. Tingnan pa rin ang nasa harap mo.</span>
+  </div>
+
+  <!-- SOS + override -->
+  <div style="padding: 0 16px 12px 16px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
+    <div style="height: 74px; background: #C42B2B; display: flex; align-items: center; justify-content: center; gap: 12px;">
+      <span style="font-size: 26px; font-weight: 700; letter-spacing: 2px; color: #FFFFFF;">SOS</span>
+      <span style="font-size: 15px; color: #FFD9D6;">gumagana pa rin</span>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 7px;">
+      <span style="font-size: 15px; text-decoration: underline;">Bumalik sa Storm Mode</span>
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#FFFFFF" stroke-width="1.8"><path d="M5.5 3.5L10 8l-4.5 4.5"/></svg>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

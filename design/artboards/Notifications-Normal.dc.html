@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #FFFFFF; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <div style="padding: 44px 16px 12px 16px; border-bottom: 1px solid #E3E7EB;">
+    <div style="font-size: 24px; font-weight: 700; line-height: 1.1;">Mga abiso</div>
+    <div style="font-size: 14px; color: #5C666F; padding-top: 3px;">Nagmumula sa data na nasa phone mo na</div>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px 16px; overflow: hidden; background: #F7F5F2;">
+
+    <!-- critical -->
+    <div style="background: #FBEBE9; border-left: 4px solid #C42B2B; padding: 12px 15px;">
+      <div style="display: flex; align-items: center; gap: 9px; padding-bottom: 9px;">
+        <div style="background: #C42B2B; padding: 4px 8px;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #FFFFFF;">MALAPIT SA BAHAY</span></div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F;">3 min</span>
+      </div>
+      <div style="font-size: 19px; font-weight: 700; line-height: 1.25; padding-bottom: 5px;">Hindi na madaanan ang Sampaloc St</div>
+      <div style="font-size: 15px; color: #7A1F1F; line-height: 1.4; padding-bottom: 10px;">Hanggang baywang · 400 m mula sa bahay mo</div>
+      <div style="display: flex; align-items: center; gap: 7px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FBF" stroke-width="2.2" style="flex-shrink: 0;"><path d="M2.4 9.3a13.5 13.5 0 0 1 19.2 0"/><path d="M6.3 13.3a8 8 0 0 1 11.4 0"/><circle cx="12" cy="18.2" r="1.9" fill="#2F7FBF" stroke="none"/></svg>
+        <span style="font-size: 13px; color: #5C666F;">Dumating via internet · 4 nagkumpirma</span>
+      </div>
+    </div>
+
+    <!-- aggregated -->
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #E4682B; padding: 12px 15px;">
+      <div style="display: flex; align-items: center; gap: 9px; padding-bottom: 9px;">
+        <div style="background: #FFF8E8; padding: 4px 8px;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #A3791A;">SA RUTA MO</span></div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F;">22 min</span>
+      </div>
+      <div style="font-size: 18px; font-weight: 600; line-height: 1.25; padding-bottom: 5px;">4 na bagong baha sa ruta pauwi</div>
+      <div style="font-size: 14px; color: #5C666F; line-height: 1.4;">Pinagsama sa isang abiso — hindi apat na tunog</div>
+    </div>
+
+    <!-- cleared -->
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #2F7FBF; padding: 12px 15px;">
+      <div style="display: flex; align-items: center; gap: 9px; padding-bottom: 9px;">
+        <div style="background: #E7F0F7; padding: 4px 8px;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #1F5F91;">HUMUPA NA</span></div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F;">1 h</span>
+      </div>
+      <div style="font-size: 18px; font-weight: 600; line-height: 1.25; padding-bottom: 5px;">Madaanan na ang Rizal Ave</div>
+      <div style="font-size: 14px; color: #5C666F; line-height: 1.4;">Kinumpirma ng barangay</div>
+    </div>
+
+    <!-- official, current -->
+    <div style="background: #FFFFFF; border: 1px solid #E3E7EB; border-left: 4px solid #C9D0D6; padding: 12px 15px;">
+      <div style="display: flex; align-items: center; gap: 9px; padding-bottom: 9px;">
+        <div style="background: #F2F4F6; padding: 4px 8px;"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.6px; color: #5C666F;">PAGASA</span></div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5C666F;">8 min ang tanda</span>
+      </div>
+      <div style="font-size: 18px; font-weight: 600; line-height: 1.25; padding-bottom: 5px;">Yellow rainfall advisory · Metro Manila</div>
+      <div style="font-size: 14px; color: #5C666F; line-height: 1.4;">Na-update kanina lang. Nakakonekta pa rin sa PAGASA.</div>
+    </div>
+
+  </div>
+
+  <div style="padding: 12px 16px 26px 16px; border-top: 1px solid #E3E7EB; display: flex; align-items: center; gap: 10px;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5C666F" stroke-width="1.9" style="flex-shrink: 0;"><path d="M12 3.2l7.6 3.2v5.8c0 4.3-3.2 7.6-7.6 8.6-4.4-1-7.6-4.3-7.6-8.6V6.4z"/><path d="M8.8 11.9l2.4 2.4 4.2-4.8"/></svg>
+    <span style="font-size: 13px; color: #5C666F; line-height: 1.4;">Kahit walang signal, nag-a-alerto pa rin — nasa phone mo ang pagsuri.</span>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

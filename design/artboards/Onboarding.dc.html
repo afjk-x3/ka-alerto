@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #FFFFFF; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- header -->
+  <div style="padding: 28px 20px 8px 20px; flex-shrink: 0;">
+    <div style="font-size: 24px; font-weight: 700; line-height: 1.15;">I-set up ang KaAlerto</div>
+    <div style="font-size: 14px; color: #5C666F; line-height: 1.4; padding-top: 4px;">Pangalan at barangay lang. Walang password, walang email.</div>
+  </div>
+
+  <!-- PRD 9: the emergency path is never gated by the form -->
+  <div style="margin: 0 20px; border: 1.5px solid #C42B2B; background: #FBEBE9; padding: 7px 10px; display: flex; align-items: center; gap: 9px; flex-shrink: 0;">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#A32020" stroke-width="2" style="flex-shrink: 0;"><path d="M12 3.2L21.5 20H2.5z"/><path d="M12 9.6v4.4"/><circle cx="12" cy="16.9" r="1.05" fill="#A32020" stroke="none"/></svg>
+    <span style="font-size: 12px; color: #8E2020; line-height: 1.3; flex-grow: 1;">May emergency ka na ngayon? Huwag mo nang tapusin ito.</span>
+    <div style="background: #C42B2B; padding: 6px 13px; flex-shrink: 0;">
+      <span style="font-size: 14px; font-weight: 700; color: #FFFFFF; letter-spacing: 0.4px;">SOS</span>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; padding: 10px 20px 0 20px;">
+
+    <!-- name -->
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #5C666F;">Pangalan</div>
+      <div style="border: 1.5px solid #14171A; padding: 10px 12px; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5C666F" stroke-width="1.9" style="flex-shrink: 0;"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></svg>
+        <span style="font-size: 17px; font-weight: 600; flex-grow: 1;">Juan Dela Cruz</span>
+        <div style="width: 2px; height: 19px; background: #14171A; flex-shrink: 0;"></div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="#5C666F" stroke-width="1.7" style="flex-shrink: 0;"><circle cx="9" cy="9" r="7"/><path d="M9 5.4v4.2M9 12.2h.01"/></svg>
+        <span style="font-size: 12px; color: #5C666F; line-height: 1.3;">Lalabas bilang <strong style="color: #14171A;">Juan D.</strong> sa mga ulat mo</span>
+      </div>
+    </div>
+
+    <!-- barangay, pre-filled from GPS -->
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #5C666F;">Barangay</div>
+      <div style="border: 1.5px solid #D8DEE3; padding: 10px 12px; display: flex; align-items: center; gap: 10px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2F7FBF" stroke-width="1.9" style="flex-shrink: 0;"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+          <span style="font-size: 16px; font-weight: 600;">Concepcion Uno</span>
+          <span style="font-size: 12px; color: #5C666F;">Marikina City</span>
+        </div>
+        <span style="font-size: 13px; font-weight: 600; text-decoration: underline; flex-shrink: 0;">Baguhin</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <svg width="13" height="13" viewBox="0 0 18 18" fill="none" stroke="#2E7D4F" stroke-width="1.9" style="flex-shrink: 0;"><path d="M3.6 9.4l3.2 3.2L14.4 5"/></svg>
+        <span style="font-size: 12px; color: #5C666F; line-height: 1.3;">Nakuha sa GPS mo — pindutin kung mali</span>
+      </div>
+    </div>
+
+    <!-- PRD 9: disclosed where it is collected, not in a policy -->
+    <div style="background: #F2F4F6; border-left: 3px solid #14171A; padding: 8px 11px; display: flex; flex-direction: column; gap: 3px;">
+      <div style="font-size: 13px; font-weight: 700; line-height: 1.25;">Makikita ng lahat ang pangalan mo sa mga ulat mo</div>
+      <div style="font-size: 12px; color: #5C666F; line-height: 1.35;">Ito ang nagpapanagot sa bawat ulat. Kapag nakarating na ito sa ibang phone, hindi na ito mababawi.</div>
+    </div>
+
+    <!-- permissions, compressed from four explainer cards -->
+    <div style="display: flex; flex-direction: column; gap: 4px; min-height: 0;">
+      <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: #5C666F;">Papayagan mo ba</div>
+
+      <div style="border: 1px solid #E3E7EB; padding: 6px 10px; display: flex; align-items: center; gap: 9px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="1.9" style="flex-shrink: 0;"><circle cx="5" cy="12" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7.2 10.8l9.6-3.6M7.2 13.2l9.6 3.6"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 0px; flex-grow: 1;">
+          <span style="font-size: 14px; font-weight: 600; line-height: 1.25;">Mga kalapit na device</span>
+          <span style="font-size: 11px; color: #5C666F; line-height: 1.25;">Dito dumadaan ang ulat kapag walang cell site</span>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #E3E7EB; padding: 6px 10px; display: flex; align-items: center; gap: 9px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="1.9" style="flex-shrink: 0;"><rect x="3" y="5" width="18" height="14"/><path d="M3 6.5l9 6 9-6"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 0px; flex-grow: 1;">
+          <span style="font-size: 14px; font-weight: 600; line-height: 1.25;">SMS</span>
+          <span style="font-size: 11px; color: #5C666F; line-height: 1.25;">Kapag walang data, may text pa</span>
+        </div>
+        <div style="background: #FFF8E8; padding: 3px 7px; flex-shrink: 0;">
+          <span style="font-size: 11px; font-weight: 600; color: #7A5A11;">May bayad</span>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #E3E7EB; padding: 6px 10px; display: flex; align-items: center; gap: 9px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="1.9" style="flex-shrink: 0;"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6 2 6H4s2-1 2-6z"/><path d="M9.5 19a2.6 2.6 0 0 0 5 0"/></svg>
+        <div style="display: flex; flex-direction: column; gap: 0px; flex-grow: 1;">
+          <span style="font-size: 14px; font-weight: 600; line-height: 1.25;">Abiso</span>
+          <span style="font-size: 11px; color: #5C666F; line-height: 1.25;">Baha malapit sa bahay mo — kahit offline</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- footer -->
+  <div style="padding: 9px 20px 16px 20px; display: flex; flex-direction: column; gap: 7px; flex-shrink: 0;">
+    <div style="background: #F2F4F6; padding: 8px 12px; display: flex; align-items: center; gap: 10px;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#14171A" stroke-width="1.9" style="flex-shrink: 0;"><path d="M12 3.5v11M8 11l4 4 4-4M4 19.5h16"/></svg>
+      <div style="display: flex; flex-direction: column; gap: 1px; flex-grow: 1;">
+        <div style="font-size: 14px; font-weight: 600;">Mapa ng Marikina</div>
+        <div style="font-size: 12px; color: #5C666F;">I-download habang may signal pa</div>
+      </div>
+    </div>
+    <div style="height: 54px; background: #14171A; display: flex; align-items: center; justify-content: center;">
+      <span style="font-size: 18px; font-weight: 700; color: #FFFFFF;">Magsimula</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

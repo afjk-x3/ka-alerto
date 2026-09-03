@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    a { color: #C42B2B; } a:hover { color: #9B2020; }
+  </style>
+</helmet>
+
+<div style="width: 360px; height: 800px; background: #FFFFFF; color: #14171A; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- location + sync -->
+  <div style="background: #FFFFFF; border-bottom: 1px solid #E3E7EB; padding: 40px 16px 12px 16px; display: flex; align-items: center; gap: 12px;">
+    <div style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1;">
+      <div style="font-size: 18px; font-weight: 700;">Brgy. Concepcion Uno</div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <div style="width: 7px; height: 7px; border-radius: 50%; background: #2E7D4F;"></div>
+        <span style="font-size: 13px; color: #5C666F;">Synced just now · 18 reports today</span>
+      </div>
+    </div>
+    <div style="width: 48px; height: 48px; border: 1px solid #E3E7EB; display: flex; align-items: center; justify-content: center;">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#14171A" stroke-width="1.8"><path d="M11 2.5v3M11 16.5v3M2.5 11h3M16.5 11h3M5 5l2.1 2.1M14.9 14.9L17 17M17 5l-2.1 2.1M7.1 14.9L5 17"/><circle cx="11" cy="11" r="3.4"/></svg>
+    </div>
+  </div>
+
+  <!-- filters -->
+  <div style="display: flex; gap: 8px; padding: 12px 16px; align-items: center;">
+    <div style="display: flex; align-items: center; gap: 6px; background: #14171A; padding: 9px 12px; height: 20px;">
+      <div style="width: 12px; height: 4px; background: #FFFFFF;"></div>
+      <span style="font-size: 14px; font-weight: 600; color: #FFFFFF;">Lahat</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #D8DEE3; padding: 9px 12px; height: 20px;">
+      <div style="width: 12px; height: 4px; background: #C42B2B;"></div>
+      <span style="font-size: 14px; color: #5C666F;">Impassable</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 6px; background: #FFFFFF; border: 1px solid #D8DEE3; padding: 9px 12px; height: 20px;">
+      <span style="font-size: 14px; color: #5C666F;">6h</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#5C666F" stroke-width="1.6"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg>
+    </div>
+  </div>
+
+  <!-- map -->
+  <div style="flex-grow: 1; position: relative; background: #E9E5DE;">
+    <svg width="360" height="474" viewBox="0 0 360 474" style="display: block;">
+      <defs>
+        <pattern id="conflictDay" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="10" height="10" fill="#C42B2B"/>
+          <rect width="5" height="10" fill="#F2A93B"/>
+        </pattern>
+      </defs>
+
+      <rect width="360" height="474" fill="#E9E5DE"/>
+
+      <g fill="#F6F3EE">
+        <rect x="8" y="8" width="70" height="96"/><rect x="104" y="8" width="92" height="96"/>
+        <rect x="8" y="128" width="70" height="98"/><rect x="104" y="128" width="92" height="98"/>
+        <rect x="222" y="128" width="60" height="98"/>
+        <rect x="8" y="250" width="70" height="106"/><rect x="104" y="250" width="92" height="106"/>
+        <rect x="8" y="380" width="70" height="86"/><rect x="104" y="380" width="92" height="86"/>
+        <rect x="222" y="380" width="66" height="86"/>
+      </g>
+      <rect x="222" y="250" width="60" height="106" fill="#D7E3CC"/>
+      <text x="230" y="304" fill="#7A8C6E" style="font-family: 'IBM Plex Sans'; font-size: 10px;">Plaza</text>
+
+      <path d="M348 0 C 330 90, 320 150, 306 226 C 296 300, 300 380, 288 474" stroke="#A9C6D6" stroke-width="20" fill="none" stroke-linecap="round"/>
+
+      <!-- road casing then fill -->
+      <g stroke="#DBD5CB" stroke-width="12" stroke-linecap="round">
+        <path d="M0 116 L360 116"/><path d="M0 238 L360 238"/><path d="M0 368 L360 368"/>
+        <path d="M90 0 L90 474"/><path d="M208 0 L208 474"/>
+      </g>
+      <g stroke="#FFFFFF" stroke-width="9" stroke-linecap="round">
+        <path d="M0 116 L360 116"/><path d="M0 238 L360 238"/><path d="M0 368 L360 368"/>
+        <path d="M90 0 L90 474"/><path d="M208 0 L208 474"/>
+      </g>
+
+      <!-- FLOOD OVERLAYS -->
+      <path d="M10 238 L150 238" stroke="#C42B2B" stroke-width="11" stroke-linecap="round" fill="none"/>
+      <path d="M208 238 L208 368" stroke="#E4682B" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M208 368 L344 368" stroke="#F2A93B" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M90 116 L208 116" stroke="url(#conflictDay)" stroke-width="11" stroke-linecap="butt" fill="none"/>
+      <path d="M90 368 L90 466" stroke="#2F7FBF" stroke-width="9" stroke-linecap="round" fill="none" opacity="0.22"/>
+      <path d="M90 368 L90 466" stroke="#2F7FBF" stroke-width="3" stroke-linecap="round" fill="none"/>
+
+      <!-- a stale segment, desaturated + dashed -->
+      <path d="M262 238 L352 238" stroke="#B9A98F" stroke-width="7" stroke-linecap="round" fill="none" stroke-dasharray="9 7"/>
+
+      <g>
+        <circle cx="80" cy="238" r="13" fill="#C42B2B" stroke="#FFFFFF" stroke-width="2"/>
+        <g stroke="#FFFFFF" stroke-width="1.7" fill="none"><circle cx="80" cy="234.5" r="2.2"/><path d="M80 237v5M77.6 243.5L80 241l2.4 2.5"/><path d="M74.5 243.5l11-11" stroke-width="1.9"/></g>
+
+        <circle cx="208" cy="303" r="13" fill="#E4682B" stroke="#FFFFFF" stroke-width="2"/>
+        <g stroke="#FFFFFF" stroke-width="1.7" fill="none"><path d="M202.5 305.5h11M204 305.5v-2.6l1.6-2.6h5l1.6 2.6v2.6"/><path d="M202.8 309.2l10.4-10.4" stroke-width="1.9"/></g>
+
+        <circle cx="276" cy="368" r="13" fill="#F2A93B" stroke="#FFFFFF" stroke-width="2"/>
+        <g stroke="#14171A" stroke-width="1.8" fill="none"><path d="M270.5 366.4c1.4-1.5 2.8-1.5 4.2 0s2.8 1.5 4.2 0M270.5 371c1.4-1.5 2.8-1.5 4.2 0s2.8 1.5 4.2 0"/></g>
+
+        <circle cx="149" cy="116" r="13" fill="#FFFFFF" stroke="#E4682B" stroke-width="2.5"/>
+        <text x="149" y="121" text-anchor="middle" fill="#14171A" style="font-family: 'IBM Plex Sans'; font-size: 15px; font-weight: 700;">?</text>
+
+        <circle cx="90" cy="424" r="12" fill="#FFFFFF" stroke="#2F7FBF" stroke-width="2.5"/>
+        <path d="M85.5 424.2l3 3 6-6.4" stroke="#2F7FBF" stroke-width="2" fill="none"/>
+
+        <circle cx="307" cy="238" r="12" fill="#FFFFFF" stroke="#B9A98F" stroke-width="2" stroke-dasharray="3 2.5"/>
+        <g stroke="#8A939B" stroke-width="1.7" fill="none"><circle cx="307" cy="238" r="5"/><path d="M307 235.4V238l1.8 1.2"/></g>
+      </g>
+
+      <text x="14" y="232" fill="#8A8478" style="font-family: 'IBM Plex Sans'; font-size: 10px; font-weight: 500;">SAMPALOC ST</text>
+      <text x="96" y="110" fill="#8A8478" style="font-family: 'IBM Plex Sans'; font-size: 10px; font-weight: 500;">DEL PILAR ST</text>
+      <text x="214" y="362" fill="#8A8478" style="font-family: 'IBM Plex Sans'; font-size: 10px; font-weight: 500;">RIZAL AVE</text>
+
+      <circle cx="149" cy="437" r="22" fill="#2F7FBF" opacity="0.14"/>
+      <circle cx="149" cy="437" r="8" fill="#2F7FBF" stroke="#FFFFFF" stroke-width="2.5"/>
+    </svg>
+
+    <!-- legend chip -->
+    <div style="position: absolute; left: 12px; bottom: 12px; background: #FFFFFF; border: 1px solid #E3E7EB; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px;">
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 5px; background: #C42B2B;"></div><span style="font-size: 12px;">Impassable for all</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 4px; background: #E4682B;"></div><span style="font-size: 12px;">Impassable for cars</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 3px; background: #F2A93B;"></div><span style="font-size: 12px;">Passable with caution</span></div>
+      <div style="display: flex; align-items: center; gap: 8px;"><div style="width: 16px; height: 3px; background: #B9A98F;"></div><span style="font-size: 12px; color: #5C666F;">Stale — needs checking</span></div>
+    </div>
+  </div>
+
+  <!-- FR-1.12 guidance disclaimer -->
+  <div style="background: #F2F4F6; border-top: 1px solid #E3E7EB; padding: 5px 16px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+    <svg width="14" height="14" viewBox="0 0 18 18" fill="none" stroke="#5C666F" stroke-width="1.7" style="flex-shrink: 0;"><circle cx="9" cy="9" r="7"/><path d="M9 8.2v4.2"/><circle cx="9" cy="5.8" r="0.85" fill="#5C666F" stroke="none"/></svg>
+    <span style="font-size: 11px; color: #5C666F; line-height: 1.3;">Galing sa ulat ng residente. Maaaring may kulang o luma. Tingnan pa rin ang nasa harap mo.</span>
+  </div>
+
+  <!-- action bar -->
+  <div style="background: #FFFFFF; border-top: 1px solid #E3E7EB; padding: 10px 16px 18px 16px; display: flex; gap: 14px; align-items: center;">
+    <div style="flex-grow: 1; height: 64px; background: #14171A; display: flex; align-items: center; justify-content: center; gap: 10px;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+      <span style="font-size: 18px; font-weight: 700; color: #FFFFFF;">Mag-ulat</span>
+    </div>
+    <div style="width: 88px; height: 88px; border-radius: 50%; background: #C42B2B; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; flex-shrink: 0;">
+      <span style="font-size: 20px; font-weight: 700; letter-spacing: 1px; color: #FFFFFF;">SOS</span>
+      <span style="font-size: 11px; color: #FFD9D6;">pindutin</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
