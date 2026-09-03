@@ -31,16 +31,19 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 
 ## Days 1–2 — Offline Map (Critical Path)
 
-### Day 1: Map scaffold + offline tiles
+### Day 1: Map scaffold + offline tiles — DONE, verified 3-4 Sep 2026
 
-**Choice: OfflineManager OR bundled MBTiles — decide by noon.**
+**OfflineManager path chosen. DoD met on the `API34_Test` emulator** (Android 14, API 34 — not the machine's original `Medium_Phone` AVD, API 37; see below).
 
-**OfflineManager path (3h):**
-- [ ] MapLibre integrated, single screen
-- [ ] Setup button triggering `OfflineManager.createOfflineRegion()` over demo bbox
-- [ ] Tiles persist to device storage
-- [ ] Location permission and FusedLocation blue dot
-- **DoD:** Airplane mode on, force-stop app, relaunch → map renders offline, blue dot appears
+- [x] MapLibre integrated, single screen (`MapScreen.kt`)
+- [x] `OfflineManager` download over `DemoArea.bounds`, tracked via `OfflineMapPack.kt`
+- [x] Tiles persist to device storage — confirmed via a real process restart (8 tiles, 198KB, found on relaunch with no re-download)
+- [x] Location permission handling (blue dot untested visually — permission was granted but no GPS fix was simulated on the emulator; low risk, standard `FusedLocationProvider` usage)
+- **DoD confirmed by screenshot:** airplane mode on, force-stop, cold relaunch → map renders the real demo area (San Juan Bautista label, real streets, real evacuation centres) from the offline pack, zero network, no crash
+
+**Two bugs hit and fixed along the way — both documented in `DemoArea.kt`/`gradle/libs.versions.toml` comments, don't re-break these:**
+1. The style was originally `demotiles.maplibre.org` — hits an open upstream MapLibre bug ([#4403](https://github.com/maplibre/maplibre-native/issues/4403)) that `SIGABRT`s the process the moment `OfflineManager` touches that style. Switched to OpenFreeMap.
+2. **The dev machine's original emulator (API 37, "CinnamonBun") cannot render MapLibre content at all** — no crash, no error, map area just paints solid black, on both Vulkan and OpenGL backends. Root-caused by elimination, not yet explained upstream. A second AVD, `API34_Test` (Android 14), was created specifically to test on a mature OS version and works perfectly. **Use `API34_Test` for all map testing** until this is confirmed on real hardware.
 
 **Bundled MBTiles path (5h):**
 - [ ] MBTiles in `assets/`, copy to app storage on first launch

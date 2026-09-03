@@ -10,7 +10,7 @@ Verified building on 3 September 2026. These versions are a set — bump them to
 |---|---|---|
 | JDK | 25 (Android Studio JBR) | What Studio ships; nothing else is installed |
 | Gradle | 9.7.1 | Needed for JDK 25 |
-| AGP | 9.4.0 | **AGP 8.x cannot be used** — it calls `InternalProblems`, a Gradle internal API removed in Gradle 9.6 |
+| AGP | 9.3.2 | **AGP 8.x cannot be used** — it calls `InternalProblems`, a Gradle internal API removed in Gradle 9.6. **AGP above 9.3.0 cannot be used either** — Android Studio 2026.1.3's own sync hard-refuses it (`android.studio.latest.known.compatible.agp.version=9.3.0` in the IDE log), even though the Gradle CLI builds it without complaint. Confirm against Studio's actual sync log before bumping, not just a green `./gradlew build` |
 | Kotlin | 2.4.10 | Compose + serialization plugins only; see below |
 | compileSdk / targetSdk | 37 | The only platform installed, and there is no `cmdline-tools` to fetch another |
 | minSdk | 26 | Covers realistic budget handsets |

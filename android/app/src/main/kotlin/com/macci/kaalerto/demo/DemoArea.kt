@@ -46,25 +46,40 @@ object DemoArea {
      * Zoom envelope for the offline pack.
      *
      * The floor is deliberately not 0: pre-downloading the whole world at low zoom is a
-     * large download for tiles nobody pans to. The ceiling is where street names and
-     * road geometry stop improving for this use — past 16 the pack grows fast and the
-     * extra detail does not change whether a road reads as passable.
+     * large download for tiles nobody pans to. The ceiling matches OpenFreeMap's actual
+     * maxzoom (14) — requesting tiles past what the source has doesn't crash anything,
+     * but it's pointless pack size for zero extra detail. MapLibre over-zooms z14 tiles
+     * to render at higher camera zoom automatically.
      */
     const val MIN_ZOOM = 10.0
-    const val MAX_ZOOM = 16.0
+    const val MAX_ZOOM = 14.0
 
     /** Camera zoom on first open. */
     const val INITIAL_ZOOM = 15.0
 
     /**
-     * MapLibre's free demo style. No API key, no account, no per-load cost.
+     * OpenFreeMap's "Liberty" style. No API key, no account, no per-load cost, planet
+     * coverage at up to z14 (verified 3 Sep 2026: https://tiles.openfreemap.org/planet).
      *
-     * Detail is coarse — it exists to prove the offline pipeline, not to ship. Replace
-     * with a self-hosted OSM-derived style before the demo; the architecture doc calls
-     * for OSM-derived vector tiles and rejects commercial SDKs on both cost and
-     * offline-capability grounds (docs/03-architecture.md §519-521).
+     * **Not `demotiles.maplibre.org` — that domain is unusable for offline packing.**
+     * It hits a confirmed, open, unfixed upstream bug: MapLibre Native's offline
+     * resource-matching code (`createTokenMap`, in `mapbox.cpp`) fails to escape the
+     * `{fontstack}`/`{range}` placeholders in a glyphs URL template before compiling it
+     * as a regex, and demotiles.maplibre.org's glyphs endpoint hits exactly that path —
+     * `std::regex_error: invalid range in a {} expression`, an uncaught native
+     * exception that SIGABRTs the whole process. It doesn't even require
+     * `createOfflineRegion()`: merely calling `OfflineManager.listOfflineRegions()`
+     * while that style is active is enough to crash, confirmed by isolating it on-device
+     * (3 Sep 2026). See https://github.com/maplibre/maplibre-native/issues/4403 — the
+     * maintainers' own stated workaround is "host your glyphs anywhere that is not
+     * demotiles.maplibre.org," naming OpenFreeMap by name. Do not switch back to it.
+     *
+     * This is still not the self-hosted OSM-derived style the architecture doc calls
+     * for (docs/03-architecture.md §519-521) — that remains a pre-demo task — but it is
+     * detailed enough to actually exercise the offline pipeline, unlike the old style's
+     * maxzoom-6 tileset, and it doesn't crash.
      */
-    const val STYLE_URL = "https://demotiles.maplibre.org/style.json"
+    const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
 
     /** Identifies our region among any others in MapLibre's offline database. */
     const val REGION_NAME = "kaalerto-demo-area"

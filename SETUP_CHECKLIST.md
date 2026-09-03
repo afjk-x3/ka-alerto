@@ -30,6 +30,23 @@ Verify early that **Bluetooth and Wi-Fi can be re-enabled while airplane mode is
 
 ---
 
+## Emulator for map work — done (with a caveat)
+
+For anything that isn't Nearby Connections (map rendering, offline packs, UI), an emulator is fine — but not every emulator image on this machine.
+
+- [x] **`API34_Test` AVD created** — Android 14.0 ("UpsideDownCake"), `google_apis_playstore`/x86_64. **Use this one for map work.**
+- [x] `sdkmanager`/`avdmanager` installed at `%LOCALAPPDATA%\Android\Sdk\cmdline-tools\latest\bin\` — weren't present before; only the emulator binary and two API-37 system images existed.
+- [ ] **Do not use the original `Medium_Phone` AVD (Android 17.0 "CinnamonBun", API 37.0) for map testing.** MapLibre renders nothing on it — solid black, no crash, no error, on both the Vulkan and OpenGL backends — root-caused by elimination, not yet explained upstream. See `CLAUDE.md` for the full isolation process. It may be fine for non-map testing; not verified either way.
+
+To create another AVD later:
+```bash
+sdkmanager --sdk_root="$SDK" "platforms;android-34" "system-images;android-34;google_apis_playstore;x86_64"
+avdmanager create avd --name "MyAVD" --package "system-images;android-34;google_apis_playstore;x86_64" --device "medium_phone"
+```
+(License acceptance needs real stdin redirection — piping via PowerShell's `|` didn't work reliably; `sdkmanager --licenses < yesfile.txt` from Git Bash did.)
+
+---
+
 ## Fixtures — demo area frozen, JSON fixtures done, one real item outstanding
 
 Needed from build day 2. An empty map demos terribly and debugs worse.
@@ -61,6 +78,16 @@ cd android && ./gradlew installDebug
 
 **`sdk.dir` not found.** `local.properties` is a Java properties file — a single backslash is an escape character, so `C:\Users\...` silently becomes `C:Users...`. Double them or use forward slashes.
 
-**Device not detected.** `adb devices`; if it shows `unauthorized`, reconnect and accept the dialog on the phone.
+**Android Studio's sync fails with "incompatible version (AGP x.x.x)... Latest supported version is AGP 9.3.0" even though `./gradlew build` succeeds on the command line.** This actually happened once already — Gradle's CLI has no opinion about which AGP version an IDE can open, but Studio's sync does, and it hard-refuses anything newer than what that Studio build knows about. The pin in `android/gradle/libs.versions.toml` (currently AGP 9.3.2) is the version Studio 2026.1.3 actually accepts — don't bump it on the strength of a green CLI build alone; check Studio's own sync error (or `idea.log` under `%LOCALAPPDATA%\Google\AndroidStudio<version>\log`, search for `latest.known.compatible.agp.version`) first.
+
+**`adb` not recognized in PowerShell / a fresh terminal.** `platform-tools` isn't on Windows PATH by default. Either add it permanently (`C:\Users\<you>\AppData\Local\Android\Sdk\platform-tools`, via System Properties → Environment Variables), or just use Android Studio's own Run ▶ button and Logcat panel instead of raw `adb` — that's the easier path day to day and doesn't need PATH set up at all.
+
+**Device not detected / `installDebug` fails with "No connected devices!"** Emulators don't stay running between sessions — check `adb devices` (or Android Studio's device dropdown) before assuming a build problem. If a real device shows `unauthorized`, reconnect and accept the dialog on the phone.
+
+**Launching via `adb shell am start` fails with "Activity class ... does not exist."** The debug build installs under a different package than you'd expect: `app/build.gradle.kts` sets `applicationIdSuffix = ".debug"` on the debug build type, so it installs as `com.macci.kaalerto.debug`, not `com.macci.kaalerto` — while the activity's own class name is unaffected and stays `com.macci.kaalerto.MainActivity`. The working command is:
+```
+adb shell am start -n com.macci.kaalerto.debug/com.macci.kaalerto.MainActivity
+```
+Simplest fix: just use Android Studio's Run ▶ button, which resolves this automatically.
 
 **A dependency bump breaks the build.** The toolchain versions are a matched set. AGP 8.x in particular can never work here — it uses a Gradle internal API removed in Gradle 9.6. Revert to the pins in `libs.versions.toml` and bump deliberately.
