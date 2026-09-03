@@ -1,0 +1,77 @@
+{
+  "type": "FeatureCollection",
+  "_meta": {
+    "demo": true,
+    "description": "Real street centreline, portion inside DemoArea.bounds only. The main road through the demo area.",
+    "source": "OpenStreetMap contributors, via Overpass API, fetched 2026-09-03. ODbL 1.0."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Josefa Llanes Escoda National Highway"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.6000323,
+            18.171284
+          ],
+          [
+            120.6004172,
+            18.1711709
+          ],
+          [
+            120.6009396,
+            18.171057
+          ],
+          [
+            120.6012127,
+            18.1709892
+          ],
+          [
+            120.6014969,
+            18.1709173
+          ],
+          [
+            120.6019591,
+            18.1708046
+          ],
+          [
+            120.602451,
+            18.170694
+          ],
+          [
+            120.6033022,
+            18.1704909
+          ],
+          [
+            120.6038488,
+            18.1703275
+          ],
+          [
+            120.6047411,
+            18.1700338
+          ],
+          [
+            120.6051665,
+            18.1698674
+          ],
+          [
+            120.6058436,
+            18.1696129
+          ],
+          [
+            120.6061118,
+            18.1695087
+          ],
+          [
+            120.6061826,
+            18.1694812
+          ]
+        ]
+      }
+    }
+  ]
+}

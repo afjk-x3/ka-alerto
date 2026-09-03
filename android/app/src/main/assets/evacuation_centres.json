@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "demo": true,
+    "area": "Barangay San Juan Bautista, San Nicolas, Ilocos Norte",
+    "description": "Names and coordinates are real (OSM-confirmed). Capacity figures are illustrative placeholders only — see capacityEstimateSource on each entry."
+  },
+  "centres": [
+    {
+      "id": "evac-filipinas-east-es",
+      "name": "Filipinas East Elementary School",
+      "lat": 18.168849,
+      "lon": 120.6058789,
+      "kind": "school",
+      "capacityEstimate": 180,
+      "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure",
+      "osmSource": "OSM node, amenity=school, fetched 2026-09-03"
+    },
+    {
+      "id": "evac-filipinas-west-es",
+      "name": "Filipinas West Elementary School",
+      "lat": 18.171008,
+      "lon": 120.602663,
+      "kind": "school",
+      "capacityEstimate": 150,
+      "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure",
+      "osmSource": "OSM node, amenity=school, fetched 2026-09-03"
+    },
+    {
+      "id": "evac-san-nicolas-nhs",
+      "name": "San Nicolas National High School",
+      "lat": 18.1703573,
+      "lon": 120.6108466,
+      "kind": "school",
+      "capacityEstimate": 400,
+      "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure. A national high school is plausibly the largest real shelter near this centroid.",
+      "osmSource": "OSM node, amenity=school, fetched 2026-09-03"
+    },
+    {
+      "id": "evac-coke-plant-clinic",
+      "name": "Coke Plant Clinic",
+      "lat": 18.1675761,
+      "lon": 120.6097222,
+      "kind": "clinic",
+      "capacityEstimate": 20,
+      "capacityEstimateSource": "PLACEHOLDER. A small clinic, not a shelter — included as a medical aid point, not primary evacuation capacity. Verify its real function before relying on it.",
+      "osmSource": "OSM node, amenity=hospital, fetched 2026-09-03"
+    }
+  ]
+}

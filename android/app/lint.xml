@@ -6,4 +6,9 @@
     <issue id="ObsoleteSdkInt">
         <ignore path="src/main/res/mipmap-anydpi-v26" />
     </issue>
+
+    <!-- Timber arrives transitively via MapLibre and ships its own lint check telling us
+         to use it instead of android.util.Log. We do not depend on Timber directly and
+         are not adding a logging library to satisfy a check from one we never chose. -->
+    <issue id="LogNotTimber" severity="ignore" />
 </lint>

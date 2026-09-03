@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "_meta": {
+    "demo": true,
+    "description": "Real street centreline. A diversion/bypass road — plausible evacuation route out of the area.",
+    "source": "OpenStreetMap contributors, via Overpass API, fetched 2026-09-03. ODbL 1.0."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "San Nicolas-Laoag Diversion Road"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            120.6078335,
+            18.1688589
+          ],
+          [
+            120.608802,
+            18.1704264
+          ],
+          [
+            120.6092378,
+            18.171124
+          ],
+          [
+            120.6094176,
+            18.1714272
+          ],
+          [
+            120.6095083,
+            18.1718701
+          ]
+        ]
+      }
+    }
+  ]
+}

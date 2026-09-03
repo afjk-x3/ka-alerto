@@ -9,20 +9,23 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 ## Day 0 — Setup & Fixtures
 
 ### Android project setup
-- [ ] Gradle project initialized with Compose, min SDK 26, target 34
-- [ ] Dependencies: MapLibre Android SDK, Room, Jetpack Compose, Nearby Connections, FusedLocation
-- [ ] Git repo initialized, .gitignore in place
+- [x] Gradle project initialized with Compose, min SDK 26, **target/compileSdk 37** (34 is not installed on the dev machine and there is no `cmdline-tools` to fetch it — see `android/README.md`)
+- [x] Dependencies: MapLibre Android SDK, Room, Jetpack Compose, Nearby Connections, FusedLocation
+- [x] Git repo initialized, .gitignore in place
 - [ ] Three physical devices in developer mode, SIMs with SMS load
 
 ### Fixtures & data
-- [ ] OSM map extract for demo barangay (small clip from Geofabrik PH)
-- [ ] Seed fixture JSON: 15–25 reports across all severities, including one conflicting pair
-- [ ] Evacuation centres JSON (4–6 entries with coords and capacity)
-- [ ] Route GeoJSON lines (2–3 routes for route-check feature)
+- [x] **Demo area frozen: Barangay San Juan Bautista, San Nicolas, Ilocos Norte** (3 Sep 2026) — see `DemoArea.kt` for sourcing
+- [x] Seed fixture JSON: 19 reports across S0–S3, real street coordinates, one deliberately conflicting pair → `android/app/src/main/assets/seed_data.json`
+- [x] Evacuation centres JSON: 4 real, OSM-confirmed facilities, capacity figures marked as unverified placeholders → `android/app/src/main/assets/evacuation_centres.json`
+- [x] Route GeoJSON lines: 3 real street centrelines → `android/app/src/main/assets/routes/`
+- [ ] **OSM map extract for offline tile building** — still not done. The fixtures above are data referencing real streets, not a downloaded/clipped `.osm.pbf` for the tile pipeline. Needed before the bundled-MBTiles fallback in build day 1. No `osmium`/`osmconvert`/`ogr2ogr` installed locally yet.
 
 ### Node server skeleton
-- [ ] Express app scaffolded, `node:sqlite` database initialized
-- [ ] Basic CORS and JSON parsing middleware
+- [x] Express app scaffolded, `node:sqlite` database initialized (`server/src/db.js`, `server/src/server.js`)
+- [x] Basic CORS and JSON parsing middleware — CORS hand-rolled (no `cors` package; Express is the only npm dependency per CLAUDE.md)
+- [x] **Went further than day 0 needed**: both day-13 endpoints are implemented and tested, not just scaffolded — `POST /events/batch` (idempotent on event ID) and `GET /events?bbox=&since=&limit=` (bbox-scoped, cursor-paginated), plus `GET /health`. 9/9 tests pass (`node --test`), and a real server process was smoke-tested end-to-end against the actual seed fixture: 19 events posted, round-tripped via GET with the conflict pair intact, re-POST confirmed idempotent, and data confirmed to persist across a process restart.
+- [ ] **Not done**: no signature/role verification (matches ground rule 4 — no crypto, no auth, this hackathon build trusts client-supplied content, documented inline in `db.js`); the `cursor` returned by `/events/batch` is a single global cursor, not per-device-region as `docs/03-architecture.md` §392 describes — an intentional simplification for the demo's one region, noted in code.
 
 ---
 

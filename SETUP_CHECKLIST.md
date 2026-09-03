@@ -30,15 +30,17 @@ Verify early that **Bluetooth and Wi-Fi can be re-enabled while airplane mode is
 
 ---
 
-## Fixtures — still to do
+## Fixtures — demo area frozen, JSON fixtures done, one real item outstanding
 
 Needed from build day 2. An empty map demos terribly and debugs worse.
 
-- [ ] Freeze one barangay as the demo area. Every fixture, screenshot and route lives there.
-- [ ] OSM extract for that area (Geofabrik PH, clipped small) → `android/app/src/main/assets/`
-- [ ] Seed fixture: 15–25 reports across all severities, some stale, **at least one deliberately conflicting pair** (that pair is the Rule C demo)
-- [ ] Evacuation centres as static JSON, 4–6 entries with coordinates and capacity
-- [ ] 2–3 route GeoJSON lines for route checking
+- [x] **Demo area frozen: Barangay San Juan Bautista, San Nicolas, Ilocos Norte** (3 Sep 2026). See `DemoArea.kt` for full provenance — two independent centroid sources agree within ~300 m; there is no official boundary polygon anywhere, so the bounding box deliberately excludes a landmark cluster ~1.3 km west that is plausibly a different barangay's poblacion.
+- [x] Seed fixture: 19 reports across S0–S3, real street coordinates (Sotto Street, Josefa Llanes Escoda National Highway, San Nicolas–Laoag Diversion Road, all OSM-verified), timestamps as load-time-relative offsets so they don't go stale, **one deliberately conflicting pair** (`seed-report-018`/`-019`, same spot, S3 vs S0) → `android/app/src/main/assets/seed_data.json`
+- [x] Evacuation centres: 4 real, named, OSM-confirmed facilities (3 schools + 1 clinic) inside the frozen area → `android/app/src/main/assets/evacuation_centres.json`. **Capacity figures are placeholders**, explicitly marked as unverified in the file — replace with barangay-provided numbers before this is shown to anyone from the actual barangay.
+- [x] 3 route GeoJSONs, real street centrelines from OSM → `android/app/src/main/assets/routes/`
+- [ ] **A proper OSM map extract for offline tile building is still not done.** What exists is fixture *data* (points, lines, JSON) referencing real streets — not a downloaded, clipped `.osm.pbf` region extract for building an offline vector-tile pack. That's a separate step (Geofabrik PH extract → clip to `DemoArea.bounds` → tile pipeline), needed before build day 1's bulletproof MBTiles fallback, and no local tool for it (`osmium`/`osmconvert`/`ogr2ogr`) is installed on this machine yet.
+
+**Before this goes anywhere near the actual barangay:** someone who knows the area should confirm the boundary and the evacuation-centre list. Everything above was built from OSM and PhilAtlas without ground-truth verification.
 
 ---
 
