@@ -1,0 +1,11 @@
+## Copy to local.properties and set the path to your Android SDK.
+## local.properties is gitignored; this template is not.
+#
+# IMPORTANT: this is a Java .properties file, so a single backslash is an escape
+# character. Either double them or use forward slashes.
+#
+# Windows:  sdk.dir=C\:\\Users\\YourName\\AppData\\Local\\Android\\Sdk
+# macOS:    sdk.dir=/Users/YourName/Library/Android/sdk
+# Linux:    sdk.dir=/home/YourName/Android/Sdk
+
+sdk.dir=

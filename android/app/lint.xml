@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- Lint suggests merging mipmap-anydpi-v26 into mipmap-anydpi because minSdk is 26.
+         Doing so makes AAPT2 fail to resolve @mipmap/ic_launcher at link time
+         ("resource mipmap/ic_launcher not found"), so the -v26 qualifier stays. -->
+    <issue id="ObsoleteSdkInt">
+        <ignore path="src/main/res/mipmap-anydpi-v26" />
+    </issue>
+</lint>

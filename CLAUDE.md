@@ -8,7 +8,9 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 
 ## Current state (updated 3 Sep 2026)
 
-**No code exists yet.** The repo holds the idea, the PRD, the architecture, the build plan, and 29 hi-fi artboards. `android/`, `server/` and `dashboard/` are empty placeholders.
+**The Android project is scaffolded and verified building; no features exist yet.** `./gradlew build` completes green — debug + release APKs, lint clean, unit tests pass. What is there is a Compose scaffold that launches and nothing more, but every dependency needed through build day 13 is wired and resolving (MapLibre, Room + KSP, Nearby Connections, FusedLocation, serialization), so no build day is blocked on dependency setup. `server/` and `dashboard/` are still empty placeholders.
+
+`BUILD_TASKS.md` (repo root) is the day-by-day implementation list, stripped of the submission ceremony in `docs/04-build-plan.md`. `SETUP_CHECKLIST.md` tracks the remaining non-code prep — devices and fixtures.
 
 **Where the schedule actually stands:** `docs/04-build-plan.md` front-loads build days 1–2 into week 1, specifically so the offline-tiles gate gets attempted on ~2 September rather than 15 September. That has not happened yet. Raw arithmetic is 15 build days into a 15-day window with zero buffer, and front-loading is what creates the only slack there is.
 
@@ -52,10 +54,11 @@ docs/          NOT IN GIT — deliberately gitignored. Local working copy only.
                01-ideation · 02-prd (canonical) · 03-architecture · 04-build-plan · 05-routing-matrix
                exports/  .docx deliverables, submitted by file upload at each gate
 design/        artboards/ (29 .dc.html) · canvas.json · screenshots/ · README.md (screen index)
+               To render artboards standalone for screenshots: see "Working with design"
 android/       Gradle project — open THIS folder in Android Studio, not the repo root
 server/        Express + node:sqlite, ~150 lines, two endpoints
 dashboard/     one HTML page + MapLibre GL JS. Not a React app
-tools/         docx generators + render-artboards.js
+tools/         render-artboards.js · final-prd.js · ideation.js · check.py
 submissions/   one file per gate; doubles as release notes. README has the gate checklist
 ```
 
@@ -97,9 +100,70 @@ The remaining ~1,000 lines are current. Where it goes deeper than the PRD — wi
 
 ---
 
+## Working with design
+
+**Viewing artboards:**
+- Live canvas (all 29 screens on one pan-and-zoom): [design canvas artifact](https://claude.ai/code/artifact/f1ee7d2c-1462-4788-bb92-5ed9b289f84a)
+- Individual artboards: `design/artboards/*.dc.html` (renders inside the canvas host; see `design/README.md` for screen index)
+
+**Rendering artboards to standalone HTML** (for headless screenshotting):
+```bash
+node tools/render-artboards.js design/artboards <output-dir> Map-Storm Report-Normal SOSStatus
+```
+
+Then screenshot with headless Chrome:
+```bash
+chrome --headless=new --hide-scrollbars --force-device-scale-factor=2 \
+  --window-size=360,800 --screenshot=out.png file:///path/to/Map-Storm.html
+```
+
+---
+
+## Tools
+
+**Render artboards to standalone HTML:**
+```bash
+node tools/render-artboards.js <artboard-dir> <output-dir> <artboard-names...>
+```
+
+**Generate PRD document:**
+```bash
+node tools/final-prd.js <output.docx>
+```
+Output builds to scratchpad first, then use `cp -f` to place it (Word locks `.docx` files during writes).
+
+**Check document compliance:**
+```bash
+PYTHONIOENCODING=utf-8 python tools/check.py
+```
+(Note: Unicode crashes on cp1252 console without the encoding prefix.)
+
+---
+
+## Android toolchain — settled 3 Sep 2026, do not re-derive
+
+Established empirically by building. Full rationale in `android/README.md`.
+
+- **`android/` is the Gradle root**, with a single `:app` module. There is no Gradle build at the repo root. Open `android/` in Android Studio.
+- **The versions are a matched set** in `android/gradle/libs.versions.toml`: Gradle 9.7.1, AGP 9.4.0, Kotlin 2.4.10, KSP 2.3.11, compileSdk/targetSdk 37, minSdk 26. Bump them together.
+- **AGP 8.x can never work here.** It calls `InternalProblems`, a Gradle internal API removed in Gradle 9.6 — and Gradle 9.x is required because Studio's JBR is JDK 25. This is a hard constraint, not a preference.
+- **AGP 9 has built-in Kotlin support.** Applying `org.jetbrains.kotlin.android` is a build error. Only the Compose and serialization Kotlin plugins are applied.
+- **compileSdk is 37 because that is the only platform installed**, and there is no `cmdline-tools`, so `sdkmanager` cannot fetch another. Changing it forces a download.
+- **Room uses KSP, not kapt.** KSP renumbered at 2.3.0 — it is plain semver now, no longer `<kotlin>-<ksp>`.
+- Gradle 9.7.1 lives at `C:\Users\pol\.gradle-dist\` and is seeded into the wrapper cache, so `./gradlew` does not re-download it.
+
+**Three fixes that lint or AAPT will fight you about:**
+
+1. **The adaptive icon must stay in `mipmap-anydpi-v26`.** Lint's `ObsoleteSdkInt` says merge it into `mipmap-anydpi` since minSdk is 26; doing so makes AAPT2 fail with "resource mipmap/ic_launcher not found". Suppressed narrowly in `app/lint.xml`.
+2. **Every `uses-feature` is `required="false"`.** A required feature would contradict the product claim and block installs on devices without telephony.
+3. **The SMS receiver is guarded by `BROADCAST_SMS`**, not `RECEIVE_SMS`. Without it anyone can spoof an `SMS_RECEIVED` intent and inject a fake report or SOS.
+
+---
+
 ## Environment gotchas
 
 - **Windows + Git Bash.** Heredocs through the Bash tool fail unpredictably on this setup — use the Write tool for any file with quotes or non-ASCII.
+- **No `java` or `gradle` on PATH.** Use Studio's JBR: `export JAVA_HOME="/c/Program Files/Android/Android Studio/jbr"`, then `./gradlew` from `android/`.
 - **Word locks `.docx` files.** Build to a scratchpad path first, then `cp -f` into place. If it fails with `EBUSY`, the file is open in Word.
 - **`docx` npm package resolves from `C:\Users\pol\node_modules`** — walking up from the script directory. Generators run as `node tools/final-prd.js <output.docx>`.
 - **`tools/check.py` crashes on Unicode output** in a cp1252 console. Prefix with `PYTHONIOENCODING=utf-8`. It also flags timelines and "V0"/"MVP" as prohibited — those rules were written for the old PRD and do not apply here.
@@ -118,6 +182,18 @@ The remaining ~1,000 lines are current. Where it goes deeper than the PRD — wi
 - All Filipino copy is unreviewed by a native speaker.
 - `docs/05-routing-matrix.md` §8 lists eight routing gaps — role landing screens with no inbound links, no cleared-detail screen, no post-submit confirmation.
 - No field measurement of relay range, delivery rate or battery cost. Named honestly in the pitch rather than implied to be done.
+
+---
+
+## Build sequence and gate structure
+
+The project follows a 15-day build schedule divided into five gates (one per September week). Each gate is equally weighted in scoring.
+
+**Pre-build (now):** Offline map tiles is the single highest-risk task. MapLibre `OfflineManager` pre-download must be verified in airplane mode before proceeding to other features. Bundled MBTiles is the bulletproof fallback.
+
+**Feature gates (days 3–15):** Features are gated behind airplane-mode testing on real hardware. See `docs/04-build-plan.md` for the full schedule, cut ladders, and the demo script that must run clean from start to finish.
+
+**What constitutes "built":** A feature is done when it passes on real hardware in airplane mode, with seed data, and works in the demo script. The demo script is canonical (`docs/04-build-plan.md` §11) — if it's not in the script, it's optional.
 
 ---
 

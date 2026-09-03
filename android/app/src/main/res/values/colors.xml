@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Only resources the platform reads outside Compose belong here.
+         Severity colours live in ui/theme/Color.kt — one source of truth, and all
+         app UI is Compose. -->
+    <color name="ic_launcher_background">#2F7FBF</color>
+</resources>
