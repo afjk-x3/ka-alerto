@@ -178,15 +178,25 @@ Resolved by **removing rather than encrypting** (`sos/SosMeshPolicy.kt`): what i
 
 **The residual, stated plainly:** coordinates still travel in the clear, because a rescue needs them and there is no key to hold them under. A non-responder's screen coarsens them to a dashed circle and a distance rounded to 50 m, but that is a display choice, not a guarantee — anyone dumping a relaying phone would find the exact point. Only real §6.5 encryption fixes that. Medical-to-officials is likewise designed-not-built. The artboard's "hindi mo ito kayang basahin" line is **changed on screen** to say what is actually true, rather than claiming a guarantee this build does not provide.
 
-### Day 10: Official role + evacuation centres
+### Day 10: Official role + evacuation centres — DONE, DoD MET, verified 5 Sep 2026 on `API34_Test` in airplane mode
 
-- [ ] Role toggle (settings): Resident / Responder / Barangay Official
-- [ ] Official actions on detail sheet: Verify · Mark closed · Mark cleared (override crowd severity)
-- [ ] Official severity gets **Official** bucket, distinct badge
-- [ ] Contradicting crowd reports stay visible with a note: *"3 residents report worse conditions than the official status"*
-- [ ] Evacuation centres from static JSON: distinct pins, distance-sorted list, detail with capacity
-- [ ] Officials can change evacuation status (tiny event that rides the mesh)
-- **DoD:** Switch to Official, mark a conflicting road cleared, watch SX resolve and badge appear
+- [x] Role toggle: Resident / Responder / Barangay Official — `identity/RoleScreen.kt`, reached from a role badge in the map header (the artboards put the role on screen as a KAGAWAD chip, and what you are acting as changes what your events mean to everyone else — it should not be buried in a menu). Replaces day 9's single responder switch. The banner says plainly that none of these are self-granted in the real product.
+- [x] Official actions on the detail sheet — `official/OfficialStatusScreen.kt`, matching OfficialVerify/OfficialReverse.dc.html: current crowd state, the resident reports retained beneath it, three rulings, and a signing strip naming who it goes out as.
+- [x] Official severity gets the **Official** bucket and a distinct badge — Rule D already produced `bucket = "official"`; the detail sheet now renders a green shield banner for it (amber when the gate is holding it).
+- [x] Contradicting crowd reports stay visible with a note — verified on device: after clearing the conflict pair, the sheet read *"1 residente ang nag-uulat ng mas malala kaysa sa opisyal na status. Nananatiling nakikita."*
+- [x] Evacuation centres from static JSON — `evac/`, distinct **square** pins (a shape difference, not just a hue: in a storm at night "somewhere to go" must be distinguishable from "something to avoid"), distance-sorted nearest-first off GPS, capacity shown but labelled as the unverified estimate the fixture itself flags.
+- [x] Officials can change evacuation status — `evac/EvacSubmit.kt`, an ordinary `Event` with `featureRef = null` so it rides the mesh and never becomes a flood marker. Status **plus an occupancy count**, stepped in tens rather than typed: an official doing this is standing in a doorway counting people, not filling in a form.
+- [x] **DoD MET.** Switched to Official, opened the seeded conflict pair, posted "Humupa na" → badge flipped to blue S0 with the green Official banner, and the contradicting resident report stayed visible.
+
+**The DoD contradicted the artboards, and the artboards won.** OfficialReverse.dc.html states a **second-official gate** — *"Magkasalungat ang lugar na ito, kaya hindi kayang ibaba ng iisang opisyal ang severity"* — while this day's DoD has a single official clearing a conflicting road. Both are now true, because the gate is conditional: it holds only when **lowering** a severity that at least `DEESCALATION_COUNT` residents are *currently* reporting as worse. Raising a severity, and reversing another official's clearance, stay single-official and immediate. It is the same safety asymmetry the crowd path already runs on, extended to officials so one person cannot quietly overrule people standing in the water.
+
+The full cycle was walked on device: one official cleared the pair (blue S0) → a second resident's S3 relayed in over the mesh → the gate held (**back to S3**, amber *"Opisyal na status — naghihintay ng pangalawang opisyal"*) → a second official's S0 arrived → released (blue S0, green banner).
+
+**Two artboard claims deliberately changed, both crypto:** OfficialVerify's footer says an official status is *"nilalagdaan sa phone"* (signed on the phone), which is `docs/03-architecture.md` §2.5's signed events. Ground rule 4 means nothing is signed, so the copy now says what travels — the official's name and role — and `official/OfficialSubmit.kt` records the real gap: a device on this mesh cannot tell a genuine kagawad from anyone who flipped the role switch.
+
+**What the evacuation screen deliberately omits:** "Ituro ang daan" (directions) and "1 baha sa ruta" are day 11's route check, and the facility chips (Kuryente / Tubig / PWD access) are not in the fixture and unvalidated for a real barangay. A button that cannot route, or an invented facility list on a screen people would walk somewhere because of, is worse than its absence.
+
+**One reducer bug found while building this:** `resolveCrowd` was being handed the official's own event, so a lone official clearance read as a two-sided disagreement and rendered **SX** — the official arguing with the residents at role weight 5. The crowd fold now excludes officials.
 
 ---
 

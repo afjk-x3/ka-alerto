@@ -14,8 +14,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.location.fetchCurrentLocation
 import com.macci.kaalerto.identity.LocalIdentity
+import androidx.compose.runtime.rememberCoroutineScope
+import com.macci.kaalerto.evac.EvacScreen
+import com.macci.kaalerto.evac.evacStates
+import com.macci.kaalerto.evac.loadEvacCentres
+import com.macci.kaalerto.evac.submitEvacStatus
+import com.macci.kaalerto.identity.RoleScreen
 import com.macci.kaalerto.map.MapScreen
+import com.macci.kaalerto.map.MapViewModel
+import com.macci.kaalerto.official.OfficialStatusScreen
+import com.macci.kaalerto.official.submitOfficialStatus
+import kotlinx.coroutines.launch
 import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.nav.Screen
 import com.macci.kaalerto.report.ReportScreen
@@ -44,8 +55,14 @@ fun KaAlertoApp(
     val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
     val meshStatus by MeshState.status.collectAsStateWithLifecycle()
     val isResponder by sosViewModel.isResponder.collectAsStateWithLifecycle()
+    val role by sosViewModel.role.collectAsStateWithLifecycle()
     val incoming by sosViewModel.incoming.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // One MapViewModel for the whole switch, so the official screen folds the same
+    // event stream the map does rather than opening a second subscription.
+    val mapViewModel: MapViewModel = viewModel()
+    val mapEvents = remember { mapViewModel.events }
 
     // Tapping the alert lands on the request it was about, not on the map. A responder
     // goes straight to the queue; a resident gets the coarse nearby view.
@@ -96,6 +113,10 @@ fun KaAlertoApp(
                 screen = if (existing != null) Screen.SosStatus(existing.sosId) else Screen.SosHold(lat, lon, accuracy)
             },
             sosActive = activeSos != null,
+            role = role,
+            onOpenRoles = { screen = Screen.Roles },
+            onOpenEvac = { screen = Screen.EvacCentres },
+            onOpenOfficialStatus = { featureRef -> screen = Screen.OfficialStatus(featureRef) },
             stormMode = stormMode,
             onToggleStormMode = onToggleStormMode,
         )
@@ -187,10 +208,63 @@ fun KaAlertoApp(
                     },
                     isResponder = isResponder,
                     onBecomeResponder = {
-                        sosViewModel.setResponder(true)
+                        sosViewModel.setRole(LocalIdentity.ROLE_RESPONDER)
                         screen = Screen.SosQueue
                     },
                     onOpenQueue = { screen = Screen.SosQueue },
+                    onBack = { screen = Screen.Map },
+                )
+            }
+        }
+
+        Screen.Roles -> RoleScreen(
+            modifier = modifier,
+            current = role,
+            onSelect = { sosViewModel.setRole(it) },
+            onBack = { screen = Screen.Map },
+        )
+
+        Screen.EvacCentres -> {
+            val centres = remember { loadEvacCentres(context) }
+            val events by mapEvents.collectAsStateWithLifecycle()
+            // "Pinakamalapit muna" is this screen's whole premise, so it needs a point
+            // to measure from. GPS first, saved home second — falling back to the map's
+            // demo centre would print confident distances from somewhere the user is not.
+            var origin by remember { mutableStateOf(HomeLocationStore.get(context)?.let { it.lat to it.lon }) }
+            LaunchedEffect(Unit) {
+                fetchCurrentLocation(context)?.let { origin = it.latitude to it.longitude }
+            }
+            val states = remember(centres, events, origin) {
+                evacStates(centres, events, origin?.first, origin?.second)
+            }
+            EvacScreen(
+                modifier = modifier,
+                states = states,
+                isOfficial = role == LocalIdentity.ROLE_OFFICIAL,
+                onUpdate = { centreId, status, occupancy ->
+                    val centre = centres.firstOrNull { it.id == centreId } ?: return@EvacScreen
+                    scope.launch { submitEvacStatus(context, centre, status, occupancy) }
+                },
+                onBack = { screen = Screen.Map },
+            )
+        }
+
+        is Screen.OfficialStatus -> {
+            val summaries by mapViewModel.featureSummaries.collectAsStateWithLifecycle()
+            val summary = summaries.firstOrNull { it.featureRef == current.featureRef }
+            if (summary == null) {
+                if (summaries.isNotEmpty()) LaunchedEffect(current.featureRef) { screen = Screen.Map }
+            } else {
+                OfficialStatusScreen(
+                    modifier = modifier,
+                    summary = summary,
+                    officialName = LocalIdentity.getOrCreate(context).authorName,
+                    onPost = { severity ->
+                        scope.launch {
+                            submitOfficialStatus(context, summary.featureRef, summary.lat, summary.lon, severity)
+                        }
+                        screen = Screen.Map
+                    },
                     onBack = { screen = Screen.Map },
                 )
             }

@@ -19,6 +19,26 @@ data class FeatureSummary(
     val disputeCount: Int,
     /** Full history for this feature, most recent first — the detail sheet's list. */
     val events: List<Event>,
+    /**
+     * The severity an official has posted, whether or not it is currently in force.
+     * Non-null and *not* equal to [severity] means the second-official gate is holding
+     * it back — see [pendingSecondOfficial].
+     */
+    val officialSeverity: String? = null,
+    /** Who posted it, and when. An official action is never anonymous (OfficialVerify.dc.html). */
+    val officialAuthorName: String? = null,
+    val officialAtMs: Long? = null,
+    /**
+     * An official has asked to lower a contradicted spot and is waiting for a second
+     * official to agree. Day 10's gate — see [REQUIRED_OFFICIALS_TO_DEESCALATE].
+     */
+    val pendingSecondOfficial: Boolean = false,
+    /**
+     * How many residents' latest reports are *worse* than the official severity. Drives
+     * OfficialReverse.dc.html's "3 residente ang salungat dito" and the detail sheet's
+     * "N residents report worse conditions than the official status".
+     */
+    val contradictingCount: Int = 0,
 )
 
 private const val PROXIMATE_METERS = 500.0
@@ -26,8 +46,28 @@ private const val WEIGHT_FLOOR = 0.05
 private const val CONFLICT_WEIGHT_THRESHOLD = 0.5
 private const val DEESCALATION_COUNT = 2
 
+/**
+ * Day 10's second-official gate (OfficialReverse.dc.html: "Magkasalungat ang lugar na
+ * ito, kaya hindi kayang ibaba ng iisang opisyal ang severity").
+ *
+ * It is the same safety asymmetry the crowd path already runs on — raising a severity
+ * takes one credible voice, lowering one takes corroboration — extended to officials so
+ * that a single person cannot quietly overrule residents who are standing in the water.
+ * It applies **only** when lowering, and **only** when at least [DEESCALATION_COUNT]
+ * residents are currently reporting worse. Raising a severity, and reversing another
+ * official's clearance, stay single-official and immediate.
+ */
+private const val REQUIRED_OFFICIALS_TO_DEESCALATE = 2
+
 private data class Weighted(val event: Event, val severity: String, val weight: Double, val proximate: Boolean)
-private data class Resolution(val severity: String, val conflicted: Boolean, val bucket: String, val confidence: Double)
+private data class Resolution(
+    val severity: String,
+    val conflicted: Boolean,
+    val bucket: String,
+    val confidence: Double,
+    /** The highest severity any weighted report claims, before Rules B/C resolve it. */
+    val maxSeverity: String = severity,
+)
 
 /**
  * Pure fold over one feature's events into a display state — `state(feature, now) =
@@ -65,15 +105,48 @@ object Reducer {
             val weight = roleWeight(event.authorRole) * proximity * recencyFactor(ageMs, severity)
             Weighted(event, severity, weight, proximity >= 0.7)
         }
-        val weightBySeverity = weighted.groupBy { it.severity }.mapValues { (_, ws) -> ws.sumOf { it.weight } }
+        // The crowd is the crowd: an official's own ruling must not also be counted as
+        // a report *within* the crowd it is overriding. Leaving it in made a lone
+        // official clearance read as a two-sided disagreement and rendered SX — the
+        // official arguing with the residents, at role weight 5.
+        val crowdWeighted = weighted.filter { it.event.authorRole != "official" }
+        val weightBySeverity = crowdWeighted.groupBy { it.severity }.mapValues { (_, ws) -> ws.sumOf { it.weight } }
 
-        // Rule D — an official event overrides everything else outright.
-        val officialEvent = events.filter { it.authorRole == "official" && it.severity != null }.maxByOrNull { it.timestampMs }
+        val crowd = resolveCrowd(crowdWeighted, weightBySeverity)
 
-        val resolution = if (officialEvent != null) {
-            resolveOfficial(officialEvent, weightBySeverity)
+        // Rule D — an official event overrides the crowd, with day 10's one exception.
+        val officialEvents = events.filter { it.authorRole == "official" && it.severity != null }
+        val latestOfficial = officialEvents.maxByOrNull { it.timestampMs }
+        val officialSeverity = latestOfficial?.severity
+
+        // Residents currently saying it is *worse* than the official line. Officials are
+        // excluded: this counts the people being overruled, not the people overruling.
+        // "Still live" is the reducer's existing notion: weight above the floor, which
+        // is time decay doing the work. Yesterday's reports have decayed away and do not
+        // hold an all-clear hostage; people reporting worse right now do.
+        val contradicting = officialSeverity?.let { official ->
+            crowdWeighted.count {
+                severityOrdinal(it.severity) > severityOrdinal(official) && it.weight > WEIGHT_FLOOR
+            }
+        } ?: 0
+
+        // The gate only ever holds back a de-escalation of a contradicted spot. Raising a
+        // severity, and reversing another official's clearance, are single-official.
+        val isDeEscalation = officialSeverity != null &&
+            severityOrdinal(officialSeverity) < severityOrdinal(crowd.maxSeverity)
+        val gated = isDeEscalation && contradicting >= DEESCALATION_COUNT
+        val backingOfficials = officialEvents
+            .filter { it.severity == officialSeverity }
+            .map { it.authorId }
+            .distinct()
+            .size
+        val officialInForce = latestOfficial != null &&
+            (!gated || backingOfficials >= REQUIRED_OFFICIALS_TO_DEESCALATE)
+
+        val resolution = if (officialInForce) {
+            resolveOfficial(latestOfficial!!, weightBySeverity)
         } else {
-            resolveCrowd(weighted, weightBySeverity)
+            crowd
         }
 
         return FeatureSummary(
@@ -88,6 +161,11 @@ object Reducer {
             isStale = now > events.maxOf { it.expiresAt },
             confirmCount = events.count { it.type == "confirm" },
             disputeCount = events.count { it.type == "dispute" },
+            officialSeverity = officialSeverity,
+            officialAuthorName = latestOfficial?.authorName,
+            officialAtMs = latestOfficial?.timestampMs,
+            pendingSecondOfficial = latestOfficial != null && gated && !officialInForce,
+            contradictingCount = contradicting,
             events = events.sortedByDescending { it.timestampMs },
         )
     }
@@ -128,13 +206,21 @@ object Reducer {
             else -> maxSeverity
         }
 
-        if (conflicted) return Resolution(resolvedSeverity, conflicted = true, bucket = "unverified", confidence = 0.0)
+        if (conflicted) return Resolution(resolvedSeverity, conflicted = true, bucket = "unverified", confidence = 0.0, maxSeverity = maxSeverity)
 
         // docs/03-architecture.md §5.3: "Unverified: confidence < 0.35, OR a single
         // report" — the OR matters, since a lone report's Wilson bound can round to
         // just above 0.35 depending on weight; a single observer must never read as
         // more than Unverified regardless.
-        if (weighted.size <= 1) return Resolution(resolvedSeverity, conflicted = false, bucket = "unverified", confidence = weightBySeverity[resolvedSeverity]?.let { wilsonLowerBound(it, 0.0) } ?: 0.0)
+        if (weighted.size <= 1) {
+            return Resolution(
+                resolvedSeverity,
+                conflicted = false,
+                bucket = "unverified",
+                confidence = weightBySeverity[resolvedSeverity]?.let { wilsonLowerBound(it, 0.0) } ?: 0.0,
+                maxSeverity = maxSeverity,
+            )
+        }
 
         val agree = weightBySeverity[resolvedSeverity] ?: 0.0
         val disagree = weightBySeverity.filterKeys { it != resolvedSeverity }.values.sum()
@@ -145,7 +231,7 @@ object Reducer {
             confidence >= 0.35 -> "likely"
             else -> "unverified"
         }
-        return Resolution(resolvedSeverity, conflicted = false, bucket = bucket, confidence = confidence)
+        return Resolution(resolvedSeverity, conflicted = false, bucket = bucket, confidence = confidence, maxSeverity = maxSeverity)
     }
 }
 

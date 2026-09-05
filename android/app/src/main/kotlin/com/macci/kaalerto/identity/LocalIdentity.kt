@@ -13,54 +13,88 @@ import java.util.UUID
  * The generated name is deliberately a placeholder, not a guess at a real one — it's
  * visible to every other device per CLAUDE.md's decision that report authorship is
  * public, so it must not look like a real person's name it never collected.
+ *
+ * **Roles are not self-granted in the real product.** A volunteer applies and the
+ * barangay activates them; an official's authority comes from holding barangay office
+ * (CLAUDE.md's decision table, `docs/03-architecture.md` §1.6.10's supersession note).
+ * There is no barangay-side anything in this build, so [setRole] stands in for that
+ * activation, and every screen that flips it says so in as many words.
  */
 object LocalIdentity {
     private const val PREFS_NAME = "kaalerto_identity"
     private const val KEY_AUTHOR_ID = "author_id"
-    private const val KEY_AUTHOR_NAME = "author_name"
-    private const val KEY_RESPONDER = "responder_mode"
+    private const val KEY_AUTHOR_SUFFIX = "author_suffix"
+    private const val KEY_ROLE = "role"
 
     const val ROLE_RESIDENT = "resident"
+    const val ROLE_RESPONDER = "responder"
 
     /**
-     * BUILD_TASKS.md day 9's "responder mode toggle".
-     *
-     * In the real product a volunteer *applies* and the barangay *activates* them
-     * (CLAUDE.md's decision table, and docs/03-architecture.md §1.6.10's supersession
-     * note) — it is never self-granted. There is no barangay-side anything in this
-     * build, so the toggle stands in for that activation, and the UI that flips it says
-     * so in as many words rather than presenting it as a user setting.
+     * Barangay official. The reducer already gives this role Rule D's override and a
+     * role weight of 5 (`data/Reducer.kt`), so this is the one role whose events change
+     * what everyone else sees — which is why day 10's second-official gate exists.
      */
-    const val ROLE_RESPONDER = "responder"
+    const val ROLE_OFFICIAL = "official"
+
+    val ALL_ROLES = listOf(ROLE_RESIDENT, ROLE_RESPONDER, ROLE_OFFICIAL)
 
     data class Identity(val authorId: String, val authorName: String, val authorRole: String)
 
     fun getOrCreate(context: Context): Identity {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = prefs(context)
         var authorId = prefs.getString(KEY_AUTHOR_ID, null)
-        var authorName = prefs.getString(KEY_AUTHOR_NAME, null)
+        var suffix = prefs.getString(KEY_AUTHOR_SUFFIX, null)
 
-        if (authorId == null || authorName == null) {
+        if (authorId == null || suffix == null) {
             authorId = "local-${UUID.randomUUID()}"
-            authorName = "Residente ${authorId.takeLast(4).uppercase()}"
+            suffix = authorId.takeLast(4).uppercase()
             prefs.edit()
                 .putString(KEY_AUTHOR_ID, authorId)
-                .putString(KEY_AUTHOR_NAME, authorName)
+                .putString(KEY_AUTHOR_SUFFIX, suffix)
                 .apply()
         }
 
-        val role = if (prefs.getBoolean(KEY_RESPONDER, false)) ROLE_RESPONDER else ROLE_RESIDENT
-        return Identity(authorId, authorName, authorRole = role)
+        val role = role(context)
+        return Identity(authorId, displayName(role, suffix), role)
     }
 
-    fun isResponder(context: Context): Boolean =
-        prefs(context).getBoolean(KEY_RESPONDER, false)
+    /**
+     * The name embedded in events, which is what other devices render. It carries the
+     * role's title because an official action must be attributable *as* an official act
+     * — OfficialVerify.dc.html signs it "M. Reyes, Kagawad" and says "makikita ng lahat
+     * kung sino ang nag-post". The four-character suffix is kept across roles so the
+     * same person stays recognisably the same person on a receiving device.
+     */
+    fun displayName(role: String, suffix: String): String = when (role) {
+        ROLE_OFFICIAL -> "Kagawad $suffix"
+        ROLE_RESPONDER -> "Responder $suffix"
+        else -> "Residente $suffix"
+    }
 
-    /** Flipped only by the clearly-labelled demo control on the nearby-SOS screen. */
-    fun setResponder(context: Context, enabled: Boolean) {
-        prefs(context).edit().putBoolean(KEY_RESPONDER, enabled).apply()
+    fun role(context: Context): String = prefs(context).getString(KEY_ROLE, null) ?: ROLE_RESIDENT
+
+    /** Responder *or* official — both see the day 9 rescue queue. */
+    fun isResponder(context: Context): Boolean = role(context) != ROLE_RESIDENT
+
+    fun isOfficial(context: Context): Boolean = role(context) == ROLE_OFFICIAL
+
+    fun setRole(context: Context, role: String) {
+        prefs(context).edit().putString(KEY_ROLE, role).apply()
     }
 
     private fun prefs(context: Context) =
         context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+}
+
+/** The short badge shown in the map header and on the official screens. */
+fun roleBadge(role: String): String = when (role) {
+    LocalIdentity.ROLE_OFFICIAL -> "KAGAWAD"
+    LocalIdentity.ROLE_RESPONDER -> "RESPONDER"
+    else -> "RESIDENTE"
+}
+
+fun roleLabel(role: String): Pair<String, String> = when (role) {
+    LocalIdentity.ROLE_OFFICIAL -> "Barangay official" to "Kagawad — nakakapag-post ng opisyal na status"
+    LocalIdentity.ROLE_RESPONDER -> "Responder" to "Nakikita ang listahan ng humihingi ng tulong"
+    else -> "Residente" to "Nag-uulat at nagkukumpirma ng baha"
 }

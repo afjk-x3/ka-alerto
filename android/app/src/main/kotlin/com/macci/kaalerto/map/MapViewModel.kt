@@ -25,6 +25,13 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
      * output, recomputed fresh on every event change rather than read back from
      * `feature_state` (docs/03-architecture.md §5.1: "cheap enough to recompute").
      */
+    /**
+     * The raw event log. Day 10's evacuation screen folds `evac_status` events out of
+     * it, which the feature reducer deliberately ignores (they carry no featureRef).
+     */
+    val events: StateFlow<List<com.macci.kaalerto.data.Event>> = repository.observeAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val featureSummaries: StateFlow<List<FeatureSummary>> = repository.observeAll()
         .map { events -> Reducer.summarizeAll(events, System.currentTimeMillis()) }
         .onEach { summaries -> persist(summaries) }

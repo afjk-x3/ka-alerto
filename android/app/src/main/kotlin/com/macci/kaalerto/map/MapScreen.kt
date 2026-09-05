@@ -7,6 +7,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.detail.DetailSheet
+import com.macci.kaalerto.evac.evacStates
+import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.location.fetchCurrentLocation
 import com.macci.kaalerto.mesh.MeshPermissions
@@ -54,6 +57,7 @@ import com.macci.kaalerto.mesh.MeshService
 import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.net.rememberIsOnline
 import com.macci.kaalerto.sos.SosColors
+import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -100,6 +104,10 @@ fun MapScreen(
     onStartReportAt: ((lat: Double, lon: Double) -> Unit)? = null,
     onStartSos: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
     sosActive: Boolean = false,
+    role: String = com.macci.kaalerto.identity.LocalIdentity.ROLE_RESIDENT,
+    onOpenRoles: (() -> Unit)? = null,
+    onOpenEvac: (() -> Unit)? = null,
+    onOpenOfficialStatus: ((featureRef: String) -> Unit)? = null,
     stormMode: Boolean = false,
     onToggleStormMode: (() -> Unit)? = null,
 ) {
@@ -169,6 +177,15 @@ fun MapScreen(
 
     val geofenceCenter = homeDraft?.let { it.lat to it.lon } ?: savedHome?.let { it.lat to it.lon }
     val geofenceRadius = homeDraft?.radiusMeters?.toDouble() ?: savedHome?.radiusMeters ?: 0.0
+    // Day 10's centre pins. The fixture is static, the statuses are folded from the
+    // same event stream the markers use, so an official's update relayed in over the
+    // mesh repaints the pin with no extra plumbing.
+    val allEvents by viewModel.events.collectAsStateWithLifecycle()
+    val evacCentres = remember { loadEvacCentres(context) }
+    val evacStateList = remember(evacCentres, allEvents, savedHome) {
+        evacStates(evacCentres, allEvents, savedHome?.lat, savedHome?.lon)
+    }
+
     val isOnline by rememberIsOnline()
     val showChrome = !pickMode && homeDraft == null
 
@@ -182,6 +199,8 @@ fun MapScreen(
                 isOnline = isOnline,
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
                 meshStatus = meshStatus,
+                role = role,
+                onRoleClick = onOpenRoles,
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
                 modifier = Modifier.fillMaxWidth(),
@@ -217,11 +236,29 @@ fun MapScreen(
                 },
                 geofenceCenter = geofenceCenter,
                 geofenceRadius = geofenceRadius,
+                evacStates = evacStateList,
                 modifier = Modifier.fillMaxSize(),
             )
 
             if (showChrome) {
                 MapLegend(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+            }
+            // Day 10's evacuation centres. A floating control on the map rather than a
+            // third button in the header, which pushed the barangay name onto two lines
+            // — and "where do I go" is a map question anyway.
+            if (showChrome && onOpenEvac != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                        .size(52.dp)
+                        .background(MaterialTheme.colorScheme.background)
+                        .border(1.dp, LocalKaAlertoColors.current.borderEmphasis)
+                        .clickable { onOpenEvac() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    ShelterIcon(MaterialTheme.colorScheme.onBackground, Modifier.size(24.dp))
+                }
             }
         }
 
@@ -291,6 +328,17 @@ fun MapScreen(
             onCheckInPerson = { lat, lon ->
                 selectedFeatureRef = null
                 onStartReportAt?.invoke(lat, lon)
+            },
+            // Day 10: only an official sees this, and it opens the ruling screen for
+            // the feature the sheet is already about.
+            onOfficialStatus = if (role == com.macci.kaalerto.identity.LocalIdentity.ROLE_OFFICIAL) {
+                {
+                    val ref = selectedSummary.featureRef
+                    selectedFeatureRef = null
+                    onOpenOfficialStatus?.invoke(ref)
+                }
+            } else {
+                null
             },
         )
     } else if (selectedFeatureRef != null && selectedSummary == null) {
@@ -468,6 +516,7 @@ private fun MapLibreMapView(
     onLongPress: ((LatLng) -> Unit)?,
     geofenceCenter: Pair<Double, Double>?,
     geofenceRadius: Double,
+    evacStates: List<com.macci.kaalerto.evac.EvacState>,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -500,6 +549,10 @@ private fun MapLibreMapView(
     // recomposition, which reloaded the whole style each time the event list changed.
     LaunchedEffect(maplibreMap, featureSummaries) {
         maplibreMap?.style?.let { updateEventMarkers(it, featureSummaries) }
+    }
+
+    LaunchedEffect(maplibreMap, evacStates) {
+        maplibreMap?.style?.let { updateEvacMarkers(it, evacStates) }
     }
 
     LaunchedEffect(maplibreMap, geofenceCenter, geofenceRadius) {
@@ -616,4 +669,26 @@ private fun enableBlueDot(
     // chases GPS makes the demo unrepeatable.
     component.setCameraMode(CameraMode.NONE)
     component.setRenderMode(RenderMode.NORMAL)
+}
+
+/** A roof over a doorway — the evacuation-centre entry, matching the map's evac pins. */
+@Composable
+private fun ShelterIcon(tint: androidx.compose.ui.graphics.Color, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(
+            width = kotlin.math.min(w, h) * 0.1f,
+            cap = androidx.compose.ui.graphics.StrokeCap.Round,
+        )
+        val roof = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.08f, h * 0.48f)
+            lineTo(w * 0.5f, h * 0.12f)
+            lineTo(w * 0.92f, h * 0.48f)
+        }
+        drawPath(roof, color = tint, style = stroke)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.2f, h * 0.48f), androidx.compose.ui.geometry.Offset(w * 0.2f, h * 0.9f), stroke.width, androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.48f), androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.9f), stroke.width, androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.2f, h * 0.9f), androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.9f), stroke.width, androidx.compose.ui.graphics.StrokeCap.Round)
+    }
 }

@@ -102,6 +102,8 @@ fun DetailSheet(
     summary: FeatureSummary,
     onDismiss: () -> Unit,
     onCheckInPerson: (lat: Double, lon: Double) -> Unit,
+    /** Non-null only for a barangay official — day 10's ruling screen for this feature. */
+    onOfficialStatus: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -168,6 +170,11 @@ fun DetailSheet(
 
             Spacer(Modifier.height(16.dp))
 
+            if (summary.officialSeverity != null) {
+                OfficialBanner(summary)
+                Spacer(Modifier.height(12.dp))
+            }
+
             if (summary.isConflicted) {
                 ConflictSection(summary)
                 Spacer(Modifier.height(16.dp))
@@ -211,6 +218,18 @@ fun DetailSheet(
                         modifier = Modifier.weight(1f),
                     )
                 }
+            }
+
+            if (onOfficialStatus != null) {
+                Spacer(Modifier.height(10.dp))
+                ActionBar(
+                    label = "Mag-post ng opisyal na status",
+                    icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
+                    onClick = onOfficialStatus,
+                    background = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                    border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground),
+                )
             }
 
             Spacer(Modifier.height(20.dp))
@@ -494,4 +513,60 @@ private fun DisputeReasonDialog(onSelect: (DisputeReason) -> Unit, onDismiss: ()
             TextButton(onClick = onDismiss) { Text("Kanselahin") }
         },
     )
+}
+
+/**
+ * Day 10's official banner, in two states.
+ *
+ * When the ruling is in force it says what the barangay's position is and who set it.
+ * When it is held by the second-official gate it says *that*, because a resident
+ * looking at a road needs to know an official has called it clear and the map has not
+ * accepted that yet — hiding a pending ruling would be as misleading as applying it.
+ *
+ * The contradiction line is BUILD_TASKS.md day 10's own requirement: contradicting crowd
+ * reports stay visible, with a note saying how many.
+ */
+@Composable
+private fun OfficialBanner(summary: FeatureSummary) {
+    val colors = LocalKaAlertoColors.current
+    val pending = summary.pendingSecondOfficial
+    val accent = if (pending) colors.warningFg else colors.safeFg
+    val background = if (pending) colors.warningBg else colors.safeBg
+    val (fil, _) = severityTextFor(summary.officialSeverity ?: "S0")
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(background)
+            .padding(horizontal = 13.dp, vertical = 11.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ConfidenceIcon("official", accent, Modifier.size(18.dp))
+            Spacer(Modifier.size(9.dp))
+            Text(
+                if (pending) "Opisyal na status — naghihintay ng pangalawang opisyal" else "Opisyal na status",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+            )
+        }
+        Text(
+            fil,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(top = 3.dp),
+        )
+        summary.officialAuthorName?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (summary.contradictingCount > 0) {
+            Text(
+                "${summary.contradictingCount} residente ang nag-uulat ng mas malala kaysa sa opisyal na status. Nananatili silang nakikita.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+    }
 }

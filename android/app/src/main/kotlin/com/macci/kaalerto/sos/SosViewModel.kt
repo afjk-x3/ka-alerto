@@ -19,18 +19,24 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = EventRepository(KaAlertoDatabase.getInstance(application).eventDao())
     private var identity = LocalIdentity.getOrCreate(application)
 
-    private val _isResponder = MutableStateFlow(LocalIdentity.isResponder(application))
-    val isResponder: StateFlow<Boolean> = _isResponder.asStateFlow()
+    private val _role = MutableStateFlow(LocalIdentity.role(application))
+    val role: StateFlow<String> = _role.asStateFlow()
+
+    /** Responder *or* official — both see the rescue queue. */
+    val isResponder: StateFlow<Boolean> = _role
+        .map { it != LocalIdentity.ROLE_RESIDENT }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, LocalIdentity.isResponder(application))
 
     /**
-     * Day 9's responder toggle. Re-reads the identity so events authored from here on
-     * carry `authorRole = "responder"` — an acknowledgement has to say what the person
-     * making it was acting as.
+     * Day 9's responder toggle, generalised to day 10's three roles. Re-reads the
+     * identity so events authored from here on carry the new role *and* the matching
+     * display name — an acknowledgement or an official ruling has to say what the
+     * person making it was acting as.
      */
-    fun setResponder(enabled: Boolean) {
-        LocalIdentity.setResponder(getApplication(), enabled)
+    fun setRole(role: String) {
+        LocalIdentity.setRole(getApplication(), role)
         identity = LocalIdentity.getOrCreate(getApplication())
-        _isResponder.value = enabled
+        _role.value = role
     }
 
     /**

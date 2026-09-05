@@ -23,4 +23,9 @@ sealed interface Screen {
     /** Day 9 — the receiving half. A resident's coarse view, and the responder queue. */
     data class SosNearby(val sosId: String) : Screen
     data object SosQueue : Screen
+
+    /** Day 10 — the role switch, an official's ruling on one feature, and the centres. */
+    data object Roles : Screen
+    data class OfficialStatus(val featureRef: String) : Screen
+    data object EvacCentres : Screen
 }
