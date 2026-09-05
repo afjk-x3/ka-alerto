@@ -98,13 +98,16 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 - [x] New reports (`report/ReportSubmit.kt`) now get a geohash-8 `featureRef` instead of `null` — day 3 correctly skipped road-snapping, but day 4's reducer needs *something* to group same-spot reports by, and a geohash cell is the fallback `docs/03-architecture.md`'s own schema names.
 - **Known gap:** map-marker tap-to-select needed a rect-based, nearest-feature hit test (`map/MapScreen.kt`'s `nearestTappedFeatureRef`) rather than an exact point query — small circle markers sitting close together (like the conflict pair next to its Sotto Street neighbours) made exact-point hits unreliably miss. Not a design defect, just Android touch-target reality; documented in code.
 
-### Day 5: Notifications + filters
+### Day 5: Notifications + filters — DONE, verified 5 Sep 2026
 
-- [ ] Home location long-press with radius slider (drawn circle on map)
-- [ ] Geofence check on every event insert (entirely local)
-- [ ] Notification channels by severity; critical breaks DND
-- [ ] Filter bar: severity toggles + recency chips
-- [ ] Storm Mode theme toggle (dark mode)
+**DoD confirmed on `API34_Test`, airplane mode, cold relaunch:** long-pressed the map to set a home location, adjusted and saved a 300 m radius (a real geographic polygon, `map/GeofenceCircle.kt` — not a fixed-pixel `CircleLayer` radius, which doesn't scale correctly with zoom), then filed a fresh report inside it. A local notification fired immediately — "S1 — Madaanan, mag-ingat · 33 m mula sa bahay mo" — with zero network, and the home circle itself survived the force-stop/cold-relaunch (read back from `SharedPreferences`).
+
+- [x] Home location long-press + radius slider (`geofence/HomeLocationStore.kt`, `map/HomeRadiusOverlay.kt`, `map/GeofenceCircle.kt`) — long-press starts a draft, the slider (100-1000 m) adjusts it live with the circle redrawing on the map, "Itakda" persists it.
+- [x] Geofence check on every event insert, entirely local (`geofence/GeofenceNotifier.kt`) — an application-scoped observer diffs the event table's own `Flow` (no per-insert-call-site wiring needed) and checks newly-appeared `flood_report` events against the saved home radius via `haversineMeters`. The first emission after app start establishes a baseline with no notifications, so a fresh install doesn't fire 19 seed notifications; confirm/dispute events are excluded too, matching the architecture doc's anti-fatigue rules (a confidence update isn't "new flooding").
+- [x] Notification channels by severity (`notification/NotificationChannels.kt`, `FloodNotifier.kt`) — S3 uses a high-importance channel with `setBypassDnd(true)`; S0-S2 use a default-importance channel.
+- [x] Filter bar (`map/FilterBar.kt`): S0-S3 severity toggle chips (conflicts always show regardless, since hiding a live disagreement is worse than a noisy map) + Lahat/1h/3h/24h recency chips, both live-filtering the map markers.
+- [x] Storm Mode toggle — a manual button (moon/sun), not `isSystemInDarkTheme()`, since Storm is a condition the resident declares (docs/02-prd.md §6), not a phone setting. Switches `KaAlertoTheme`'s existing light/dark color schemes; state lives in `MainActivity`, not persisted across relaunches (not asked for, and re-toggling costs one tap).
+- **Testing note, not a code gap:** `POST_NOTIFICATIONS` (API 33+) is requested alongside location permissions on first launch, but the OS presents them as two separate sequential system dialogs — worth rehearsing so a real demo device doesn't end up with the second one silently un-granted.
 - **DoD:** In airplane mode, insert a report inside home radius → notification fires
 - **If behind:** Keep the notification, cut the filter bar
 
@@ -244,7 +247,7 @@ Cut anything else first.
 | 2 | Event store + seeding | 20 markers on map, right colors, right places | ✅ |
 | 3 | Reporting flow | Report filed in <15s in airplane mode | ✅ |
 | 4 | Confirm/dispute + reducer | Conflicting pair renders as SX, confirming moves bucket | ✅ |
-| 5 | Notifications + filters | In-radius report triggers notification | ⬜ |
+| 5 | Notifications + filters | In-radius report triggers notification | ✅ |
 | 6 | Nearby Connections | Two phones exchange events over mesh (single-hop) | ⬜ |
 | 7 | Nearby — multi-hop | Three-phone relay, C receives via B | ⬜ |
 | 8 | SOS + Lighthouse card | SOS → BEACONING, QR card appears | ⬜ |

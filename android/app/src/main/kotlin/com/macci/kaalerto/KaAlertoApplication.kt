@@ -1,6 +1,10 @@
 package com.macci.kaalerto
 
 import android.app.Application
+import com.macci.kaalerto.geofence.GeofenceNotifier
+import com.macci.kaalerto.notification.NotificationChannels
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import org.maplibre.android.MapLibre
 
 /**
@@ -17,8 +21,15 @@ import org.maplibre.android.MapLibre
  * this artifact only supports OpenGL.
  */
 class KaAlertoApplication : Application() {
+    // Application-lifetime scope for the geofence watcher — day 6-7's mesh foreground
+    // service is the eventual right home for "runs for as long as the app is alive",
+    // but that doesn't exist yet, so this is the longest-lived scope available today.
+    private val applicationScope = CoroutineScope(SupervisorJob())
+
     override fun onCreate() {
         super.onCreate()
         MapLibre.getInstance(this)
+        NotificationChannels.ensureCreated(this)
+        GeofenceNotifier(this).start(applicationScope)
     }
 }

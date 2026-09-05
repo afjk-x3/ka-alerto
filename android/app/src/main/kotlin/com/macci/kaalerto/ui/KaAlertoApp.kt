@@ -13,7 +13,7 @@ import com.macci.kaalerto.report.ReportScreen
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
 @Composable
-fun KaAlertoApp(modifier: Modifier = Modifier) {
+fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onToggleStormMode: (() -> Unit)? = null) {
     var screen by remember { mutableStateOf<Screen>(Screen.Map) }
 
     when (val current = screen) {
@@ -24,6 +24,8 @@ fun KaAlertoApp(modifier: Modifier = Modifier) {
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
             // conflicted spot rather than a confirm/dispute — see detail/DetailSheet.kt.
             onStartReportAt = { lat, lon -> screen = Screen.Report(lat, lon, null) },
+            stormMode = stormMode,
+            onToggleStormMode = onToggleStormMode,
         )
 
         Screen.PickLocation -> MapScreen(

@@ -3,6 +3,7 @@ package com.macci.kaalerto.map
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -20,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -43,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.detail.DetailSheet
+import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.location.fetchCurrentLocation
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -58,6 +61,8 @@ private val LOCATION_PERMISSIONS = arrayOf(
     Manifest.permission.ACCESS_COARSE_LOCATION,
 )
 
+private data class HomeDraft(val lat: Double, val lon: Double, val radiusMeters: Float)
+
 /**
  * @param onStartReport Reachable only in normal browsing mode. Tries GPS first and
  *   falls back to [onEnterPickLocation] on no permission/no fix — "GPS primary,
@@ -68,6 +73,9 @@ private val LOCATION_PERMISSIONS = arrayOf(
  * @param onStartReportAt Bubbles up when the day 4 conflict sheet's "I-check ko
  *   ngayon" is tapped — filing a fresh report is the resolution path for a
  *   conflicting feature, not a confirm/dispute (see detail/DetailSheet.kt).
+ * @param stormMode / onToggleStormMode Day 5's dark-mode toggle — a manual condition
+ *   the resident or barangay declares, not a system setting (docs/02-prd.md §6), so
+ *   it's a button here rather than following `isSystemInDarkTheme()`.
  */
 @Composable
 fun MapScreen(
@@ -79,6 +87,8 @@ fun MapScreen(
     onStartReport: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
     onEnterPickLocation: (() -> Unit)? = null,
     onStartReportAt: ((lat: Double, lon: Double) -> Unit)? = null,
+    stormMode: Boolean = false,
+    onToggleStormMode: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -87,6 +97,10 @@ fun MapScreen(
     val featureSummaries by viewModel.featureSummaries.collectAsStateWithLifecycle()
     var locatingReport by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
+    var homeDraft by remember { mutableStateOf<HomeDraft?>(null) }
+    var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
+    var selectedSeverities by remember { mutableStateOf(ALL_SEVERITIES.toSet()) }
+    var recencyFilter by remember { mutableStateOf(RecencyFilter.ALL) }
 
     var hasLocation by remember {
         mutableStateOf(
@@ -102,7 +116,14 @@ fun MapScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (!hasLocation) permissionLauncher.launch(LOCATION_PERMISSIONS)
+        if (!hasLocation) {
+            val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                LOCATION_PERMISSIONS + Manifest.permission.POST_NOTIFICATIONS
+            } else {
+                LOCATION_PERMISSIONS
+            }
+            permissionLauncher.launch(permissions)
+        }
         pack.ensureDownloaded()
     }
 
@@ -110,29 +131,80 @@ fun MapScreen(
         onDispose { pack.release() }
     }
 
+    val visibleSummaries = remember(featureSummaries, selectedSeverities, recencyFilter) {
+        val now = System.currentTimeMillis()
+        featureSummaries.filter { summary ->
+            passesFilter(summary.severity, summary.isConflicted, summary.lastEventMs, selectedSeverities, recencyFilter, now)
+        }
+    }
+
+    val geofenceCenter = homeDraft?.let { it.lat to it.lon } ?: savedHome?.let { it.lat to it.lon }
+    val geofenceRadius = homeDraft?.radiusMeters?.toDouble() ?: savedHome?.radiusMeters ?: 0.0
+
     Box(modifier = modifier.fillMaxSize()) {
         MapLibreMapView(
             showLocation = hasLocation,
-            featureSummaries = featureSummaries,
+            featureSummaries = visibleSummaries,
             pickMode = pickMode,
             onLocationPicked = onLocationPicked,
             onFeatureTapped = { featureRef -> selectedFeatureRef = featureRef },
+            onLongPress = if (!pickMode) {
+                { latLng -> homeDraft = HomeDraft(latLng.latitude, latLng.longitude, homeDraft?.radiusMeters ?: HomeLocationStore.DEFAULT_RADIUS_METERS.toFloat()) }
+            } else {
+                null
+            },
+            geofenceCenter = geofenceCenter,
+            geofenceRadius = geofenceRadius,
             modifier = Modifier.fillMaxSize(),
         )
-        PackStatusBanner(
-            state = packState,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-        )
 
-        if (pickMode) {
-            PickLocationBanner(
+        Column(modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+            PackStatusBanner(state = packState, modifier = Modifier.fillMaxWidth())
+            if (!pickMode && homeDraft == null) {
+                Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+                    FilterBar(
+                        selectedSeverities = selectedSeverities,
+                        onToggleSeverity = { severity ->
+                            selectedSeverities = if (severity in selectedSeverities) {
+                                selectedSeverities - severity
+                            } else {
+                                selectedSeverities + severity
+                            }
+                        },
+                        recency = recencyFilter,
+                        onRecencyChange = { recencyFilter = it },
+                    )
+                }
+            }
+        }
+
+        if (onToggleStormMode != null && !pickMode) {
+            IconButton(
+                onClick = onToggleStormMode,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 96.dp, end = 4.dp),
+            ) {
+                Text(if (stormMode) "☀" else "🌙")
+            }
+        }
+
+        when {
+            pickMode -> PickLocationBanner(
                 onCancel = { onCancelPick?.invoke() },
                 modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp),
             )
-        } else if (onStartReport != null) {
-            ExtendedFloatingActionButton(
+            homeDraft != null -> HomeRadiusOverlay(
+                radiusMeters = homeDraft!!.radiusMeters,
+                onRadiusChange = { homeDraft = homeDraft!!.copy(radiusMeters = it) },
+                onSave = {
+                    val draft = homeDraft!!
+                    HomeLocationStore.set(context, draft.lat, draft.lon, draft.radiusMeters.toDouble())
+                    savedHome = HomeLocationStore.get(context)
+                    homeDraft = null
+                },
+                onCancel = { homeDraft = null },
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+            )
+            onStartReport != null -> ExtendedFloatingActionButton(
                 text = { Text(if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat") },
                 icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
                 onClick = {
@@ -154,7 +226,7 @@ fun MapScreen(
     }
 
     val selectedSummary = featureSummaries.firstOrNull { it.featureRef == selectedFeatureRef }
-    if (selectedSummary != null) {
+    if (selectedSummary != null && homeDraft == null) {
         DetailSheet(
             summary = selectedSummary,
             onDismiss = { selectedFeatureRef = null },
@@ -163,7 +235,7 @@ fun MapScreen(
                 onStartReportAt?.invoke(lat, lon)
             },
         )
-    } else if (selectedFeatureRef != null) {
+    } else if (selectedFeatureRef != null && selectedSummary == null) {
         // The feature vanished from under the sheet (e.g. events reloaded) — don't
         // leave a sheet open with nothing to show.
         selectedFeatureRef = null
@@ -265,6 +337,9 @@ private fun MapLibreMapView(
     pickMode: Boolean,
     onLocationPicked: ((LatLng) -> Unit)?,
     onFeatureTapped: (String) -> Unit,
+    onLongPress: ((LatLng) -> Unit)?,
+    geofenceCenter: Pair<Double, Double>?,
+    geofenceRadius: Double,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -299,6 +374,10 @@ private fun MapLibreMapView(
         maplibreMap?.style?.let { updateEventMarkers(it, featureSummaries) }
     }
 
+    LaunchedEffect(maplibreMap, geofenceCenter, geofenceRadius) {
+        maplibreMap?.style?.let { updateGeofenceCircle(it, geofenceCenter, geofenceRadius) }
+    }
+
     // Pick-mode (setting a report location) and marker selection are mutually
     // exclusive per current screen state, so only one click listener is ever live.
     DisposableEffect(maplibreMap, pickMode, onLocationPicked, onFeatureTapped) {
@@ -324,6 +403,23 @@ private fun MapLibreMapView(
             }
             map.addOnMapClickListener(listener)
             onDispose { map.removeOnMapClickListener(listener) }
+        }
+    }
+
+    // Long-press sets/moves the home-radius draft (day 5) — a separate gesture from
+    // the click listener above, so both can be registered at once with no conflict.
+    DisposableEffect(maplibreMap, onLongPress) {
+        val map = maplibreMap
+        val callback = onLongPress
+        if (map == null || callback == null) {
+            onDispose { }
+        } else {
+            val listener = MapLibreMap.OnMapLongClickListener { latLng ->
+                callback(latLng)
+                true
+            }
+            map.addOnMapLongClickListener(listener)
+            onDispose { map.removeOnMapLongClickListener(listener) }
         }
     }
 
