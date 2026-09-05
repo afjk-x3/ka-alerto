@@ -19,6 +19,8 @@ See [`android/README.md`](android/README.md) for why each version is pinned wher
 
 Nearby Connections needs real radios; **the emulator cannot do this.**
 
+**This is now the single blocking item.** Build days 6–7's mesh code is written and running (`android/.../mesh/`), and everything about it that can be checked without a second radio has been — the service starts, Nearby accepts advertising and discovery, the peer counter renders, and the whole thing behaves correctly as Bluetooth is switched off and back on in airplane mode. What is still unproven is the only thing that matters: that a report actually crosses from one phone to another, and then relays to a third. **Nothing about the mesh should be described as working until these phones exist.**
+
 - [ ] Three physical Android phones, API 26+ (two is the minimum, three demos genuine multi-hop)
 - [ ] Developer Mode on each: Settings → About Phone → tap Build Number 7×
 - [ ] USB Debugging enabled, and the authorisation dialog accepted on each phone

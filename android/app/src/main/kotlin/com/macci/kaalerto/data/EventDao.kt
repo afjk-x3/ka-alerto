@@ -19,6 +19,16 @@ interface EventDao {
     @Query("SELECT * FROM events ORDER BY timestampMs DESC")
     fun observeAll(): Flow<List<Event>>
 
+    // One-shot reads for the mesh exchange (mesh/MeshService.kt). It needs a snapshot at
+    // a specific instant — "what do I hold right now, that this peer does not" — which
+    // is a different question from observeAll()'s continuous one, and collecting a Flow
+    // for a single answer would leave the diff racing the next emission.
+    @Query("SELECT id FROM events")
+    suspend fun allIds(): List<String>
+
+    @Query("SELECT * FROM events")
+    suspend fun all(): List<Event>
+
     @Query("SELECT COUNT(*) FROM events")
     suspend fun count(): Int
 }

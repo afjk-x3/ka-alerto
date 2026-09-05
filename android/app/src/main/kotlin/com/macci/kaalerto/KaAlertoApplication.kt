@@ -21,9 +21,11 @@ import org.maplibre.android.MapLibre
  * this artifact only supports OpenGL.
  */
 class KaAlertoApplication : Application() {
-    // Application-lifetime scope for the geofence watcher — day 6-7's mesh foreground
-    // service is the eventual right home for "runs for as long as the app is alive",
-    // but that doesn't exist yet, so this is the longest-lived scope available today.
+    // Application-lifetime scope for the geofence watcher. Day 6-7's mesh foreground
+    // service (mesh/MeshService.kt) now exists and outlives this process's UI, but the
+    // watcher deliberately stays here: it must fire for *locally authored* reports too,
+    // which have nothing to do with the mesh, and folding it into the service would
+    // silently make home-radius alerts depend on the resident having granted Bluetooth.
     private val applicationScope = CoroutineScope(SupervisorJob())
 
     override fun onCreate() {

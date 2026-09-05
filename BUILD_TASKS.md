@@ -115,20 +115,22 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 
 ## Days 6–10 — V1 (Mesh + SOS)
 
-### Days 6–7: Nearby Connections mesh
+### Days 6–7: Nearby Connections mesh — CODE COMPLETE 5 Sep 2026, **DoD NOT MET**
 
 **Hard gate — allocate full two days.**
 
-- [ ] Foreground service hosting Nearby client, persistent notification
-- [ ] `startAdvertising()` + `startDiscovery()` on `Strategy.P2P_CLUSTER`, auto-accept
-- [ ] On connect: exchange event IDs, send diff as JSON
-- [ ] On receive: insert with dedupe, **re-share to other peers** (genuine multi-hop)
-- [ ] Peer counter in UI ("3 nearby phones connected")
-- [ ] Mark received events with `origin: mesh`, increment `hopCount`
-- [ ] Detail sheet shows "via mesh · 2 hops"
-- **DoD:** Two airplane-mode phones — report on A appears on B. Phone C (out of A's range, in B's) receives via B
-- **Critical debugging note:** Nearby needs location *services* on (not just permission). Both devices need Bluetooth and Wi-Fi manually re-enabled after airplane mode (AM turns them off). Verify this on day 6, not day 29.
-- **If behind end of day 6:** Fall back to single-hop, drop multi-hop relay, keep moving
+Everything is written and every part that can run without a second radio has been verified on the `API34_Test` emulator. **The DoD itself has not been met and cannot be until the three phones exist** — see `SETUP_CHECKLIST.md`. Do not describe the mesh as working.
+
+- [x] Foreground service hosting Nearby client, persistent notification — `mesh/MeshService.kt`, `foregroundServiceType="connectedDevice"`, low-importance channel with a "Ihinto" stop action so the relay is never un-stoppable
+- [x] `startAdvertising()` + `startDiscovery()` on `Strategy.P2P_CLUSTER`, auto-accept — `authenticationDigits` deliberately ignored (ground rule 4)
+- [x] On connect: exchange event IDs, send diff as JSON — `mesh/MeshProtocol.kt`. Anti-entropy, not broadcast: peers trade ID manifests first and send only what the other side lacks, so two reconciled devices fall silent instead of re-shipping 19 reports on every re-encounter. Batched by measured size against Nearby's 32 KB payload cap
+- [x] On receive: insert with dedupe, **re-share to other peers** (genuine multi-hop) — only what was new to this device is forwarded, and never back to the sender, which is what makes the flood terminate
+- [x] Peer counter in UI ("3 nearby phones connected") — third line of the map header, using the design system's own phrase ("kalapit na phone")
+- [x] Mark received events with `origin: mesh`, increment `hopCount` — the content-hash `id` is left alone, so the same report still dedupes against a copy arriving later by SMS or server
+- [x] Detail sheet shows "via mesh · 2 hops" — already built during the UI rebuild (`detail/DetailSheet.kt`)
+- [ ] **DoD — NOT MET.** Two airplane-mode phones (report on A appears on B; phone C, out of A's range and in B's, receives via B) requires hardware this project does not yet have. The hop arithmetic that DoD checks is covered by unit test (`MeshProtocolTest`: A→B at one hop, B→C at two), which is a test of the decision, not of the radio.
+- [x] **Critical debugging note** — verified as far as an emulator allows, and it paid for itself twice. (a) Nearby also needs `ACCESS_WIFI_STATE` + `CHANGE_WIFI_STATE` in the manifest; without them `startAdvertising()` fails at runtime with `MISSING_PERMISSION_CHANGE_WIFI_STATE` (8033) and nothing catches it at build or install time. (b) `startAdvertising()` reports **success even when the radios underneath it are unusable** — so `mesh/MeshRadios.kt` checks Bluetooth and location *services* directly, and `MeshService` watches `ACTION_STATE_CHANGED`/`MODE_CHANGED_ACTION` so switching Bluetooth back on after airplane mode brings the mesh up within a second with no app restart. Confirmed on the emulator in airplane mode: BT off → header reads "Buksan ang Bluetooth para sa mesh" in amber; BT on → "Naghahanap ng kalapit na phone", no relaunch.
+- **If behind end of day 6:** Fall back to single-hop, drop multi-hop relay, keep moving — *not taken; multi-hop is implemented.*
 
 ### Day 8: SOS flow
 

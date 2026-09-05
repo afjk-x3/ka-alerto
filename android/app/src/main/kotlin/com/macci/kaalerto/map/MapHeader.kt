@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.detail.MeshIcon
+import com.macci.kaalerto.mesh.MeshStatus
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /**
@@ -32,6 +34,7 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 fun MapHeader(
     isOnline: Boolean,
     reportsToday: Int,
+    meshStatus: MeshStatus,
     stormMode: Boolean,
     onModeIconClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -69,6 +72,7 @@ fun MapHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            MeshStatusLine(meshStatus)
         }
         Box(
             modifier = Modifier
@@ -84,5 +88,33 @@ fun MapHeader(
                 )
             }
         }
+    }
+}
+
+/**
+ * BUILD_TASKS.md days 6-7's peer counter. Rendered only once the mesh service is
+ * actually up (or has actually failed) — a resident who never granted the Bluetooth
+ * permissions has no relay, and a permanent "0 kalapit na phone" would read as "nobody
+ * is nearby" rather than "this phone isn't looking".
+ *
+ * Copy follows the design system's own phrase for this, "kalapit na phone"
+ * (SOSStatus.dc.html, DetailConfirmed-*.dc.html), not a fresh translation.
+ */
+@Composable
+private fun MeshStatusLine(status: MeshStatus) {
+    if (!status.running && status.error == null) return
+
+    val colors = LocalKaAlertoColors.current
+    val tint = if (status.error != null) colors.warningFg else MaterialTheme.colorScheme.onSurfaceVariant
+    val text = when {
+        status.error != null -> status.error
+        status.peerCount > 0 -> "${status.peerCount} kalapit na phone"
+        else -> "Naghahanap ng kalapit na phone"
+    }
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+        MeshIcon(tint = tint, modifier = Modifier.size(13.dp))
+        Spacer(Modifier.size(6.dp))
+        Text(text, style = MaterialTheme.typography.bodySmall, color = tint)
     }
 }

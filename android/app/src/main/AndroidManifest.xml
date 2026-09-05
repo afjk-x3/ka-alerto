@@ -12,6 +12,14 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <!-- Nearby Connections brings up its own Wi-Fi Direct / hotspot legs to upgrade a
+         bandwidth-limited Bluetooth connection, so it needs these two even though the
+         app never touches Wi-Fi itself. Both are install-time, so nothing is prompted
+         for. Omitting them does not fail at build or install time — startAdvertising()
+         fails at runtime with MISSING_PERMISSION_CHANGE_WIFI_STATE (8033), which is how
+         this was found on the API 34 emulator. -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
     <!-- SMS -->
     <uses-permission android:name="android.permission.SEND_SMS" />
@@ -59,6 +67,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Nearby Connections mesh. Not exported: nothing outside this app may start
+             or stop the relay, and the only legitimate starter is MapScreen once the
+             Bluetooth/Wi-Fi/location runtime permissions are actually held. -->
+        <service
+            android:name=".mesh.MeshService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- SMS Receiver -->
         <receiver

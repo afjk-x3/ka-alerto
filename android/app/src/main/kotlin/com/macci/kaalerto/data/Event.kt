@@ -2,6 +2,7 @@ package com.macci.kaalerto.data
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * One immutable observation. [id] is a content hash (or, for seed fixtures, the
@@ -10,7 +11,14 @@ import androidx.room.PrimaryKey
  *
  * The local store is a replica of this table, not a cache: rows are never updated or
  * deleted except TTL expiry (CLAUDE.md architecture summary).
+ *
+ * `@Serializable` because this row *is* the mesh wire format (mesh/MeshProtocol.kt).
+ * A separate transport DTO would be the usual decoupling, but here it would be a
+ * field-for-field copy of a replicated table: what one device stores is exactly what
+ * the next device must store, and a mapping layer between them is somewhere for the
+ * two to silently drift apart.
  */
+@Serializable
 @Entity(tableName = "events")
 data class Event(
     @PrimaryKey val id: String,

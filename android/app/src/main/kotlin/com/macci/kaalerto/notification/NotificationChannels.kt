@@ -15,6 +15,14 @@ object NotificationChannels {
     const val CHANNEL_NORMAL = "flood_normal"
     const val CHANNEL_CRITICAL = "flood_critical"
 
+    /**
+     * The mesh foreground service's own channel (mesh/MeshService.kt). IMPORTANCE_LOW
+     * on purpose: this notification exists because Android requires one for a
+     * long-running service, not because it has news — it must never make a sound, and
+     * it must never compete with an actual flood warning.
+     */
+    const val CHANNEL_MESH = "mesh_status"
+
     fun ensureCreated(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
 
@@ -28,6 +36,12 @@ object NotificationChannels {
                 description = "S3 flood reports inside your home radius"
                 setBypassDnd(true)
                 enableVibration(true)
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_MESH, "Mesh sa mga kalapit na phone", NotificationManager.IMPORTANCE_LOW).apply {
+                description = "Status of the background relay to nearby phones"
+                setShowBadge(false)
             },
         )
     }

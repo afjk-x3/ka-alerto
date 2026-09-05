@@ -14,5 +14,10 @@ class EventRepository(private val eventDao: EventDao) {
 
     suspend fun insert(event: Event) = eventDao.insert(event)
 
+    /** Point-in-time snapshots for the mesh anti-entropy exchange — see [EventDao.allIds]. */
+    suspend fun allIds(): List<String> = eventDao.allIds()
+
+    suspend fun all(): List<Event> = eventDao.all()
+
     suspend fun isEmpty(): Boolean = eventDao.count() == 0
 }

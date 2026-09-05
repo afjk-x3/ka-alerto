@@ -48,6 +48,9 @@ import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.location.fetchCurrentLocation
+import com.macci.kaalerto.mesh.MeshPermissions
+import com.macci.kaalerto.mesh.MeshService
+import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.net.rememberIsOnline
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -110,24 +113,40 @@ fun MapScreen(
                 PackageManager.PERMISSION_GRANTED
         )
     }
+    var meshPermitted by remember { mutableStateOf(MeshPermissions.allGranted(context)) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
         hasLocation = granted.values.any { it }
+        meshPermitted = MeshPermissions.allGranted(context)
     }
 
     LaunchedEffect(Unit) {
-        if (!hasLocation) {
-            val permissions = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                LOCATION_PERMISSIONS + Manifest.permission.POST_NOTIFICATIONS
-            } else {
-                LOCATION_PERMISSIONS
-            }
-            permissionLauncher.launch(permissions)
+        // One prompt for everything still outstanding — location, notifications, and
+        // day 6-7's Bluetooth/Wi-Fi set for the mesh. Asking for the mesh permissions
+        // separately, later, would mean interrupting someone mid-flood to enable a
+        // transport that only helps if it was already running.
+        val wanted = buildList {
+            addAll(LOCATION_PERMISSIONS)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+            addAll(MeshPermissions.required())
         }
+        val missing = wanted.distinct().filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isNotEmpty()) permissionLauncher.launch(missing.toTypedArray())
         pack.ensureDownloaded()
     }
+
+    // The mesh runs for as long as the app does — it is a foreground service precisely
+    // so it keeps reconciling with peers while this screen is off. Hence start-only:
+    // leaving the map (to file a report) must not tear down the relay, and stopping it
+    // is the notification's "Ihinto" action, i.e. the resident's decision.
+    LaunchedEffect(meshPermitted) {
+        if (meshPermitted) MeshService.start(context)
+    }
+    val meshStatus by MeshState.status.collectAsStateWithLifecycle()
 
     DisposableEffect(pack) {
         onDispose { pack.release() }
@@ -154,6 +173,7 @@ fun MapScreen(
             MapHeader(
                 isOnline = isOnline,
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
+                meshStatus = meshStatus,
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
                 modifier = Modifier.fillMaxWidth(),
