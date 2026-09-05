@@ -28,6 +28,7 @@ fun decayTauMinutesFor(severity: String): Double = ttlMinutesFor(severity).toDou
 
 /** Severity-tier copy shared by the report picker and the detail sheet — one canonical FIL/EN pair per tier, not per screen. */
 private val SEVERITY_TEXT = mapOf(
+    "S0" to ("Humupa na" to "Reported cleared"),
     "S1" to ("Madaanan, mag-ingat" to "Passable with caution"),
     "S2" to ("Hindi madaanan ng sasakyan" to "Impassable for cars"),
     "S3" to ("Hindi madaanan" to "Impassable for all"),

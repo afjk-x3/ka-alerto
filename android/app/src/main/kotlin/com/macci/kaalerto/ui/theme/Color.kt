@@ -15,58 +15,45 @@ val SeverityS2NoCars = Color(0xFFE4682B)      // impassable for cars
 val SeverityS3Impassable = Color(0xFFC42B2B)  // impassable for all
 // SX (conflicting) is rendered as a hatch pattern, not a flat colour.
 
-// Light theme
-val md_theme_light_primary = Color(0xFF2F7FBF)
-val md_theme_light_onPrimary = Color(0xFFFFFFFF)
-val md_theme_light_primaryContainer = Color(0xFFD5E8FF)
-val md_theme_light_onPrimaryContainer = Color(0xFF001C47)
-val md_theme_light_secondary = Color(0xFF536B7F)
-val md_theme_light_onSecondary = Color(0xFFFFFFFF)
-val md_theme_light_secondaryContainer = Color(0xFFD8E2F1)
-val md_theme_light_onSecondaryContainer = Color(0xFF0E1D35)
-val md_theme_light_tertiary = Color(0xFFC42B2B)
-val md_theme_light_onTertiary = Color(0xFFFFFFFF)
-val md_theme_light_tertiaryContainer = Color(0xFFFFDAD6)
-val md_theme_light_onTertiaryContainer = Color(0xFF410006)
-val md_theme_light_error = Color(0xFFB3261E)
-val md_theme_light_errorContainer = Color(0xFFF9DEDC)
-val md_theme_light_onError = Color(0xFFFFFFFF)
-val md_theme_light_onErrorContainer = Color(0xFF410E0B)
-val md_theme_light_background = Color(0xFFFDF8F6)
-val md_theme_light_onBackground = Color(0xFF1C1B1F)
-val md_theme_light_surface = Color(0xFFFDF8F6)
-val md_theme_light_onSurface = Color(0xFF1C1B1F)
-val md_theme_light_surfaceVariant = Color(0xFFEFEFF4)
-val md_theme_light_onSurfaceVariant = Color(0xFF49454F)
-val md_theme_light_outline = Color(0xFF79747E)
-val md_theme_light_inverseOnSurface = Color(0xFFF4EFF4)
-val md_theme_light_inverseSurface = Color(0xFF313033)
-val md_theme_light_inversePrimary = Color(0xFFB3D7FF)
+// ---------------------------------------------------------------------------
+// Normal mode — design/artboards/Palettes.dc.html, "Normal" column (12 tokens).
+// ---------------------------------------------------------------------------
+val NormalBackground = Color(0xFFFFFFFF)
+val NormalCanvas = Color(0xFFF7F5F2)
+val NormalRecessedSurface = Color(0xFFF2F4F6)
+val NormalPrimaryText = Color(0xFF14171A)
+val NormalSecondaryText = Color(0xFF5C666F)
+val NormalDisabledText = Color(0xFF8A939B)
+val NormalBorder = Color(0xFFE3E7EB)
+val NormalBorderEmphasis = Color(0xFFD8DEE3)
+val NormalPrimaryAction = Color(0xFF14171A)
+val NormalOnPrimaryAction = Color(0xFFFFFFFF)
+val NormalSafeBg = Color(0xFFE4F1E9)
+val NormalSafeFg = Color(0xFF2E7D4F)
+val NormalWarningBg = Color(0xFFFFF8E8)
+val NormalWarningFg = Color(0xFFA3791A)
+val NormalCriticalBg = Color(0xFFFBEBE9)
+val NormalCriticalFg = Color(0xFFA32020)
 
-// Dark theme
-val md_theme_dark_primary = Color(0xFFB3D7FF)
-val md_theme_dark_onPrimary = Color(0xFF00325E)
-val md_theme_dark_primaryContainer = Color(0xFF1B5499)
-val md_theme_dark_onPrimaryContainer = Color(0xFFD5E8FF)
-val md_theme_dark_secondary = Color(0xFFBCC7D8)
-val md_theme_dark_onSecondary = Color(0xFF24334C)
-val md_theme_dark_secondaryContainer = Color(0xFF3B4A63)
-val md_theme_dark_onSecondaryContainer = Color(0xFFD8E2F1)
-val md_theme_dark_tertiary = Color(0xFFFFB4AE)
-val md_theme_dark_onTertiary = Color(0xFF67000D)
-val md_theme_dark_tertiaryContainer = Color(0xFF93001A)
-val md_theme_dark_onTertiaryContainer = Color(0xFFFFDAD6)
-val md_theme_dark_error = Color(0xFFF2B8B5)
-val md_theme_dark_errorContainer = Color(0xFF8C1D18)
-val md_theme_dark_onError = Color(0xFF601410)
-val md_theme_dark_onErrorContainer = Color(0xFFF9DEDC)
-val md_theme_dark_background = Color(0xFF1C1B1F)
-val md_theme_dark_onBackground = Color(0xFFE8E7EB)
-val md_theme_dark_surface = Color(0xFF1C1B1F)
-val md_theme_dark_onSurface = Color(0xFFE8E7EB)
-val md_theme_dark_surfaceVariant = Color(0xFF49454F)
-val md_theme_dark_onSurfaceVariant = Color(0xFFCAC7D0)
-val md_theme_dark_outline = Color(0xFF938F96)
-val md_theme_dark_inverseOnSurface = Color(0xFF1C1B1F)
-val md_theme_dark_inverseSurface = Color(0xFFE8E7EB)
-val md_theme_dark_inversePrimary = Color(0xFF2F7FBF)
+// ---------------------------------------------------------------------------
+// Storm mode — design/artboards/Palettes.dc.html, "Storm" column (6 tokens).
+// "Dark is not a preference here. It saves OLED power during an outage and
+// stays readable at minimum brightness."
+// ---------------------------------------------------------------------------
+val StormBackground = Color(0xFF0D0F12)
+val StormElevatedSurface = Color(0xFF1A1D21)
+val StormPrimaryText = Color(0xFFF2F4F7)
+val StormSecondaryText = Color(0xFFA8B0BA)
+val StormCriticalAccent = Color(0xFFFF5A4E)
+val StormSafeAccent = Color(0xFF4FA3E3)
+val StormBorder = Color(0xFF3A4149)
+val StormDivider = Color(0xFF23272C)
+/**
+ * Not in Palettes.dc.html's 6-token Storm list — needed because Material3's
+ * `contentColorFor()` matches a `Surface`'s color against the scheme's container
+ * roles by value. Reusing [StormElevatedSurface] for both `surfaceVariant` and
+ * `errorContainer` made them ambiguous, so a plain neutral card (background =
+ * surfaceVariant) started rendering its default text in `onErrorContainer`'s red
+ * instead of `onSurfaceVariant`'s grey. This just needs to be a distinct value.
+ */
+val StormCriticalBg = Color(0xFF2A1414)

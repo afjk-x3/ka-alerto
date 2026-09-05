@@ -7,21 +7,22 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -47,6 +48,7 @@ import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.location.fetchCurrentLocation
+import com.macci.kaalerto.net.rememberIsOnline
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -140,57 +142,69 @@ fun MapScreen(
 
     val geofenceCenter = homeDraft?.let { it.lat to it.lon } ?: savedHome?.let { it.lat to it.lon }
     val geofenceRadius = homeDraft?.radiusMeters?.toDouble() ?: savedHome?.radiusMeters ?: 0.0
+    val isOnline by rememberIsOnline()
+    val showChrome = !pickMode && homeDraft == null
 
-    Box(modifier = modifier.fillMaxSize()) {
-        MapLibreMapView(
-            showLocation = hasLocation,
-            featureSummaries = visibleSummaries,
-            pickMode = pickMode,
-            onLocationPicked = onLocationPicked,
-            onFeatureTapped = { featureRef -> selectedFeatureRef = featureRef },
-            onLongPress = if (!pickMode) {
-                { latLng -> homeDraft = HomeDraft(latLng.latitude, latLng.longitude, homeDraft?.radiusMeters ?: HomeLocationStore.DEFAULT_RADIUS_METERS.toFloat()) }
-            } else {
-                null
-            },
-            geofenceCenter = geofenceCenter,
-            geofenceRadius = geofenceRadius,
-            modifier = Modifier.fillMaxSize(),
-        )
-
-        Column(modifier = Modifier.align(Alignment.TopCenter).fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxSize()) {
+        // Map-Normal.dc.html's header ("Brgy. ... · synced/report status") is only
+        // honest to show once the offline pack is actually ready — see PackStatusBanner.
+        if (packState !is PackState.Ready) {
             PackStatusBanner(state = packState, modifier = Modifier.fillMaxWidth())
-            if (!pickMode && homeDraft == null) {
-                Surface(color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
-                    FilterBar(
-                        selectedSeverities = selectedSeverities,
-                        onToggleSeverity = { severity ->
-                            selectedSeverities = if (severity in selectedSeverities) {
-                                selectedSeverities - severity
-                            } else {
-                                selectedSeverities + severity
-                            }
-                        },
-                        recency = recencyFilter,
-                        onRecencyChange = { recencyFilter = it },
-                    )
-                }
+        } else if (onToggleStormMode != null) {
+            MapHeader(
+                isOnline = isOnline,
+                reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
+                stormMode = stormMode,
+                onModeIconClick = onToggleStormMode,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (showChrome) {
+            FilterBar(
+                selectedSeverities = selectedSeverities,
+                onToggleSeverity = { severity ->
+                    selectedSeverities = if (severity in selectedSeverities) {
+                        selectedSeverities - severity
+                    } else {
+                        selectedSeverities + severity
+                    }
+                },
+                recency = recencyFilter,
+                onRecencyChange = { recencyFilter = it },
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            MapLibreMapView(
+                showLocation = hasLocation,
+                featureSummaries = visibleSummaries,
+                pickMode = pickMode,
+                onLocationPicked = onLocationPicked,
+                onFeatureTapped = { featureRef -> selectedFeatureRef = featureRef },
+                onLongPress = if (!pickMode) {
+                    { latLng -> homeDraft = HomeDraft(latLng.latitude, latLng.longitude, homeDraft?.radiusMeters ?: HomeLocationStore.DEFAULT_RADIUS_METERS.toFloat()) }
+                } else {
+                    null
+                },
+                geofenceCenter = geofenceCenter,
+                geofenceRadius = geofenceRadius,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            if (showChrome) {
+                MapLegend(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
             }
         }
 
-        if (onToggleStormMode != null && !pickMode) {
-            IconButton(
-                onClick = onToggleStormMode,
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 96.dp, end = 4.dp),
-            ) {
-                Text(if (stormMode) "☀" else "🌙")
-            }
+        if (showChrome) {
+            MapDisclaimer()
         }
 
         when {
             pickMode -> PickLocationBanner(
                 onCancel = { onCancelPick?.invoke() },
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
             homeDraft != null -> HomeRadiusOverlay(
                 radiusMeters = homeDraft!!.radiusMeters,
@@ -202,13 +216,12 @@ fun MapScreen(
                     homeDraft = null
                 },
                 onCancel = { homeDraft = null },
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
             )
-            onStartReport != null -> ExtendedFloatingActionButton(
-                text = { Text(if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat") },
-                icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+            onStartReport != null -> MapActionBar(
+                label = if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat",
                 onClick = {
-                    if (locatingReport) return@ExtendedFloatingActionButton
+                    if (locatingReport) return@MapActionBar
                     locatingReport = true
                     scope.launch {
                         val location = fetchCurrentLocation(context)
@@ -220,7 +233,7 @@ fun MapScreen(
                         }
                     }
                 },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
@@ -264,6 +277,40 @@ private fun PickLocationBanner(onCancel: () -> Unit, modifier: Modifier = Modifi
         }
         IconButton(onClick = onCancel) {
             Icon(Icons.Filled.Close, contentDescription = "Kanselahin", tint = MaterialTheme.colorScheme.inverseOnSurface)
+        }
+    }
+}
+
+/**
+ * Map-Normal.dc.html's "Mag-ulat" bar — a full-width bar docked at the bottom of the
+ * screen, not a floating rounded FAB. The artboard pairs it with an SOS button, which
+ * this deliberately omits: SOS isn't built yet, and a button that does nothing would
+ * misrepresent what the app can do.
+ */
+@Composable
+private fun MapActionBar(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .background(MaterialTheme.colorScheme.primary)
+                .clickable(onClick = onClick)
+                .padding(vertical = 20.dp),
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+            Spacer(Modifier.size(10.dp))
+            Text(
+                label,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
         }
     }
 }

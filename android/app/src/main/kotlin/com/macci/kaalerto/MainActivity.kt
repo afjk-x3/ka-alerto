@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
             // theme itself is chosen at this level.
             var stormMode by remember { mutableStateOf(false) }
 
-            KaAlertoTheme(darkTheme = stormMode) {
+            KaAlertoTheme(stormMode = stormMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,

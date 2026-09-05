@@ -34,6 +34,9 @@ import org.maplibre.android.geometry.LatLngBounds
  */
 object DemoArea {
 
+    /** Header display name for the map screen — matches the frozen demo area above. */
+    const val BARANGAY_NAME = "Brgy. San Juan Bautista"
+
     val bounds: LatLngBounds = LatLngBounds.Builder()
         .include(LatLng(18.1760, 120.6130))  // north-east
         .include(LatLng(18.1660, 120.5990))  // south-west

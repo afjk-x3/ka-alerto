@@ -1,5 +1,6 @@
 package com.macci.kaalerto.detail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,14 +12,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,13 +33,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.data.severityTextFor
+import com.macci.kaalerto.report.BODY_LEVELS
+import com.macci.kaalerto.report.BodyIllustration
+import com.macci.kaalerto.report.VEHICLE_LEVELS
+import com.macci.kaalerto.report.VehicleGlyph
+import com.macci.kaalerto.report.WaterLevelOption
+import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 private fun colorFor(severity: String): Color =
     Color(android.graphics.Color.parseColor(SeverityColors.forSeverity(severity)))
@@ -54,12 +63,14 @@ private fun roleLabel(role: String): String = when (role) {
 }
 
 private fun originLabel(event: Event): String = when (event.origin) {
-    "mesh" -> "Mesh" + if (event.hopCount > 0) " · ${event.hopCount} hops" else ""
+    "mesh" -> "Mesh"
     "sms" -> "SMS"
     "server" -> "Server"
     "seed" -> "Seed data"
     else -> "Direkta" // local — authored on this device
 }
+
+private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
 
 private fun ageLabel(ms: Long): String {
     val minutes = ms / 60_000
@@ -95,16 +106,25 @@ fun DetailSheet(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val colors = LocalKaAlertoColors.current
     var showDisputeDialog by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val latestReport = summary.events.firstOrNull { it.type == "flood_report" }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, modifier = modifier) {
+    // Lighter than the default scrim: the map behind stays dimly visible rather than
+    // fully hidden, evoking Detail*.dc.html's "map peeking through" header without a
+    // second, fake, unsynced map render — this is the real map, at its real position.
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        modifier = modifier,
+        scrimColor = Color.Black.copy(alpha = 0.4f),
+    ) {
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(featureDisplayName(summary.featureRef), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(featureDisplayName(summary.featureRef), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     if (summary.isStale) {
                         Text("Naka-decay · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -115,11 +135,7 @@ fun DetailSheet(
             Spacer(Modifier.height(12.dp))
 
             if (latestReport?.waterLevel != null && !summary.isConflicted) {
-                val (fil, en) = severityTextFor(summary.severity)
-                InfoCard {
-                    Text(fil, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                    Text(en, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                ReadingCard(waterLevelId = latestReport.waterLevel, severity = summary.severity)
                 Spacer(Modifier.height(12.dp))
             }
 
@@ -128,10 +144,25 @@ fun DetailSheet(
                 InfoCard(modifier = Modifier.weight(1f)) {
                     Text("HULING ULAT", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(ageLabel(System.currentTimeMillis() - summary.lastEventMs), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(
+                        timeFormat.format(summary.lastEventMs),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 InfoCard(modifier = Modifier.weight(1f)) {
                     Text("PAANO DUMATING", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(originLabel(anchorEvent), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (anchorEvent.origin == "mesh") {
+                            MeshIcon(tint = colors.safeFg, modifier = Modifier.size(15.dp))
+                            Spacer(Modifier.size(6.dp))
+                        }
+                        Text(originLabel(anchorEvent), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    }
+                    if (anchorEvent.origin == "mesh" && anchorEvent.hopCount > 0) {
+                        Text("${anchorEvent.hopCount} hops", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
 
@@ -140,35 +171,49 @@ fun DetailSheet(
             if (summary.isConflicted) {
                 ConflictSection(summary)
                 Spacer(Modifier.height(16.dp))
-                Text("Malapit ka ba? Tulungan mo kaming i-check.", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("Malapit ka ba? Tulungan mo kaming i-check.", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
-                Button(onClick = { onCheckInPerson(summary.lat, summary.lon) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("I-check ko ngayon")
-                }
+                ActionBar(
+                    label = "I-check ko ngayon",
+                    icon = { tint -> MagnifierIcon(tint, Modifier.size(20.dp)) },
+                    onClick = { onCheckInPerson(summary.lat, summary.lon) },
+                    background = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                )
             } else {
                 ConfidenceSection(summary)
                 Spacer(Modifier.height(16.dp))
-                Text("Nandiyan ka ba ngayon?", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("Nandiyan ka ba ngayon?", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                 Spacer(Modifier.height(8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    ActionBar(
+                        label = "Tama",
+                        icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
-                            if (submitting) return@Button
+                            if (submitting) return@ActionBar
                             submitting = true
                             scope.launch {
                                 submitConfirm(context, summary.featureRef, summary.severity)
                                 submitting = false
                             }
                         },
+                        background = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.weight(1f),
-                    ) { Text("Tama") }
-                    OutlinedButton(onClick = { showDisputeDialog = true }, modifier = Modifier.weight(1f)) {
-                        Text("Iba na")
-                    }
+                    )
+                    ActionBar(
+                        label = "Iba na",
+                        icon = { tint -> XIcon(tint, Modifier.size(18.dp)) },
+                        onClick = { showDisputeDialog = true },
+                        background = MaterialTheme.colorScheme.background,
+                        contentColor = MaterialTheme.colorScheme.onBackground,
+                        border = BorderStroke(1.5.dp, colors.borderEmphasis),
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(20.dp))
             Text("ULAT (${summary.events.size})", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             summary.events.take(5).forEach { event -> EventHistoryRow(event) }
@@ -191,14 +236,95 @@ fun DetailSheet(
     }
 }
 
+/** A plain rectangular action bar (not Material's default pill `Button`) — matches the black full-width bars every artboard uses for primary actions. */
+@Composable
+private fun ActionBar(
+    label: String,
+    icon: @Composable (tint: Color) -> Unit,
+    onClick: () -> Unit,
+    background: Color,
+    contentColor: Color,
+    modifier: Modifier = Modifier,
+    border: BorderStroke? = null,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
+        color = background,
+        border = border,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(64.dp).padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            icon(contentColor)
+            Spacer(Modifier.size(9.dp))
+            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = contentColor)
+        }
+    }
+}
+
+/**
+ * Seed fixtures store the Filipino word here ("bukong-bukong"); live reports
+ * (report/ReportSubmit.kt) store the option's English id ("ankle") — both are the same
+ * field, just written by two different sources that never agreed on a format. Resolving
+ * either to the same [WaterLevelOption] is cheaper and safer than picking one fixture
+ * format to be "correct" and leaving the other undrawn.
+ */
+private fun resolveLevelOption(waterLevelId: String): WaterLevelOption? =
+    (BODY_LEVELS + VEHICLE_LEVELS).find { it.id == waterLevelId || it.fil.equals(waterLevelId, ignoreCase = true) }
+
+/** The small figure/vehicle icon next to the water-level reading — reuses the same drawing as the report form so a resident recognizes it as "the depth someone picked," not a new picture. */
+@Composable
+private fun ReadingCard(waterLevelId: String, severity: String) {
+    val severityColor = colorFor(severity)
+    InfoCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val option = resolveLevelOption(waterLevelId)
+            val bodyOption = option?.takeIf { it in BODY_LEVELS }
+            val vehicleOption = option?.takeIf { it in VEHICLE_LEVELS }
+            when {
+                bodyOption != null -> BodyIllustration(
+                    levelId = bodyOption.id,
+                    waterColor = severityColor,
+                    animate = false,
+                    modifier = Modifier.size(width = 42.dp, height = 58.dp),
+                )
+                vehicleOption != null -> VehicleGlyph(
+                    id = vehicleOption.id,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(36.dp),
+                )
+            }
+            Spacer(Modifier.size(16.dp))
+            val (fil, en) = severityTextFor(severity)
+            val label = bodyOption?.let { "Hanggang ${it.fil.lowercase()}" } ?: vehicleOption?.fil ?: fil
+            Column {
+                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(en, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
 @Composable
 private fun SeverityBadge(severity: String) {
+    val isConflict = severity == "SX"
+    val onColor = Color.White
     Box(
         modifier = Modifier
-            .background(colorFor(severity), RoundedCornerShape(6.dp))
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .then(
+                if (isConflict) Modifier.background(conflictHatchBrush()) else Modifier.background(colorFor(severity))
+            )
+            .padding(horizontal = 12.dp, vertical = 9.dp),
     ) {
-        Text(severity, color = Color.White, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (!isConflict) {
+                SeverityBadgeIcon(severity, tint = onColor, modifier = Modifier.size(15.dp))
+                Spacer(Modifier.size(6.dp))
+            }
+            Text(severity, color = onColor, fontWeight = FontWeight.Bold)
+        }
     }
 }
 
@@ -211,58 +337,102 @@ private fun InfoCard(modifier: Modifier = Modifier, content: @Composable android
 
 @Composable
 private fun ConfidenceSection(summary: FeatureSummary) {
-    InfoCard {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(bucketLabel(summary.bucket), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+    val colors = LocalKaAlertoColors.current
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row {
+            Box(modifier = Modifier.width(3.dp).background(MaterialTheme.colorScheme.onBackground))
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ConfidenceIcon(summary.bucket, tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(19.dp))
+                    Spacer(Modifier.size(9.dp))
+                    Text(bucketLabel(summary.bucket), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(10.dp))
+                LinearProgressIndicator(
+                    progress = { summary.confidence.toFloat() },
+                    modifier = Modifier.fillMaxWidth().height(6.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = colors.borderEmphasis,
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "${summary.confirmCount} nag-confirm · ${summary.disputeCount} nag-dispute",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
-        Spacer(Modifier.height(8.dp))
-        LinearProgressIndicator(progress = { summary.confidence.toFloat() }, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "${summary.confirmCount} nag-confirm · ${summary.disputeCount} nag-dispute",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
 @Composable
 private fun ConflictSection(summary: FeatureSummary) {
+    val colors = LocalKaAlertoColors.current
     Surface(
-        color = MaterialTheme.colorScheme.errorContainer,
-        shape = RoundedCornerShape(8.dp),
+        color = colors.criticalBg,
+        border = BorderStroke(1.5.dp, colors.criticalFg.copy(alpha = 0.35f)),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("⚠ Magkaibang ulat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onErrorContainer)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "Ituring na hindi madaanan hangga't walang nakakumpirma.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
-            Text(
-                "Conflicting reports — treat as impassable.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-            )
+        Row(modifier = Modifier.padding(16.dp)) {
+            WarningTriangleIcon(tint = colors.criticalFg, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(12.dp))
+            Column {
+                Text("Magkaibang ulat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.criticalFg)
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Ituring na hindi madaanan hangga't walang nakakumpirma.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    "Conflicting reports — treat as impassable.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
-    Spacer(Modifier.height(12.dp))
-    Text("ANG MGA ULAT", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Spacer(Modifier.height(4.dp))
+    Spacer(Modifier.height(16.dp))
+    Text("ANG DALAWANG ULAT", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(8.dp))
     // The two positions that actually disagree, not the whole history — one from
     // each side of the split, most recent first, matching the artboard's framing.
     val reports = summary.events.filter { it.severity != null }
     val dangerous = reports.filter { (it.severity == "S2" || it.severity == "S3") }.maxByOrNull { it.timestampMs }
     val safe = reports.filter { (it.severity == "S0" || it.severity == "S1") }.maxByOrNull { it.timestampMs }
-    listOfNotNull(dangerous, safe).sortedByDescending { it.timestampMs }.forEach { EventHistoryRow(it) }
-    Spacer(Modifier.height(12.dp))
+    listOfNotNull(dangerous, safe).sortedByDescending { it.timestampMs }.forEach { event ->
+        ConflictReportRow(event)
+        Spacer(Modifier.height(8.dp))
+    }
+    Spacer(Modifier.height(4.dp))
     Text(
         "Hindi namin pinipili kung sino ang tama, at hindi rin namin pinagsasama. Ipinapakita namin ang hindi pagkakasundo.",
-        style = MaterialTheme.typography.bodySmall,
+        style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
+}
+
+@Composable
+private fun ConflictReportRow(event: Event) {
+    val color = event.severity?.let { colorFor(it) } ?: Color.Gray
+    // Callers only ever pass events already filtered to severity != null.
+    val (fil, en) = severityTextFor(event.severity ?: "S0")
+    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+        Row(modifier = Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                timeFormat.format(event.timestampMs),
+                style = MaterialTheme.typography.bodyMedium,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.size(13.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                val levelLabel = event.waterLevel?.let { resolveLevelOption(it)?.fil ?: it }
+                Text(levelLabel?.let { "Hanggang $it" } ?: fil, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text("$en · nasa lugar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box(modifier = Modifier.size(width = 10.dp, height = 34.dp).background(color))
+        }
+    }
 }
 
 @Composable
