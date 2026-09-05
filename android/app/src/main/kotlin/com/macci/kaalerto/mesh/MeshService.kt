@@ -182,6 +182,10 @@ class MeshService : Service() {
         runCatching { connections.stopAllEndpoints() }
         connected.clear()
         nearbyActive = false
+        // Without this, the notification falls through to "Naghahanap ng kalapit na
+        // phone" — a false claim when the radio is actually off.  The error is cleared
+        // by setRunning(true) when startNearby() succeeds again.
+        MeshState.setError("Buksan ang Bluetooth para sa mesh")
     }
 
     private fun startNearby() {

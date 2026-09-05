@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 /** Unused until the day 4 reducer lands — see the class doc on [FeatureState]. */
 @Dao
 interface FeatureStateDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun upsert(state: FeatureState)
 
     @Query("SELECT * FROM feature_state")

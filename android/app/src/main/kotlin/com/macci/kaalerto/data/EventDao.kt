@@ -31,4 +31,9 @@ interface EventDao {
 
     @Query("SELECT COUNT(*) FROM events")
     suspend fun count(): Int
+
+    /** Expired events are stale data: the reducer already ignores them (isStale), but
+     *  they still consume storage and slow down the mesh diff. Run on cold start. */
+    @Query("DELETE FROM events WHERE expiresAt < :nowMs")
+    suspend fun deleteExpired(nowMs: Long)
 }

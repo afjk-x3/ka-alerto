@@ -1,10 +1,14 @@
 package com.macci.kaalerto
 
 import android.app.Application
+import com.macci.kaalerto.data.EventRepository
+import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.geofence.GeofenceNotifier
 import com.macci.kaalerto.notification.NotificationChannels
+import com.macci.kaalerto.sos.SosTransmitter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import org.maplibre.android.MapLibre
 
 /**
@@ -32,6 +36,16 @@ class KaAlertoApplication : Application() {
         super.onCreate()
         MapLibre.getInstance(this)
         NotificationChannels.ensureCreated(this)
+        // Purge expired events before anything observes the table — the geofence
+        // watcher and the SOS transmitter both start collecting immediately.
+        applicationScope.launch {
+            EventRepository(KaAlertoDatabase.getInstance(this@KaAlertoApplication).eventDao())
+                .deleteExpired()
+        }
         GeofenceNotifier(this).start(applicationScope)
+        // Day 8. Advances an active SOS's state machine from what is actually
+        // observable — see SosTransmitter. It lives here rather than in a screen
+        // because a request has to keep escalating while the phone is in a pocket.
+        SosTransmitter(this).start(applicationScope)
     }
 }

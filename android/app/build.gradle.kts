@@ -74,6 +74,8 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    implementation(libs.zxing.core)
+
     implementation(libs.play.services.location)
     implementation(libs.play.services.nearby)
 

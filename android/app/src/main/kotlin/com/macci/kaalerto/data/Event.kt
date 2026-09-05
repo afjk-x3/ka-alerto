@@ -39,4 +39,15 @@ data class Event(
     val note: String?,
     /** Only set on `type = "dispute"` events: cleared_now | worse | shallower | wrong_location. */
     val disputeReason: String? = null,
+    /**
+     * Structured, type-specific detail as JSON, for events whose content does not fit
+     * the columns above — today only the `sos*` family (see `sos/SosEvents.kt`), whose
+     * payload is a people count, medical needs and a water trend rather than a severity.
+     *
+     * It is a JSON string rather than more columns because the alternative is a table
+     * where most rows have most fields null, and because it travels over the mesh as
+     * part of the event with no extra handling. Nothing queries inside it: the reducer
+     * decodes it in memory, so there is no index to miss.
+     */
+    val payload: String? = null,
 )

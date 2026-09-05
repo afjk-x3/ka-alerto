@@ -20,4 +20,8 @@ class EventRepository(private val eventDao: EventDao) {
     suspend fun all(): List<Event> = eventDao.all()
 
     suspend fun isEmpty(): Boolean = eventDao.count() == 0
+
+    /** Purge expired events from the store. Safe to call on every cold start —
+     *  a row whose expiresAt is in the future is untouched. */
+    suspend fun deleteExpired(nowMs: Long = System.currentTimeMillis()) = eventDao.deleteExpired(nowMs)
 }

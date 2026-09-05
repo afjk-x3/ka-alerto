@@ -1,20 +1,45 @@
 package com.macci.kaalerto.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.map.MapScreen
+import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.nav.Screen
 import com.macci.kaalerto.report.ReportScreen
+import com.macci.kaalerto.sos.RescueCardScreen
+import com.macci.kaalerto.sos.SosAddContextRoute
+import com.macci.kaalerto.sos.SosHoldScreen
+import com.macci.kaalerto.sos.SosState
+import com.macci.kaalerto.sos.SosStatusScreen
+import com.macci.kaalerto.sos.SosViewModel
+import com.macci.kaalerto.sos.elapsedLabel
+import kotlinx.coroutines.delay
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
 @Composable
 fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onToggleStormMode: (() -> Unit)? = null) {
     var screen by remember { mutableStateOf<Screen>(Screen.Map) }
+    val sosViewModel: SosViewModel = viewModel()
+    val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
+    val meshStatus by MeshState.status.collectAsStateWithLifecycle()
+
+    // One clock for every SOS screen's elapsed counter, rather than a ticker per screen.
+    var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(activeSos != null) {
+        while (activeSos != null) {
+            nowMs = System.currentTimeMillis()
+            delay(1_000)
+        }
+    }
 
     when (val current = screen) {
         Screen.Map -> MapScreen(
@@ -24,6 +49,15 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
             // conflicted spot rather than a confirm/dispute — see detail/DetailSheet.kt.
             onStartReportAt = { lat, lon -> screen = Screen.Report(lat, lon, null) },
+            // Day 8: an already-running request reopens its status rather than starting
+            // a second one — five people pressing SOS is one rescue
+            // (docs/03-architecture.md §6.5, duplicate collapse), and the same person
+            // pressing twice certainly is.
+            onStartSos = { lat, lon, accuracy ->
+                val existing = activeSos
+                screen = if (existing != null) Screen.SosStatus(existing.sosId) else Screen.SosHold(lat, lon, accuracy)
+            },
+            sosActive = activeSos != null,
             stormMode = stormMode,
             onToggleStormMode = onToggleStormMode,
         )
@@ -51,6 +85,66 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
                 onBack = { screen = Screen.Map },
                 onSubmitted = { screen = Screen.Map },
             )
+        }
+
+        is Screen.SosHold -> SosHoldScreen(
+            modifier = modifier,
+            lat = current.lat,
+            lon = current.lon,
+            accuracyMeters = current.accuracyMeters,
+            onHoldComplete = {
+                sosViewModel.raise(current.lat, current.lon, current.accuracyMeters) { sosId ->
+                    screen = Screen.SosAddContext(sosId)
+                }
+            },
+            onCancel = { screen = Screen.Map },
+        )
+
+        is Screen.SosAddContext -> SosAddContextRoute(
+            modifier = modifier,
+            sosId = current.sosId,
+            viewModel = sosViewModel,
+            nowMs = nowMs,
+            onDone = { screen = Screen.SosStatus(current.sosId) },
+        )
+
+        is Screen.SosStatus -> {
+            val snapshot = sosViewModel.snapshots.collectAsStateWithLifecycle().value
+                .firstOrNull { it.sosId == current.sosId }
+            if (snapshot == null) {
+                LaunchedEffect(current.sosId) { screen = Screen.Map }
+            } else {
+                // The rescue card is a state, not a tap (design/README.md): once no
+                // channel has produced anything within the threshold, it raises itself.
+                LaunchedEffect(snapshot.state) {
+                    if (snapshot.state == SosState.UNREACHABLE) screen = Screen.SosRescueCard(current.sosId)
+                }
+                SosStatusScreen(
+                    modifier = modifier,
+                    snapshot = snapshot,
+                    meshStatus = meshStatus,
+                    elapsedLabel = elapsedLabel(snapshot.startedAtMs, nowMs),
+                    onMarkSafe = {
+                        sosViewModel.close(current.sosId, SosState.SAFE_SELF_RESOLVED)
+                        screen = Screen.Map
+                    },
+                    onShowRescueCard = { screen = Screen.SosRescueCard(current.sosId) },
+                )
+            }
+        }
+
+        is Screen.SosRescueCard -> {
+            val snapshot = sosViewModel.snapshots.collectAsStateWithLifecycle().value
+                .firstOrNull { it.sosId == current.sosId }
+            if (snapshot == null) {
+                LaunchedEffect(current.sosId) { screen = Screen.Map }
+            } else {
+                RescueCardScreen(
+                    modifier = modifier,
+                    snapshot = snapshot,
+                    onBack = { screen = Screen.SosStatus(current.sosId) },
+                )
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
@@ -52,6 +53,7 @@ import com.macci.kaalerto.mesh.MeshPermissions
 import com.macci.kaalerto.mesh.MeshService
 import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.net.rememberIsOnline
+import com.macci.kaalerto.sos.SosColors
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -78,6 +80,10 @@ private data class HomeDraft(val lat: Double, val lon: Double, val radiusMeters:
  * @param onStartReportAt Bubbles up when the day 4 conflict sheet's "I-check ko
  *   ngayon" is tapped — filing a fresh report is the resolution path for a
  *   conflicting feature, not a confirm/dispute (see detail/DetailSheet.kt).
+ * @param onStartSos Day 8's SOS path. Uses the same GPS-first, last-known-fallback
+ *   location as a report, but unlike [onStartReport] it never bounces to pick-mode:
+ *   asking someone to tap their own position on a map during a rescue is not an
+ *   acceptable fallback, so a coarse fix is used and its accuracy is shown instead.
  * @param stormMode / onToggleStormMode Day 5's dark-mode toggle — a manual condition
  *   the resident or barangay declares, not a system setting (docs/02-prd.md §6), so
  *   it's a button here rather than following `isSystemInDarkTheme()`.
@@ -92,6 +98,8 @@ fun MapScreen(
     onStartReport: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
     onEnterPickLocation: (() -> Unit)? = null,
     onStartReportAt: ((lat: Double, lon: Double) -> Unit)? = null,
+    onStartSos: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
+    sosActive: Boolean = false,
     stormMode: Boolean = false,
     onToggleStormMode: (() -> Unit)? = null,
 ) {
@@ -240,6 +248,23 @@ fun MapScreen(
             )
             onStartReport != null -> MapActionBar(
                 label = if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat",
+                sosActive = sosActive,
+                onSos = onStartSos?.let { start ->
+                    {
+                        scope.launch {
+                            // Best fix available, but never a blocker: §6.1 has the
+                            // request going out at t+0 with the last known position and
+                            // refining afterwards. A null here still opens the hold
+                            // screen at the demo centre rather than refusing.
+                            val location = fetchCurrentLocation(context)
+                            start(
+                                location?.latitude ?: DemoArea.centre.latitude,
+                                location?.longitude ?: DemoArea.centre.longitude,
+                                location?.accuracy,
+                            )
+                        }
+                    }
+                },
                 onClick = {
                     if (locatingReport) return@MapActionBar
                     locatingReport = true
@@ -302,17 +327,30 @@ private fun PickLocationBanner(onCancel: () -> Unit, modifier: Modifier = Modifi
 }
 
 /**
- * Map-Normal.dc.html's "Mag-ulat" bar — a full-width bar docked at the bottom of the
- * screen, not a floating rounded FAB. The artboard pairs it with an SOS button, which
- * this deliberately omits: SOS isn't built yet, and a button that does nothing would
- * misrepresent what the app can do.
+ * Map-Normal.dc.html's action bar: a full-width "Mag-ulat" bar plus the 88 dp round SOS
+ * button, not a floating rounded FAB.
+ *
+ * The SOS button was deliberately absent until day 8 — there was no SOS flow behind it,
+ * and a red button that does nothing is worse than no red button. It is here now
+ * because pressing it genuinely raises a request (`sos/`), so the artboard's layout and
+ * what the app can actually do have converged.
+ *
+ * [sosActive] flips the label to "AKTIBO", because while a request is out this button
+ * is a way back to its status, not a way to start a second one.
  */
 @Composable
-private fun MapActionBar(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun MapActionBar(
+    label: String,
+    onClick: () -> Unit,
+    onSos: (() -> Unit)?,
+    sosActive: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             modifier = Modifier
@@ -331,6 +369,29 @@ private fun MapActionBar(label: String, onClick: () -> Unit, modifier: Modifier 
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
+        }
+        if (onSos != null) {
+            Spacer(Modifier.size(14.dp))
+            Column(
+                modifier = Modifier
+                    .size(88.dp)
+                    .background(SosColors.Critical, CircleShape)
+                    .clickable(onClick = onSos),
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    "SOS",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = SosColors.CardBackground,
+                )
+                Text(
+                    if (sosActive) "aktibo" else "pindutin",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SosColors.CriticalText,
+                )
+            }
         }
     }
 }
