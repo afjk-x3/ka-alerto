@@ -6,13 +6,15 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 
 ---
 
-## Current state (updated 3 Sep 2026)
+## Current state (updated 5 Sep 2026)
 
 **The demo area is frozen: Barangay San Juan Bautista, San Nicolas, Ilocos Norte.** Every fixture, screenshot and route lives inside `DemoArea.kt`'s bounding box. Read that file's class doc before touching any coordinate in the project — it records the sourcing (two independent centroid sources agreeing within ~300 m, no official boundary polygon exists anywhere, and a landmark cluster ~1.3 km west was deliberately excluded because it is plausibly a *different* barangay's poblacion). **None of this has been walked or verified against a printed barangay map** — confirm with someone who knows the area before it goes anywhere near the barangay itself.
 
-**Day 0 fixtures are done except the actual OSM tile extract.** `android/app/src/main/assets/` has real, OSM-sourced seed reports (19, across S0–S3, including the deliberate conflicting pair for the Rule C/SX demo), evacuation centres (4 real named facilities, capacity figures explicitly marked as placeholders), and route GeoJSONs (3 real street centrelines). What's still missing is a downloaded, clipped `.osm.pbf` region extract for the offline tile pipeline — that's a separate step from the fixture JSON, and no `osmium`/`osmconvert`/`ogr2ogr` is installed locally yet.
+**Day 0 fixtures are now fully done, including the OSM tile extract.** `android/app/src/main/assets/` has real, OSM-sourced seed reports (19, across S0–S3, including the deliberate conflicting pair for the Rule C/SX demo), evacuation centres (4 real named facilities, capacity figures explicitly marked as placeholders), and route GeoJSONs (3 real street centrelines). `tools/osm-extract/demo-area.osm.pbf` (fetched 5 Sep 2026) is the region-clipped OSM extract for the offline tile pipeline — 10,239 nodes, 1,787 ways, 3 relations, verified against the same real streets and landmarks the other fixtures reference. It came from the official OSM API's `/api/0.6/map` bbox endpoint rather than a Geofabrik PH download clipped with `osmium`/`osmconvert`/`ogr2ogr` (none of which were installed, and the PH extract alone is ~600 MB) — same bbox-clipped `.osm.pbf` result, at the cost of only `pip install osmium` for the XML→PBF conversion. See `tools/osm-extract/README.md`. This is still just the source extract, not a built tile pack — the day 1 MBTiles-fallback build step is separate and not needed since `OfflineManager` already works (below).
 
 **Build day 1 (offline map tiles) is DONE and verified — on the API 34 emulator, not API 37.** `OfflineMapPack.kt` and `MapScreen.kt` implement the `OfflineManager` pre-download path. Full DoD confirmed by screenshot: airplane mode on, force-stop, cold relaunch, map renders the real demo area (`San Juan Bautista` label, Sotto Street, evacuation centres) from the 8-tile offline pack, zero network. Style is OpenFreeMap's Liberty (`tiles.openfreemap.org`) — not yet the self-hosted OSM-derived style the architecture doc calls for, but real cartographic detail with worldwide maxzoom-14 coverage, not the bundled-MBTiles fallback (not needed; `OfflineManager` works fine).
+
+**Build day 2 (event model + local store) is DONE and verified — same `API34_Test` emulator.** Room schema for `Event` and `FeatureState` (`android/.../data/`), an `EventRepository` deduplicating by content-hash primary key, a seed loader for `assets/seed_data.json`, and severity-colored map markers wired into `MapScreen` via a new `MapViewModel`. DoD confirmed by screenshot: airplane mode, force-stop, cold relaunch, all 19 seeded reports render at the correct real-world locations in the correct severity colors (amber S1, orange S2, red S3, blue S0), zero network. `FeatureState` is schema-only so far — nothing populates it yet; the reducer (Rules A–D, SX conflict detection) is day 4's job, and the seeded conflicting pair currently just renders as a single S3 dot with S0 occluded underneath.
 
 **Two hard-won toolchain findings, both now fixed in code — do not re-derive or revert them:**
 
@@ -73,7 +75,7 @@ design/        artboards/ (29 .dc.html) · canvas.json · screenshots/ · README
 android/       Gradle project — open THIS folder in Android Studio, not the repo root
 server/        Express + node:sqlite, ~150 lines, two endpoints
 dashboard/     one HTML page + MapLibre GL JS. Not a React app
-tools/         render-artboards.js · final-prd.js · ideation.js · check.py
+tools/         render-artboards.js · final-prd.js · ideation.js · check.py · osm-extract/ (day-0 OSM extract fetch + README)
 submissions/   one file per gate; doubles as release notes. README has the gate checklist
                Macci-PRD.md (added 5 Sep) is the living, editable twin of docs/02-prd.md —
                unlike docs/, this one IS in git. Update policy: don't edit its content

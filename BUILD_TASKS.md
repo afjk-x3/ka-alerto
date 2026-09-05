@@ -19,7 +19,7 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 - [x] Seed fixture JSON: 19 reports across S0–S3, real street coordinates, one deliberately conflicting pair → `android/app/src/main/assets/seed_data.json`
 - [x] Evacuation centres JSON: 4 real, OSM-confirmed facilities, capacity figures marked as unverified placeholders → `android/app/src/main/assets/evacuation_centres.json`
 - [x] Route GeoJSON lines: 3 real street centrelines → `android/app/src/main/assets/routes/`
-- [ ] **OSM map extract for offline tile building** — still not done. The fixtures above are data referencing real streets, not a downloaded/clipped `.osm.pbf` for the tile pipeline. Needed before the bundled-MBTiles fallback in build day 1. No `osmium`/`osmconvert`/`ogr2ogr` installed locally yet.
+- [x] **OSM map extract for offline tile building — done 5 Sep 2026.** `tools/osm-extract/demo-area.osm.pbf`, clipped to `DemoArea.bounds` (10,239 nodes, 1,787 ways, 3 relations). Fetched via the official OSM API's `/api/0.6/map` bbox endpoint instead of Geofabrik PH + `osmium`/`osmconvert`/`ogr2ogr` (none installed locally) — see `tools/osm-extract/README.md`. Source extract only; the day 1 MBTiles-fallback tile-build step itself is still not done.
 
 ### Node server skeleton
 - [x] Express app scaffolded, `node:sqlite` database initialized (`server/src/db.js`, `server/src/server.js`)
