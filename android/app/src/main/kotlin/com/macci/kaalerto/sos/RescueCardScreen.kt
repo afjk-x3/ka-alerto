@@ -70,14 +70,11 @@ fun RescueCardScreen(
     // one, so the card actually takes the screen to full brightness — and gives it back
     // on the way out, since nothing else in the app has any business running there.
     DisposableEffect(Unit) {
-        val activity = context as? Activity
-        val window = activity?.window
+        val window = (context as? Activity)?.window
         val previous = window?.attributes?.screenBrightness
-        window?.attributes = window?.attributes?.apply { screenBrightness = 1f }
+        window?.setBrightness(1f)
         onDispose {
-            if (window != null && previous != null) {
-                window.attributes = window.attributes.apply { screenBrightness = previous }
-            }
+            if (previous != null) window.setBrightness(previous)
             alarm.stop()
         }
     }
@@ -271,6 +268,18 @@ fun RescueCardScreen(
                 Text("Bumalik", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SosColors.CardInk)
             }
         }
+    }
+}
+
+/**
+ * `window.attributes` hands back the live `LayoutParams` the window manager is already
+ * holding, so mutating it in place and assigning it back is a self-assignment the
+ * framework may or may not notice. Copying first makes the change an actual change.
+ */
+private fun android.view.Window.setBrightness(value: Float) {
+    attributes = android.view.WindowManager.LayoutParams().apply {
+        copyFrom(attributes)
+        screenBrightness = value
     }
 }
 

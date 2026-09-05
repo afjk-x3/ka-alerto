@@ -21,7 +21,22 @@ class EventRepository(private val eventDao: EventDao) {
 
     suspend fun isEmpty(): Boolean = eventDao.count() == 0
 
-    /** Purge expired events from the store. Safe to call on every cold start —
-     *  a row whose expiresAt is in the future is untouched. */
-    suspend fun deleteExpired(nowMs: Long = System.currentTimeMillis()) = eventDao.deleteExpired(nowMs)
+    /**
+     * Purge long-expired events. Safe to call on every cold start.
+     *
+     * [RETENTION_AFTER_EXPIRY_MS] is the grace between an event expiring and being
+     * forgotten. It exists so an expired report still renders as stale for a while
+     * rather than vanishing — see [EventDao.deleteExpiredBefore].
+     */
+    suspend fun deleteExpired(nowMs: Long = System.currentTimeMillis()) =
+        eventDao.deleteExpiredBefore(nowMs - RETENTION_AFTER_EXPIRY_MS)
+
+    companion object {
+        /**
+         * 24 h. Long enough that a stale marker is visible for a full day after the
+         * report lapsed — the window in which "go and check this" is still useful
+         * advice — and short enough to bound both storage and the mesh diff.
+         */
+        const val RETENTION_AFTER_EXPIRY_MS = 24L * 60 * 60 * 1000
+    }
 }

@@ -32,8 +32,17 @@ interface EventDao {
     @Query("SELECT COUNT(*) FROM events")
     suspend fun count(): Int
 
-    /** Expired events are stale data: the reducer already ignores them (isStale), but
-     *  they still consume storage and slow down the mesh diff. Run on cold start. */
-    @Query("DELETE FROM events WHERE expiresAt < :nowMs")
-    suspend fun deleteExpired(nowMs: Long)
+    /**
+     * Purges events that expired long enough ago to be worth forgetting.
+     *
+     * The cutoff is **not** `expiresAt < now`, and that distinction is load-bearing.
+     * The reducer derives `isStale` as `now > max(expiresAt)`, so a feature can only
+     * render as the grey "Luma na — kailangang tingnan" marker the map legend
+     * advertises *while its expired events still exist*. Deleting at the instant of
+     * expiry means that after any cold start a stale road silently disappears from the
+     * map instead of prompting someone to go and check it — which is the opposite of
+     * what expiry is for. Callers pass `now - RETENTION_AFTER_EXPIRY_MS`.
+     */
+    @Query("DELETE FROM events WHERE expiresAt < :cutoffMs")
+    suspend fun deleteExpiredBefore(cutoffMs: Long)
 }

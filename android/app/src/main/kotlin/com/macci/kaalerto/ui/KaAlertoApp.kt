@@ -32,6 +32,14 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
     val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
     val meshStatus by MeshState.status.collectAsStateWithLifecycle()
 
+    // Which request has already had its rescue card raised for it. The card opens
+    // itself once, when a request first goes UNREACHABLE — not every time the status
+    // screen happens to be composed while it is still in that state. Without this the
+    // card's "Bumalik" is a trap: it returns to the status screen, the effect below
+    // fires again on the unchanged state, and the user is bounced straight back with no
+    // way to reach "Ligtas na ako".
+    var rescueCardRaisedFor by remember { mutableStateOf<String?>(null) }
+
     // One clock for every SOS screen's elapsed counter, rather than a ticker per screen.
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(activeSos != null) {
@@ -115,9 +123,13 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
                 LaunchedEffect(current.sosId) { screen = Screen.Map }
             } else {
                 // The rescue card is a state, not a tap (design/README.md): once no
-                // channel has produced anything within the threshold, it raises itself.
-                LaunchedEffect(snapshot.state) {
-                    if (snapshot.state == SosState.UNREACHABLE) screen = Screen.SosRescueCard(current.sosId)
+                // channel has produced anything within the threshold, it raises itself —
+                // once per request, see rescueCardRaisedFor.
+                LaunchedEffect(snapshot.state, snapshot.sosId) {
+                    if (snapshot.state == SosState.UNREACHABLE && rescueCardRaisedFor != snapshot.sosId) {
+                        rescueCardRaisedFor = snapshot.sosId
+                        screen = Screen.SosRescueCard(current.sosId)
+                    }
                 }
                 SosStatusScreen(
                     modifier = modifier,

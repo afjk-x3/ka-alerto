@@ -112,12 +112,27 @@ class SosQrTest {
     }
 
     @Test
-    fun `the code stays small enough to read off a phone screen`() {
+    fun `the code stays coarse enough to read off a phone screen`() {
         val matrix = encodeQr(snapshot.toCard().encode())
 
-        // A 150dp card region with a 4-module quiet zone leaves roughly 2.5 px per
-        // module at 3x density by version 41 (177 modules) — too fine for a camera
-        // pointed at a wet screen. Version 25 is 117 modules, which is comfortable.
-        assertTrue("QR grew to ${matrix.size} modules", matrix.size <= 117)
+        // The constraint that actually matters is not the module *count* but the module
+        // *size in pixels* once drawn, because that is what a camera has to resolve.
+        //
+        // The card draws the QR in a 150 dp box with a 4-module quiet zone each side.
+        // The worst realistic device is a budget phone at 2.0x density, so 300 px of
+        // box. QRCode.kt floors the module to a whole pixel, so:
+        //
+        //     modulePx = floor(300 / (modules + 8))
+        //
+        // Below 3 px per module the code starts failing against a real camera on a wet
+        // or cracked screen. 3 px needs modules + 8 <= 100, i.e. 92 modules — version 19.
+        // Measured on the API 34 emulator this payload produces 73 modules, decoded
+        // successfully straight out of a device screenshot, so the headroom is real.
+        val worstCaseBoxPx = 300
+        val modulePx = worstCaseBoxPx / (matrix.size + 8)
+        assertTrue(
+            "QR is ${matrix.size} modules -> ${modulePx}px per module on a 2x 150dp card",
+            modulePx >= 3,
+        )
     }
 }

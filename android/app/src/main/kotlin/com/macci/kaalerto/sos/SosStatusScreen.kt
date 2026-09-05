@@ -90,6 +90,12 @@ fun SosStatusScreen(
             ) {
                 Text("Ipakita ang rescue card", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = SosColors.PrimaryText)
             }
+
+            // Lets the last control scroll clear of the fixed footer. Without it the
+            // scroll area ends exactly at the button, so at rest the button is sliced
+            // through its own label — which reads as a rendering fault rather than as
+            // "there is more below", on the one screen that must not look broken.
+            Spacer(Modifier.size(16.dp))
         }
 
         if (snapshot.isActive) {
