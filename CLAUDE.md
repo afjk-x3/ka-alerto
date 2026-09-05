@@ -75,6 +75,10 @@ server/        Express + node:sqlite, ~150 lines, two endpoints
 dashboard/     one HTML page + MapLibre GL JS. Not a React app
 tools/         render-artboards.js · final-prd.js · ideation.js · check.py
 submissions/   one file per gate; doubles as release notes. README has the gate checklist
+               Macci-PRD.md (added 5 Sep) is the living, editable twin of docs/02-prd.md —
+               unlike docs/, this one IS in git. Update policy: don't edit its content
+               unilaterally; surface the proposed change and get an explicit decision first,
+               then update it and docs/02-prd.md together so they don't drift.
 ```
 
 **`docs/` is gitignored on purpose** (`.gitignore` lines 39–40). The user's decision: submission documents go up through each stage's file-upload field rather than living in the repository. Two consequences to hold onto:
