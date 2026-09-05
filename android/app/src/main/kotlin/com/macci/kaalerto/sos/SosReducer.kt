@@ -14,6 +14,19 @@ data class SosSnapshot(
     val authorName: String,
     /** True when this request was authored on this device rather than relayed in from a peer. */
     val isMine: Boolean,
+    /** Relayed in over the mesh rather than authored here — the queue's "dumating via mesh" count. */
+    val arrivedByMesh: Boolean,
+    /** How many devices this request crossed to get here. 0 when authored locally. */
+    val hopCount: Int,
+    /**
+     * The responder who last advanced this request, from the `sos_state` event that did
+     * it — the artboard's "Papunta na si Boy". Null while nobody has claimed it.
+     *
+     * This is the requester's *counterpart* name, and it travels the mesh unredacted on
+     * purpose: sos/SosMeshPolicy.kt strips the person asking for help, not the person
+     * volunteering to walk into floodwater for them.
+     */
+    val claimedByName: String?,
 ) {
     val isActive: Boolean get() = !state.isClosed
 }
@@ -41,10 +54,21 @@ object SosReducer {
 
         var state = SosState.QUEUED
         var context = requestPayload.context ?: SosContext()
+        var claimedByName: String? = null
 
         for ((event, payload) in events) {
             when (event.type) {
-                TYPE_SOS_STATE -> payload.state?.let { state = mergeSosState(state, it) }
+                TYPE_SOS_STATE -> payload.state?.let { incoming ->
+                    val merged = mergeSosState(state, incoming)
+                    // Only credit a transition that was actually adopted, and only one
+                    // a responder made. The requester's own QUEUED -> BEACONING and
+                    // "Ligtas na ako" must not put their name on the card as the
+                    // person coming to help.
+                    if (merged != state && merged.rank >= SosState.ACKNOWLEDGED.rank && !merged.isClosed) {
+                        claimedByName = event.authorName
+                    }
+                    state = merged
+                }
                 TYPE_SOS_AMEND -> payload.context?.let { context = context.mergedWith(it) }
             }
         }
@@ -59,6 +83,9 @@ object SosReducer {
             context = context,
             authorName = request.authorName,
             isMine = localAuthorId != null && request.authorId == localAuthorId,
+            arrivedByMesh = request.origin == "mesh",
+            hopCount = request.hopCount,
+            claimedByName = claimedByName,
         )
     }
 
@@ -79,4 +106,11 @@ object SosReducer {
      */
     fun activeMine(allEvents: List<Event>, localAuthorId: String?): SosSnapshot? =
         all(allEvents, localAuthorId).firstOrNull { it.isMine && it.isActive }
+
+    /**
+     * Everyone else's open requests, newest first — the responder queue's contents.
+     * Excludes this device's own, which belong on the requester's own status screen.
+     */
+    fun activeOthers(allEvents: List<Event>, localAuthorId: String?): List<SosSnapshot> =
+        all(allEvents, localAuthorId).filter { !it.isMine && it.isActive }
 }

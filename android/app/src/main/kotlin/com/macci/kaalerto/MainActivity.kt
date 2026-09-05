@@ -1,5 +1,6 @@
 package com.macci.kaalerto
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,12 +12,28 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.macci.kaalerto.sos.EXTRA_SOS_ID
 import com.macci.kaalerto.ui.KaAlertoApp
 import com.macci.kaalerto.ui.theme.KaAlertoTheme
 
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Set when the activity was launched from day 9's nearby-SOS alert. Kept as state so
+     * a second alert arriving while the app is already open still routes: onNewIntent
+     * fires rather than onCreate, and without this the tap would do nothing.
+     */
+    private var openSosId by mutableStateOf<String?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        openSosId = intent.getStringExtra(EXTRA_SOS_ID)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        openSosId = intent?.getStringExtra(EXTRA_SOS_ID)
         setContent {
             // Manual toggle, not isSystemInDarkTheme() — Storm mode is a condition
             // (night, rain, glare) the user or barangay declares, not a phone setting
@@ -29,7 +46,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    KaAlertoApp(stormMode = stormMode, onToggleStormMode = { stormMode = !stormMode })
+                    KaAlertoApp(
+                        stormMode = stormMode,
+                        onToggleStormMode = { stormMode = !stormMode },
+                        openSosId = openSosId,
+                    )
                 }
             }
         }

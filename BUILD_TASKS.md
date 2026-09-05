@@ -156,18 +156,27 @@ Whole path lives in `sos/`: SOSHold → SOSContext → SOSStatus → RescueCard,
 
 **Schema change: `Event.payload` (`String?`), DB version 3.** Structured type-specific detail as JSON, for events whose content does not fit the columns — today only the `sos*` family, whose payload is a people count, medical needs and a water trend rather than a severity. It travels over the mesh as part of the event with no extra handling. `fallbackToDestructiveMigration` was already set, so upgrading wipes and reseeds.
 
-### Day 9: SOS over mesh + acknowledgement
+### Day 9: SOS over mesh + acknowledgement — CODE COMPLETE 5 Sep 2026, **DoD NOT MET** (needs two phones)
 
 **The money demo — hard gate.**
 
-- [ ] SOS routes over Nearby at highest priority
-- [ ] Receiving device raises critical full-screen alert (distinct from flood notifications: sound, vibration, red)
-- [ ] Responder mode toggle exposing SOS list with Acknowledge button
-- [ ] Acknowledgement is an event propagating **back** over the mesh
-- [ ] Originator screen updates to "Barangay responder has seen your request"
-- [ ] Monotonic states: lower state cannot regress a higher one
-- **DoD:** Two airplane-mode phones. SOS on A → critical alert on B → acknowledge → A updates. Rehearse 10× before day 10
-- **If behind:** Demo one-way SOS; note the ack as designed-not-built. Try hard not to cut it — it's the emotional peak.
+Every step was exercised on one `API34_Test` emulator in airplane mode by injecting a peer's SOS into the store exactly as `MeshService` would have written it — redacted, `origin: mesh`, `hopCount: 2`. What that cannot prove is the radio hop itself; that still needs the phones (`SETUP_CHECKLIST.md`).
+
+- [x] SOS routes over Nearby — it is an `Event`, so days 6-7's anti-entropy exchange carries it with no new transport code. "Highest priority" is **not** implemented: the mesh sends one diff, unordered. Real P0/P1 queueing is `docs/03-architecture.md` §2.5 and is not in this build.
+- [x] Receiving device raises critical alert — `sos/SosAlertNotifier.kt` + `SosAlertWatcher.kt`, own channel, alarm stream, own vibration pattern, red, `CATEGORY_ALARM`. Confirmed posted on device (`channel=sos_nearby importance=4 category=alarm color=0xffc42b2b`). **Full-screen is best-effort**: since API 34 `USE_FULL_SCREEN_INTENT` is auto-granted only to calling/alarm apps, so the code checks `canUseFullScreenIntent()` and degrades to a max-priority heads-up rather than attaching an intent it cannot use.
+- [x] Responder mode toggle exposing SOS list with Acknowledge button — `sos/SosQueueScreen.kt`. The toggle lives on the nearby-SOS screen where the artboard already has "Magparehistro bilang responder", and its subtext says plainly that this is a demo stand-in for barangay activation (which is how it really works — CLAUDE.md's decision table).
+- [x] Acknowledgement is an event propagating **back** over the mesh — a `sos_state` event, identical in kind to the request. Verified in the DB after tapping: `sos_state · role=responder · state=EN_ROUTE`.
+- [x] Originator screen updates — §6.2's own requester-facing strings, driven by the fold: "Nakita na ng barangay responder ang hiling mo." then "Papunta na ang tulong."
+- [x] Monotonic states — `SosState.rank` + `mergeSosState`, with tests for out-of-order arrival and for a stale `BEACONING` failing to un-acknowledge a claimed request.
+- [x] **ACKNOWLEDGED + EN_ROUTE**, both, matching the artboard's own two buttons ("Nakita ko" / "Nakita ko — papunta na"). The queue card then shows "Papunta na si …" with the responder's real name.
+- [ ] **DoD NOT MET.** Two airplane-mode phones (SOS on A → critical alert on B → acknowledge → A updates) needs hardware this project does not have. Everything either side of the radio is verified; the radio is not.
+- **If behind:** Demo one-way SOS; note the ack as designed-not-built — *not taken; the ack round trip is built.*
+
+**The privacy conflict this day forced, and how it was resolved.** `SOSNearby.dc.html` tells a plain resident "Hindi ipinapakita ang eksaktong lokasyon o kung sino sila" and "Dinadala rin ito ng phone mo papunta sa iba — hindi mo ito kayang basahin". That last line is `docs/03-architecture.md` §6.5: relaying peers hold an **encrypted** payload. Ground rule 4 forbids crypto, and the mesh relays whole `Event` rows — so medical needs and the requester's name would have sat readable on every phone in the barangay, which is exactly the RA 10173 exposure the PRD flags.
+
+Resolved by **removing rather than encrypting** (`sos/SosMeshPolicy.kt`): what is not sent cannot be read off a relay. Medical needs and the requester's display name are stripped on the way out, irreversibly at the first hop. Coordinates, timestamp, hop data and the people count still travel — which is precisely what `QueueVolunteer.dc.html`'s footer already says a volunteer is entitled to ("lokasyon at bilang ng tao … ang detalyeng medikal ay hawak ng barangay official"), so the demo loses nothing. The *responder's* name is deliberately not stripped: the artboard's "Papunta na si Boy" is the point, and someone volunteering to walk into floodwater is entitled to be identified for it.
+
+**The residual, stated plainly:** coordinates still travel in the clear, because a rescue needs them and there is no key to hold them under. A non-responder's screen coarsens them to a dashed circle and a distance rounded to 50 m, but that is a display choice, not a guarantee — anyone dumping a relaying phone would find the exact point. Only real §6.5 encryption fixes that. Medical-to-officials is likewise designed-not-built. The artboard's "hindi mo ito kayang basahin" line is **changed on screen** to say what is actually true, rather than claiming a guarantee this build does not provide.
 
 ### Day 10: Official role + evacuation centres
 

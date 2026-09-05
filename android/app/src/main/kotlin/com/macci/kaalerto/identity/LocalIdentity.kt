@@ -18,6 +18,20 @@ object LocalIdentity {
     private const val PREFS_NAME = "kaalerto_identity"
     private const val KEY_AUTHOR_ID = "author_id"
     private const val KEY_AUTHOR_NAME = "author_name"
+    private const val KEY_RESPONDER = "responder_mode"
+
+    const val ROLE_RESIDENT = "resident"
+
+    /**
+     * BUILD_TASKS.md day 9's "responder mode toggle".
+     *
+     * In the real product a volunteer *applies* and the barangay *activates* them
+     * (CLAUDE.md's decision table, and docs/03-architecture.md §1.6.10's supersession
+     * note) — it is never self-granted. There is no barangay-side anything in this
+     * build, so the toggle stands in for that activation, and the UI that flips it says
+     * so in as many words rather than presenting it as a user setting.
+     */
+    const val ROLE_RESPONDER = "responder"
 
     data class Identity(val authorId: String, val authorName: String, val authorRole: String)
 
@@ -35,8 +49,18 @@ object LocalIdentity {
                 .apply()
         }
 
-        // No role switching exists yet (BUILD_TASKS.md day 10) — every locally-authored
-        // report is a resident report until then.
-        return Identity(authorId, authorName, authorRole = "resident")
+        val role = if (prefs.getBoolean(KEY_RESPONDER, false)) ROLE_RESPONDER else ROLE_RESIDENT
+        return Identity(authorId, authorName, authorRole = role)
     }
+
+    fun isResponder(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_RESPONDER, false)
+
+    /** Flipped only by the clearly-labelled demo control on the nearby-SOS screen. */
+    fun setResponder(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(KEY_RESPONDER, enabled).apply()
+    }
+
+    private fun prefs(context: Context) =
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 }

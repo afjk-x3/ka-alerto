@@ -5,6 +5,7 @@ import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.geofence.GeofenceNotifier
 import com.macci.kaalerto.notification.NotificationChannels
+import com.macci.kaalerto.sos.SosAlertWatcher
 import com.macci.kaalerto.sos.SosTransmitter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -47,5 +48,8 @@ class KaAlertoApplication : Application() {
         // observable — see SosTransmitter. It lives here rather than in a screen
         // because a request has to keep escalating while the phone is in a pocket.
         SosTransmitter(this).start(applicationScope)
+        // Day 9. Raises the critical alert when somebody else's SOS lands in the store,
+        // by whatever transport put it there.
+        SosAlertWatcher(this).start(applicationScope)
     }
 }

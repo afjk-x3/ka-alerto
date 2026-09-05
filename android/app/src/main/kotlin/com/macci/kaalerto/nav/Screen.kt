@@ -19,4 +19,8 @@ sealed interface Screen {
     data class SosAddContext(val sosId: String) : Screen
     data class SosStatus(val sosId: String) : Screen
     data class SosRescueCard(val sosId: String) : Screen
+
+    /** Day 9 — the receiving half. A resident's coarse view, and the responder queue. */
+    data class SosNearby(val sosId: String) : Screen
+    data object SosQueue : Screen
 }

@@ -23,6 +23,14 @@ object NotificationChannels {
      */
     const val CHANNEL_MESH = "mesh_status"
 
+    /**
+     * Someone nearby has asked for rescue. Deliberately its own channel, louder than
+     * `CHANNEL_CRITICAL` and separately silenceable: BUILD_TASKS.md day 9 wants this
+     * "distinct from flood notifications", and a resident who mutes flood chatter must
+     * not thereby mute a neighbour calling for help.
+     */
+    const val CHANNEL_SOS = "sos_nearby"
+
     fun ensureCreated(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
 
@@ -36,6 +44,23 @@ object NotificationChannels {
                 description = "S3 flood reports inside your home radius"
                 setBypassDnd(true)
                 enableVibration(true)
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_SOS, "Humihingi ng tulong sa malapit", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Someone nearby has requested rescue"
+                setBypassDnd(true)
+                enableVibration(true)
+                // A long, irregular pattern — it has to be distinguishable from a flood
+                // alert through a pocket, in the rain, at night.
+                vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 900)
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
             },
         )
         manager.createNotificationChannel(

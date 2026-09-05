@@ -36,6 +36,7 @@ import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.notification.NotificationChannels
+import com.macci.kaalerto.sos.redactForMesh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -326,7 +327,12 @@ class MeshService : Service() {
 
     private fun sendEvents(endpointIds: Set<String>, events: List<Event>) {
         if (endpointIds.isEmpty() || events.isEmpty()) return
-        for (batch in chunkForPayload(events)) {
+        // Day 9: strip an SOS's medical detail and the requester's name before it
+        // leaves this device. §6.5 wants that payload encrypted; with no crypto in this
+        // build the honest equivalent is not to send it at all — what is not sent
+        // cannot be read off a relaying phone. See sos/SosMeshPolicy.kt.
+        val outbound = events.map(::redactForMesh)
+        for (batch in chunkForPayload(outbound)) {
             val payload = Payload.fromBytes(encode(MeshMessage.Events(batch)))
             connections.sendPayload(endpointIds.toList(), payload)
         }

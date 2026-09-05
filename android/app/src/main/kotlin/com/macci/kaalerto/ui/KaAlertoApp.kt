@@ -11,6 +11,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalContext
+import com.macci.kaalerto.data.haversineMeters
+import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.map.MapScreen
 import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.nav.Screen
@@ -18,6 +22,8 @@ import com.macci.kaalerto.report.ReportScreen
 import com.macci.kaalerto.sos.RescueCardScreen
 import com.macci.kaalerto.sos.SosAddContextRoute
 import com.macci.kaalerto.sos.SosHoldScreen
+import com.macci.kaalerto.sos.SosNearbyScreen
+import com.macci.kaalerto.sos.SosQueueScreen
 import com.macci.kaalerto.sos.SosState
 import com.macci.kaalerto.sos.SosStatusScreen
 import com.macci.kaalerto.sos.SosViewModel
@@ -26,11 +32,27 @@ import kotlinx.coroutines.delay
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
 @Composable
-fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onToggleStormMode: (() -> Unit)? = null) {
+fun KaAlertoApp(
+    modifier: Modifier = Modifier,
+    stormMode: Boolean = false,
+    onToggleStormMode: (() -> Unit)? = null,
+    /** Set when the activity was opened by tapping day 9's nearby-SOS alert. */
+    openSosId: String? = null,
+) {
     var screen by remember { mutableStateOf<Screen>(Screen.Map) }
     val sosViewModel: SosViewModel = viewModel()
     val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
     val meshStatus by MeshState.status.collectAsStateWithLifecycle()
+    val isResponder by sosViewModel.isResponder.collectAsStateWithLifecycle()
+    val incoming by sosViewModel.incoming.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // Tapping the alert lands on the request it was about, not on the map. A responder
+    // goes straight to the queue; a resident gets the coarse nearby view.
+    LaunchedEffect(openSosId) {
+        val id = openSosId ?: return@LaunchedEffect
+        screen = if (LocalIdentity.isResponder(context)) Screen.SosQueue else Screen.SosNearby(id)
+    }
 
     // Which request has already had its rescue card raised for it. The card opens
     // itself once, when a request first goes UNREACHABLE — not every time the status
@@ -48,6 +70,14 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
             delay(1_000)
         }
     }
+
+    val snapshots by sosViewModel.snapshots.collectAsStateWithLifecycle()
+    // `snapshots` starts empty and fills on the first emission of the event Flow. A
+    // screen addressed by sosId must not read that initial empty list as "this request
+    // does not exist" and bounce back to the map — which is exactly what the nearby-SOS
+    // alert did: it routed correctly and was thrown straight back before a frame drew.
+    val snapshotsLoaded = snapshots.isNotEmpty()
+    fun snapshotFor(id: String) = snapshots.firstOrNull { it.sosId == id }
 
     when (val current = screen) {
         Screen.Map -> MapScreen(
@@ -117,10 +147,9 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
         )
 
         is Screen.SosStatus -> {
-            val snapshot = sosViewModel.snapshots.collectAsStateWithLifecycle().value
-                .firstOrNull { it.sosId == current.sosId }
+            val snapshot = snapshotFor(current.sosId)
             if (snapshot == null) {
-                LaunchedEffect(current.sosId) { screen = Screen.Map }
+                if (snapshotsLoaded) LaunchedEffect(current.sosId) { screen = Screen.Map }
             } else {
                 // The rescue card is a state, not a tap (design/README.md): once no
                 // channel has produced anything within the threshold, it raises itself —
@@ -145,11 +174,42 @@ fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onTog
             }
         }
 
-        is Screen.SosRescueCard -> {
-            val snapshot = sosViewModel.snapshots.collectAsStateWithLifecycle().value
-                .firstOrNull { it.sosId == current.sosId }
+        is Screen.SosNearby -> {
+            val snapshot = snapshotFor(current.sosId)
             if (snapshot == null) {
-                LaunchedEffect(current.sosId) { screen = Screen.Map }
+                if (snapshotsLoaded) LaunchedEffect(current.sosId) { screen = Screen.Map }
+            } else {
+                SosNearbyScreen(
+                    modifier = modifier,
+                    snapshot = snapshot,
+                    distanceMeters = HomeLocationStore.get(context)?.let {
+                        haversineMeters(it.lat, it.lon, snapshot.lat, snapshot.lon)
+                    },
+                    isResponder = isResponder,
+                    onBecomeResponder = {
+                        sosViewModel.setResponder(true)
+                        screen = Screen.SosQueue
+                    },
+                    onOpenQueue = { screen = Screen.SosQueue },
+                    onBack = { screen = Screen.Map },
+                )
+            }
+        }
+
+        Screen.SosQueue -> SosQueueScreen(
+            modifier = modifier,
+            requests = incoming,
+            myLat = HomeLocationStore.get(context)?.lat,
+            myLon = HomeLocationStore.get(context)?.lon,
+            onAcknowledge = { sosViewModel.advance(it, SosState.ACKNOWLEDGED) },
+            onEnRoute = { sosViewModel.advance(it, SosState.EN_ROUTE) },
+            onBack = { screen = Screen.Map },
+        )
+
+        is Screen.SosRescueCard -> {
+            val snapshot = snapshotFor(current.sosId)
+            if (snapshot == null) {
+                if (snapshotsLoaded) LaunchedEffect(current.sosId) { screen = Screen.Map }
             } else {
                 RescueCardScreen(
                     modifier = modifier,

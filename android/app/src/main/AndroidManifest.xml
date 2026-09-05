@@ -40,6 +40,12 @@
 
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Day 9's nearby-SOS alert. Since API 34 this is auto-granted only to calling and
+         alarm apps; for everyone else the user grants it in settings, and
+         NotificationManager.canUseFullScreenIntent() says which side we are on. The
+         alert degrades to a max-priority heads-up when it is not held — see
+         sos/SosAlertNotifier.kt. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <!-- Foreground Service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -58,9 +64,15 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.KaAlerto">
 
+        <!-- singleTop so tapping day 9's nearby-SOS alert reaches onNewIntent on the
+             already-running activity. With the default "standard" mode a tap on an
+             app that is already open resumes it without any callback at all, so the
+             alert's whole point — landing on the request it was about — silently does
+             nothing. Found by tapping it on the emulator. -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.KaAlerto">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

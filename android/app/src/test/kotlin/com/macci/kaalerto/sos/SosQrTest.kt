@@ -39,6 +39,9 @@ class SosQrTest {
         ),
         authorName = "Residente A1B2",
         isMine = true,
+        arrivedByMesh = false,
+        hopCount = 0,
+        claimedByName = null,
     )
 
     /** Renders the matrix exactly as [QrCode] does: whole-pixel modules, 4-module quiet zone. */

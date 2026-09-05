@@ -6,7 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.identity.LocalIdentity
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -15,7 +17,21 @@ import kotlinx.coroutines.launch
 class SosViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = EventRepository(KaAlertoDatabase.getInstance(application).eventDao())
-    private val identity = LocalIdentity.getOrCreate(application)
+    private var identity = LocalIdentity.getOrCreate(application)
+
+    private val _isResponder = MutableStateFlow(LocalIdentity.isResponder(application))
+    val isResponder: StateFlow<Boolean> = _isResponder.asStateFlow()
+
+    /**
+     * Day 9's responder toggle. Re-reads the identity so events authored from here on
+     * carry `authorRole = "responder"` — an acknowledgement has to say what the person
+     * making it was acting as.
+     */
+    fun setResponder(enabled: Boolean) {
+        LocalIdentity.setResponder(getApplication(), enabled)
+        identity = LocalIdentity.getOrCreate(getApplication())
+        _isResponder.value = enabled
+    }
 
     /**
      * Every SOS this device knows of, folded from the event log on each change — the
@@ -23,6 +39,11 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
      */
     val snapshots: StateFlow<List<SosSnapshot>> = repository.observeAll()
         .map { events -> SosReducer.all(events, identity.authorId) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Everyone else's open requests — the responder queue. */
+    val incoming: StateFlow<List<SosSnapshot>> = repository.observeAll()
+        .map { events -> SosReducer.activeOthers(events, identity.authorId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val activeMine: StateFlow<SosSnapshot?> = repository.observeAll()
@@ -61,7 +82,17 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun close(sosId: String, state: SosState) {
+    /**
+     * Day 9's acknowledgement. Writes a `sos_state` event exactly like any other, which
+     * is the whole trick: it rides the same mesh the request arrived on, back to the
+     * originator, with no server between them. Monotonicity is enforced in the fold, so
+     * an ack overtaking a BEACONING in flight still lands correctly.
+     */
+    fun advance(sosId: String, state: SosState) = write(sosId, state)
+
+    fun close(sosId: String, state: SosState) = write(sosId, state)
+
+    private fun write(sosId: String, state: SosState) {
         val snapshot = snapshotOf(sosId) ?: return
         viewModelScope.launch {
             repository.insert(
