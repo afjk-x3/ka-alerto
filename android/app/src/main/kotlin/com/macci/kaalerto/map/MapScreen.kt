@@ -31,6 +31,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.demo.DemoArea
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.location.LocationComponentActivationOptions
@@ -44,10 +46,11 @@ private val LOCATION_PERMISSIONS = arrayOf(
 )
 
 @Composable
-fun MapScreen(modifier: Modifier = Modifier) {
+fun MapScreen(modifier: Modifier = Modifier, viewModel: MapViewModel = viewModel()) {
     val context = LocalContext.current
     val pack = remember { OfflineMapPack(context) }
     val packState by pack.state.collectAsStateWithLifecycle()
+    val events by viewModel.events.collectAsStateWithLifecycle()
 
     var hasLocation by remember {
         mutableStateOf(
@@ -74,6 +77,7 @@ fun MapScreen(modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
         MapLibreMapView(
             showLocation = hasLocation,
+            events = events,
             modifier = Modifier.fillMaxSize(),
         )
         PackStatusBanner(
@@ -148,7 +152,7 @@ private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
  * reimplemented. Missing any of these callbacks leaks the GL surface.
  */
 @Composable
-private fun MapLibreMapView(showLocation: Boolean, modifier: Modifier = Modifier) {
+private fun MapLibreMapView(showLocation: Boolean, events: List<Event>, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -185,6 +189,7 @@ private fun MapLibreMapView(showLocation: Boolean, modifier: Modifier = Modifier
                     if (showLocation) {
                         enableBlueDot(map.locationComponent, context, style)
                     }
+                    updateEventMarkers(style, events)
                 }
             }
         },

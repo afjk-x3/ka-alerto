@@ -53,15 +53,17 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 
 **Decision:** If you hit 3pm and tiles aren't loading, abandon current path and switch before day ends.
 
-### Day 2: Event model + local store
+### Day 2: Event model + local store — DONE, verified 5 Sep 2026
 
-- [ ] Room database schema:
-  - `Event`: id, type, lat, lon, featureRef, severity, waterLevel, authorId, authorRole, timestampMs, expiresAt, origin, hopCount
-  - `FeatureState`: featureRef, severity, confidence, bucket, isConflicted, lastReportMs
-- [ ] `EventRepository` with deduplication by content-hash ID (5 lines, use immediately)
-- [ ] Seed loader reading fixture JSON on first launch
-- [ ] Map markers colored by severity from seeded events
-- **DoD:** App launches offline, shows 20 seeded markers in correct colors at correct places
+**DoD confirmed by screenshot on `API34_Test`:** airplane mode on, force-stop, cold relaunch → all 19 seeded markers render over the real demo area, colored by severity (amber S1, orange S2, red S3, blue S0), zero network. `Event.authorName` is also included (not in the original bullet list below) per the architecture guardrail that the author's display name is embedded in the event at creation, not looked up.
+
+- [x] Room database schema:
+  - `Event`: id, type, lat, lon, featureRef, severity, waterLevel, authorId, authorName, authorRole, timestampMs, expiresAt, origin, hopCount, note — `data/Event.kt`
+  - `FeatureState`: featureRef, severity, confidence, bucket, isConflicted, lastReportMs — `data/FeatureState.kt`. Schema only; nothing writes to it yet, the reducer that populates it is day 4.
+- [x] `EventRepository` with deduplication by content-hash ID (`data/EventRepository.kt`, `data/EventDao.kt`) — `OnConflictStrategy.IGNORE` on the id primary key, exactly the 5-line dedup story
+- [x] Seed loader reading `assets/seed_data.json` on first launch only (`data/SeedLoader.kt`) — resolves the fixture's `timestampMinutesAgo`/`ttlMinutes` offsets against wall clock at load time, per the fixture's own `_meta.schemaNote`
+- [x] Map markers colored by severity from seeded events (`map/EventMarkers.kt`, wired into `map/MapScreen.kt` via `map/MapViewModel.kt`) — one dot per event, not the feature-level reducer; the seeded conflicting pair (018/019, identical coordinates) renders as an S3 dot with the S0 dot fully occluded underneath, which is correct for what's built so far — the SX conflict render is day 4.
+- **DoD:** App launches offline, shows 19 seeded markers (actual fixture count — the original "20" here was written before the fixture was finalized) in correct colors at correct places
 
 ---
 
@@ -233,7 +235,7 @@ Cut anything else first.
 | Day | Feature | DoD | Status |
 |---|---|---|---|
 | 1 | Offline map | App launches offline, map renders, blue dot visible | ⬜ |
-| 2 | Event store + seeding | 20 markers on map, right colors, right places | ⬜ |
+| 2 | Event store + seeding | 20 markers on map, right colors, right places | ✅ |
 | 3 | Reporting flow | Report filed in <15s in airplane mode | ⬜ |
 | 4 | Confirm/dispute + reducer | Conflicting pair renders as SX, confirming moves bucket | ⬜ |
 | 5 | Notifications + filters | In-radius report triggers notification | ⬜ |
