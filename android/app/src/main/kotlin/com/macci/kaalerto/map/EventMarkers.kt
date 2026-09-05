@@ -2,6 +2,7 @@ package com.macci.kaalerto.map
 
 import android.graphics.Color
 import com.macci.kaalerto.data.Event
+import com.macci.kaalerto.ui.theme.SeverityColors
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
 import org.maplibre.android.style.layers.CircleLayer
@@ -13,14 +14,6 @@ import org.maplibre.geojson.Point
 
 private const val EVENTS_SOURCE_ID = "kaalerto-events"
 private const val EVENTS_LAYER_ID = "kaalerto-events-circles"
-
-// docs/03-architecture.md severity legend: S1 amber, S2 orange, S3 red. S0 ("reported
-// cleared") keeps a colour rather than disappearing, so historical risk stays visible.
-private const val COLOR_S0 = "#2196F3"
-private const val COLOR_S1 = "#FFC107"
-private const val COLOR_S2 = "#FF9800"
-private const val COLOR_S3 = "#F44336"
-private const val COLOR_UNKNOWN = "#9E9E9E"
 
 /**
  * Renders one marker per event, colored by severity.
@@ -50,11 +43,11 @@ fun updateEventMarkers(style: Style, events: List<Event>) {
             PropertyFactory.circleColor(
                 Expression.match(
                     Expression.get("severity"),
-                    Expression.color(Color.parseColor(COLOR_UNKNOWN)),
-                    Expression.stop("S0", Expression.color(Color.parseColor(COLOR_S0))),
-                    Expression.stop("S1", Expression.color(Color.parseColor(COLOR_S1))),
-                    Expression.stop("S2", Expression.color(Color.parseColor(COLOR_S2))),
-                    Expression.stop("S3", Expression.color(Color.parseColor(COLOR_S3))),
+                    Expression.color(Color.parseColor(SeverityColors.UNKNOWN)),
+                    Expression.stop("S0", Expression.color(Color.parseColor(SeverityColors.S0))),
+                    Expression.stop("S1", Expression.color(Color.parseColor(SeverityColors.S1))),
+                    Expression.stop("S2", Expression.color(Color.parseColor(SeverityColors.S2))),
+                    Expression.stop("S3", Expression.color(Color.parseColor(SeverityColors.S3))),
                 ),
             ),
             PropertyFactory.circleStrokeWidth(1.5f),

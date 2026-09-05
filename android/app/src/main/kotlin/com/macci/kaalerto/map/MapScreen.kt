@@ -8,9 +8,16 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -20,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,10 +42,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.location.fetchCurrentLocation
+import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
+import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 
 private val LOCATION_PERMISSIONS = arrayOf(
@@ -45,12 +57,30 @@ private val LOCATION_PERMISSIONS = arrayOf(
     Manifest.permission.ACCESS_COARSE_LOCATION,
 )
 
+/**
+ * @param onStartReport Reachable only in normal browsing mode. Tries GPS first and
+ *   falls back to [onEnterPickLocation] on no permission/no fix — "GPS primary,
+ *   map-tap fallback" (BUILD_TASKS.md day 3) — so the caller only needs to react to
+ *   whichever of the two callbacks actually fires.
+ * @param pickMode When true, a tap anywhere on the map calls [onLocationPicked]
+ *   instead of doing nothing; a cancel affordance calls [onCancelPick].
+ */
 @Composable
-fun MapScreen(modifier: Modifier = Modifier, viewModel: MapViewModel = viewModel()) {
+fun MapScreen(
+    modifier: Modifier = Modifier,
+    viewModel: MapViewModel = viewModel(),
+    pickMode: Boolean = false,
+    onLocationPicked: ((LatLng) -> Unit)? = null,
+    onCancelPick: (() -> Unit)? = null,
+    onStartReport: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
+    onEnterPickLocation: (() -> Unit)? = null,
+) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val pack = remember { OfflineMapPack(context) }
     val packState by pack.state.collectAsStateWithLifecycle()
     val events by viewModel.events.collectAsStateWithLifecycle()
+    var locatingReport by remember { mutableStateOf(false) }
 
     var hasLocation by remember {
         mutableStateOf(
@@ -78,6 +108,8 @@ fun MapScreen(modifier: Modifier = Modifier, viewModel: MapViewModel = viewModel
         MapLibreMapView(
             showLocation = hasLocation,
             events = events,
+            pickMode = pickMode,
+            onLocationPicked = onLocationPicked,
             modifier = Modifier.fillMaxSize(),
         )
         PackStatusBanner(
@@ -86,6 +118,58 @@ fun MapScreen(modifier: Modifier = Modifier, viewModel: MapViewModel = viewModel
                 .align(Alignment.TopCenter)
                 .fillMaxWidth(),
         )
+
+        if (pickMode) {
+            PickLocationBanner(
+                onCancel = { onCancelPick?.invoke() },
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp),
+            )
+        } else if (onStartReport != null) {
+            ExtendedFloatingActionButton(
+                text = { Text(if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat") },
+                icon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                onClick = {
+                    if (locatingReport) return@ExtendedFloatingActionButton
+                    locatingReport = true
+                    scope.launch {
+                        val location = fetchCurrentLocation(context)
+                        locatingReport = false
+                        if (location != null) {
+                            onStartReport(location.latitude, location.longitude, location.accuracy)
+                        } else {
+                            onEnterPickLocation?.invoke()
+                        }
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            )
+        }
+    }
+}
+
+/** Shown only while [MapScreen]'s pickMode is active — GPS's fallback path (BUILD_TASKS.md day 3). */
+@Composable
+private fun PickLocationBanner(onCancel: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.background(MaterialTheme.colorScheme.inverseSurface).padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "Tapikin ang mapa para itakda ang lokasyon",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+            )
+            Text(
+                "Tap the map to set the report location",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+            )
+        }
+        IconButton(onClick = onCancel) {
+            Icon(Icons.Filled.Close, contentDescription = "Kanselahin", tint = MaterialTheme.colorScheme.inverseOnSurface)
+        }
     }
 }
 
@@ -152,13 +236,20 @@ private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
  * reimplemented. Missing any of these callbacks leaks the GL surface.
  */
 @Composable
-private fun MapLibreMapView(showLocation: Boolean, events: List<Event>, modifier: Modifier = Modifier) {
+private fun MapLibreMapView(
+    showLocation: Boolean,
+    events: List<Event>,
+    pickMode: Boolean,
+    onLocationPicked: ((LatLng) -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     // onCreate must happen before onStart, and ON_CREATE may already have fired by the
     // time this composable enters, so it is called here rather than in the observer.
     val mapView = remember { MapView(context).apply { onCreate(null) } }
+    var maplibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
 
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
@@ -177,19 +268,42 @@ private fun MapLibreMapView(showLocation: Boolean, events: List<Event>, modifier
         }
     }
 
+    // Markers are pushed reactively once the style is loaded, instead of inside the
+    // AndroidView `update` block — that block used to call `setStyle` on every
+    // recomposition, which reloaded the whole style each time the event list changed.
+    LaunchedEffect(maplibreMap, events) {
+        maplibreMap?.style?.let { updateEventMarkers(it, events) }
+    }
+
+    DisposableEffect(maplibreMap, pickMode, onLocationPicked) {
+        val map = maplibreMap
+        if (map == null || !pickMode || onLocationPicked == null) {
+            onDispose { }
+        } else {
+            val listener = MapLibreMap.OnMapClickListener { latLng ->
+                onLocationPicked(latLng)
+                true
+            }
+            map.addOnMapClickListener(listener)
+            onDispose { map.removeOnMapClickListener(listener) }
+        }
+    }
+
     androidx.compose.ui.viewinterop.AndroidView(
         factory = { mapView },
         modifier = modifier,
         update = { view ->
-            view.getMapAsync { map ->
-                map.setStyle(DemoArea.STYLE_URL) { style ->
-                    map.moveCamera(
-                        CameraUpdateFactory.newLatLngZoom(DemoArea.centre, DemoArea.INITIAL_ZOOM)
-                    )
-                    if (showLocation) {
-                        enableBlueDot(map.locationComponent, context, style)
+            if (maplibreMap == null) {
+                view.getMapAsync { map ->
+                    map.setStyle(DemoArea.STYLE_URL) { style ->
+                        map.moveCamera(
+                            CameraUpdateFactory.newLatLngZoom(DemoArea.centre, DemoArea.INITIAL_ZOOM)
+                        )
+                        if (showLocation) {
+                            enableBlueDot(map.locationComponent, context, style)
+                        }
+                        maplibreMap = map
                     }
-                    updateEventMarkers(style, events)
                 }
             }
         },

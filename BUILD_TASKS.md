@@ -69,12 +69,15 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 
 ## Days 3–5 — V0 Core (Offline Reporting)
 
-### Day 3: Reporting flow
+### Day 3: Reporting flow — DONE, verified 5 Sep 2026
 
-- [ ] Water-level picker: icon grid with body silhouette (ankle/knee/waist/chest) + vehicle icons
-- [ ] Location input: GPS primary, map-tap fallback (skip snap-to-road)
-- [ ] Auto-derive severity from water level (S0–S3), show it, allow override
-- [ ] Report writes to local DB immediately, appears on map instantly
+**DoD confirmed on `API34_Test`, airplane mode, cold relaunch:** FAB → GPS fetch → Report screen with the exact copy/layout from `design/artboards/Report-Normal.dc.html` → pick a depth → severity auto-derives and shows → submit → back to Map → new marker renders instantly at the right place in the right color, with zero network. Also exercised the map-tap fallback path (GPS denied/no-fix) end to end. Both a GPS-sourced and a map-tap-sourced report round-tripped through the real local Room DB and rendered correctly.
+
+- [x] Water-level picker: `report/WaterLevel.kt`, `report/ReportScreen.kt`. Body scale (ankle/knee/waist/chest) copy and severity mapping lifted verbatim from `Report-Normal.dc.html`'s own embedded data, not reinvented. Vehicle scale (car/truck/motorcycle-only/nothing) added per this bullet's "+ vehicle icons" — no artboard specifies it, so its copy/mapping is grounded in `docs/03-architecture.md`'s own S1–S3 vehicle-passability text; see comments in `WaterLevel.kt`. Both scales get a dynamic Canvas-drawn illustration (`WaterLevelIllustration.kt`) rather than the design's hand-drawn SVG, which is host-specific to the design canvas.
+- [x] Location input (`location/LocationFetcher.kt`, wired through `map/MapScreen.kt`'s FAB and pick-mode): one-shot `FusedLocationProviderClient.getCurrentLocation` primary, falling back to a map-tap mode (tap listener on the existing MapLibre view, not a second map) on missing permission or no fix. No snap-to-road, per the bullet.
+- [x] Auto-derive severity from the selected depth, shown in a tappable banner; tapping opens a manual override dialog (`SeverityOverrideDialog` in `ReportScreen.kt`) that takes precedence until the depth selection changes again.
+- [x] `report/ReportSubmit.kt` writes directly to `EventRepository` (day 2) on submit; the map's existing `Flow`-backed marker rendering picks it up with no extra plumbing.
+- **Known gap, not scheduled anywhere:** no registration/onboarding screen exists yet (PRD §9), so `identity/LocalIdentity.kt` is a stand-in — a per-install generated placeholder name/id, clearly not a real collected identity. Real registration should land before this goes near an actual user.
 - **DoD:** In airplane mode, file a report in <15 seconds and see it on the map
 
 ### Day 4: Confirm/dispute + reducer
@@ -236,7 +239,7 @@ Cut anything else first.
 |---|---|---|---|
 | 1 | Offline map | App launches offline, map renders, blue dot visible | ⬜ |
 | 2 | Event store + seeding | 20 markers on map, right colors, right places | ✅ |
-| 3 | Reporting flow | Report filed in <15s in airplane mode | ⬜ |
+| 3 | Reporting flow | Report filed in <15s in airplane mode | ✅ |
 | 4 | Confirm/dispute + reducer | Conflicting pair renders as SX, confirming moves bucket | ⬜ |
 | 5 | Notifications + filters | In-radius report triggers notification | ⬜ |
 | 6 | Nearby Connections | Two phones exchange events over mesh (single-hop) | ⬜ |
