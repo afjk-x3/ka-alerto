@@ -11,6 +11,8 @@ object SeverityColors {
     const val S1 = "#F2A93B"
     const val S2 = "#E4682B"
     const val S3 = "#C42B2B"
+    /** Rule C conflict — deliberately not on the S0-S3 ladder (docs/03-architecture.md §4.4). */
+    const val SX = "#6A1B9A"
     const val UNKNOWN = "#9E9E9E"
 
     fun forSeverity(severity: String?): String = when (severity) {
@@ -18,6 +20,7 @@ object SeverityColors {
         "S1" -> S1
         "S2" -> S2
         "S3" -> S3
+        "SX" -> SX
         else -> UNKNOWN
     }
 }

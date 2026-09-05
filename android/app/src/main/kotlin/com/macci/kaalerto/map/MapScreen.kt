@@ -40,8 +40,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.macci.kaalerto.data.Event
+import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.location.fetchCurrentLocation
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -63,7 +64,10 @@ private val LOCATION_PERMISSIONS = arrayOf(
  *   map-tap fallback" (BUILD_TASKS.md day 3) — so the caller only needs to react to
  *   whichever of the two callbacks actually fires.
  * @param pickMode When true, a tap anywhere on the map calls [onLocationPicked]
- *   instead of doing nothing; a cancel affordance calls [onCancelPick].
+ *   instead of selecting a marker; a cancel affordance calls [onCancelPick].
+ * @param onStartReportAt Bubbles up when the day 4 conflict sheet's "I-check ko
+ *   ngayon" is tapped — filing a fresh report is the resolution path for a
+ *   conflicting feature, not a confirm/dispute (see detail/DetailSheet.kt).
  */
 @Composable
 fun MapScreen(
@@ -74,13 +78,15 @@ fun MapScreen(
     onCancelPick: (() -> Unit)? = null,
     onStartReport: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
     onEnterPickLocation: (() -> Unit)? = null,
+    onStartReportAt: ((lat: Double, lon: Double) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val pack = remember { OfflineMapPack(context) }
     val packState by pack.state.collectAsStateWithLifecycle()
-    val events by viewModel.events.collectAsStateWithLifecycle()
+    val featureSummaries by viewModel.featureSummaries.collectAsStateWithLifecycle()
     var locatingReport by remember { mutableStateOf(false) }
+    var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
 
     var hasLocation by remember {
         mutableStateOf(
@@ -107,9 +113,10 @@ fun MapScreen(
     Box(modifier = modifier.fillMaxSize()) {
         MapLibreMapView(
             showLocation = hasLocation,
-            events = events,
+            featureSummaries = featureSummaries,
             pickMode = pickMode,
             onLocationPicked = onLocationPicked,
+            onFeatureTapped = { featureRef -> selectedFeatureRef = featureRef },
             modifier = Modifier.fillMaxSize(),
         )
         PackStatusBanner(
@@ -144,6 +151,22 @@ fun MapScreen(
                 modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             )
         }
+    }
+
+    val selectedSummary = featureSummaries.firstOrNull { it.featureRef == selectedFeatureRef }
+    if (selectedSummary != null) {
+        DetailSheet(
+            summary = selectedSummary,
+            onDismiss = { selectedFeatureRef = null },
+            onCheckInPerson = { lat, lon ->
+                selectedFeatureRef = null
+                onStartReportAt?.invoke(lat, lon)
+            },
+        )
+    } else if (selectedFeatureRef != null) {
+        // The feature vanished from under the sheet (e.g. events reloaded) — don't
+        // leave a sheet open with nothing to show.
+        selectedFeatureRef = null
     }
 }
 
@@ -238,9 +261,10 @@ private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
 @Composable
 private fun MapLibreMapView(
     showLocation: Boolean,
-    events: List<Event>,
+    featureSummaries: List<FeatureSummary>,
     pickMode: Boolean,
     onLocationPicked: ((LatLng) -> Unit)?,
+    onFeatureTapped: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -271,18 +295,32 @@ private fun MapLibreMapView(
     // Markers are pushed reactively once the style is loaded, instead of inside the
     // AndroidView `update` block — that block used to call `setStyle` on every
     // recomposition, which reloaded the whole style each time the event list changed.
-    LaunchedEffect(maplibreMap, events) {
-        maplibreMap?.style?.let { updateEventMarkers(it, events) }
+    LaunchedEffect(maplibreMap, featureSummaries) {
+        maplibreMap?.style?.let { updateEventMarkers(it, featureSummaries) }
     }
 
-    DisposableEffect(maplibreMap, pickMode, onLocationPicked) {
+    // Pick-mode (setting a report location) and marker selection are mutually
+    // exclusive per current screen state, so only one click listener is ever live.
+    DisposableEffect(maplibreMap, pickMode, onLocationPicked, onFeatureTapped) {
         val map = maplibreMap
-        if (map == null || !pickMode || onLocationPicked == null) {
+        if (map == null) {
             onDispose { }
-        } else {
+        } else if (pickMode && onLocationPicked != null) {
             val listener = MapLibreMap.OnMapClickListener { latLng ->
                 onLocationPicked(latLng)
                 true
+            }
+            map.addOnMapClickListener(listener)
+            onDispose { map.removeOnMapClickListener(listener) }
+        } else {
+            val listener = MapLibreMap.OnMapClickListener { latLng ->
+                val featureRef = nearestTappedFeatureRef(map, latLng)
+                if (featureRef != null) {
+                    onFeatureTapped(featureRef)
+                    true
+                } else {
+                    false
+                }
             }
             map.addOnMapClickListener(listener)
             onDispose { map.removeOnMapClickListener(listener) }
@@ -308,6 +346,36 @@ private fun MapLibreMapView(
             }
         },
     )
+}
+
+/** Screen-pixel tap tolerance, since exactly hitting an 8dp circle is unreliable — see below. */
+private const val TAP_TOLERANCE_PX = 24f
+
+/**
+ * A raw point query against [EVENTS_LAYER_ID] frequently misses the marker entirely —
+ * these circles render small, and nearby seeded reports (e.g. the conflict pair and
+ * its Sotto Street neighbours) sit close enough on screen that a point-exact hit test
+ * is unreasonably strict. Querying a small rect around the tap and then picking
+ * whichever candidate's own coordinate is nearest the tap (rather than whatever order
+ * queryRenderedFeatures happens to return) handles both problems at once.
+ */
+private fun nearestTappedFeatureRef(map: MapLibreMap, tapped: LatLng): String? {
+    val screenPoint = map.projection.toScreenLocation(tapped)
+    val rect = android.graphics.RectF(
+        screenPoint.x - TAP_TOLERANCE_PX,
+        screenPoint.y - TAP_TOLERANCE_PX,
+        screenPoint.x + TAP_TOLERANCE_PX,
+        screenPoint.y + TAP_TOLERANCE_PX,
+    )
+    val candidates = map.queryRenderedFeatures(rect, EVENTS_LAYER_ID)
+    val nearest = candidates.minByOrNull { feature ->
+        val point = feature.geometry() as? org.maplibre.geojson.Point ?: return@minByOrNull Float.MAX_VALUE
+        val featureScreen = map.projection.toScreenLocation(LatLng(point.latitude(), point.longitude()))
+        val dx = featureScreen.x - screenPoint.x
+        val dy = featureScreen.y - screenPoint.y
+        dx * dx + dy * dy
+    }
+    return nearest?.getStringProperty(FEATURE_REF_PROPERTY)
 }
 
 @SuppressLint("MissingPermission") // guarded by the showLocation flag at the call site

@@ -11,15 +11,6 @@ data class WaterLevelOption(
     val severity: String,
 )
 
-/** Severity-tier copy, shared by every scale so an override always shows the canonical text for the tier it lands on, not whichever option happened to produce it. */
-private val SEVERITY_TEXT = mapOf(
-    "S1" to ("Madaanan, mag-ingat" to "Passable with caution"),
-    "S2" to ("Hindi madaanan ng sasakyan" to "Impassable for cars"),
-    "S3" to ("Hindi madaanan" to "Impassable for all"),
-)
-
-fun severityTextFor(severity: String): Pair<String, String> = SEVERITY_TEXT[severity] ?: ("Hindi tiyak" to "Unknown")
-
 /**
  * Exact FIL/EN copy and severity mapping lifted from
  * design/artboards/Report-Normal.dc.html's own `levels` data — that artboard is the
@@ -56,12 +47,4 @@ val VEHICLE_LEVELS = listOf(
 fun levelsFor(mode: ReportMode): List<WaterLevelOption> = when (mode) {
     ReportMode.BODY -> BODY_LEVELS
     ReportMode.VEHICLE -> VEHICLE_LEVELS
-}
-
-/** Severity-dependent TTL in minutes — same table as the seed fixtures use. */
-fun ttlMinutesFor(severity: String): Long = when (severity) {
-    "S1" -> 120L
-    "S2" -> 240L
-    "S3" -> 360L
-    else -> 60L
 }

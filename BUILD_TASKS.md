@@ -80,20 +80,23 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 - **Known gap, not scheduled anywhere:** no registration/onboarding screen exists yet (PRD §9), so `identity/LocalIdentity.kt` is a stand-in — a per-install generated placeholder name/id, clearly not a real collected identity. Real registration should land before this goes near an actual user.
 - **DoD:** In airplane mode, file a report in <15 seconds and see it on the map
 
-### Day 4: Confirm/dispute + reducer
+### Day 4: Confirm/dispute + reducer — DONE, verified 5 Sep 2026
 
 **The intellectual core — give this a full day.**
 
-- [ ] Detail sheet: severity, water level, age, confirm/dispute counts, confidence bucket, source
-- [ ] Confirm action, dispute action with follow-up (cleared now / worse / shallower / wrong location)
-- [ ] Reducer as pure function:
-  - Weighted counts: weight = role × proximity × exponential time decay
-  - **Rule B:** De-escalation needs ≥2 proximate confirmations OR one official event
-  - **Rule C:** Substantial weight on both dangerous and safe readings → SX (conflicting, hatched)
-  - Buckets: Unverified / Likely / Confirmed / Official
-  - Stale: desaturated, dashed, age label ("Last confirmed 3h ago")
-- **DoD:** Seeded conflicting pair renders as SX. Confirming moves the bucket visibly
-- **If behind:** Rules B and C only, skip decay refinement
+**DoD confirmed on `API34_Test`, airplane mode, cold relaunch:** the seeded conflicting pair (018/019) renders as a distinct purple SX marker with a thicker stroke, and its detail sheet shows the "Magkaibang ulat" conflict card with both underlying reports listed. Confirming a normal (non-conflicting) seeded S2 report moved its bucket from Unverified to Likely live in the open sheet, with no manual refresh — the whole chain (Room insert → Flow → reducer recompute → Compose recomposition) is reactive end to end. Disputing with "Humupa na" (cleared now) correctly wrote severity S0; a single dispute did not by itself lower the seeded feature's displayed severity, matching Rule B.
+
+- [x] Detail sheet (`detail/DetailSheet.kt`): severity/SX badge, water level + severity text, age, "PAANO DUMATING" (origin/hop count), confidence bucket with progress bar, confirm/dispute counts, and up to 5 history rows with author name + role. Layout and copy for the non-conflict and conflict states are lifted from `design/artboards/DetailConfirmed-Normal.dc.html` and `DetailConflict-Normal.dc.html` respectively, including the exact "Malapit ka ba? Tulungan mo kaming i-check." line.
+- [x] Confirm action ("Tama") and dispute action ("Iba na") with the four follow-ups (`detail/ConfirmDisputeSubmit.kt`) — cleared now → S0, worse/shallower → one severity tier up/down from the currently displayed severity, wrong location → no severity (recorded, excluded from weighting). Both fetch the acting device's own GPS position first, same one-shot flow as day 3's report location, so the reducer can weight the action by real proximity.
+- [x] Reducer as a pure function (`data/Reducer.kt`) — deliberately a simplified reading of `docs/03-architecture.md` §4-5, matching this bullet's own literal spec rather than the fuller certificate/sensor-tier/independence-discounting system (no crypto in this build, ground rule 4):
+  - Weight = role (resident 1.0 / responder 2.5 / official 5.0) × proximity (100/500/2000 m bands from the architecture doc) × `exp(-age/τ)`, τ = the same per-severity TTL table as the seed fixtures and `report/WaterLevel.kt`.
+  - **Rule A** (fast escalation) and **Rule B** (≥2 proximate observations at a lower tier, or one official event, to de-escalate) implemented as: the highest claimed severity with real weight is the ceiling, overridable downward only when a lower tier clears the day-4-literal 2-observer bar.
+  - **Rule C**: both a "dangerous" (S2/S3) and a "safe" (S0/S1) reading with substantial weight, and no de-escalation bar met → severity `"SX"`. Rendered as a distinct purple marker (not literal hatching — day 2/3's markers are points, not line/polygon road segments, so a hatch pattern has nothing to apply to at this stage).
+  - **Rule D**: any official-role event pins severity and bucket `Official` outright, clearing any conflict flag.
+  - Confidence via the Wilson score lower bound (`docs/03-architecture.md` §5.3, z≈1.44), buckets at the doc's own 0.35/0.65 thresholds, with the "single report is always Unverified" clause enforced explicitly rather than left to floating-point luck.
+  - Stale = the feature's most recent contributing event has itself decayed past its own TTL; rendered desaturated (45% opacity) on the map, per the day-4 bullet.
+- [x] New reports (`report/ReportSubmit.kt`) now get a geohash-8 `featureRef` instead of `null` — day 3 correctly skipped road-snapping, but day 4's reducer needs *something* to group same-spot reports by, and a geohash cell is the fallback `docs/03-architecture.md`'s own schema names.
+- **Known gap:** map-marker tap-to-select needed a rect-based, nearest-feature hit test (`map/MapScreen.kt`'s `nearestTappedFeatureRef`) rather than an exact point query — small circle markers sitting close together (like the conflict pair next to its Sotto Street neighbours) made exact-point hits unreliably miss. Not a design defect, just Android touch-target reality; documented in code.
 
 ### Day 5: Notifications + filters
 
@@ -240,7 +243,7 @@ Cut anything else first.
 | 1 | Offline map | App launches offline, map renders, blue dot visible | ⬜ |
 | 2 | Event store + seeding | 20 markers on map, right colors, right places | ✅ |
 | 3 | Reporting flow | Report filed in <15s in airplane mode | ✅ |
-| 4 | Confirm/dispute + reducer | Conflicting pair renders as SX, confirming moves bucket | ⬜ |
+| 4 | Confirm/dispute + reducer | Conflicting pair renders as SX, confirming moves bucket | ✅ |
 | 5 | Notifications + filters | In-radius report triggers notification | ⬜ |
 | 6 | Nearby Connections | Two phones exchange events over mesh (single-hop) | ⬜ |
 | 7 | Nearby — multi-hop | Three-phone relay, C receives via B | ⬜ |

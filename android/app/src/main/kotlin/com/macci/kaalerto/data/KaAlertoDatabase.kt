@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [Event::class, FeatureState::class], version = 1, exportSchema = false)
+@Database(entities = [Event::class, FeatureState::class], version = 2, exportSchema = false)
 abstract class KaAlertoDatabase : RoomDatabase() {
     abstract fun eventDao(): EventDao
     abstract fun featureStateDao(): FeatureStateDao
@@ -19,7 +19,11 @@ abstract class KaAlertoDatabase : RoomDatabase() {
                     context.applicationContext,
                     KaAlertoDatabase::class.java,
                     "kaalerto.db",
-                ).build().also { instance = it }
+                )
+                    // No migrations written yet — acceptable pre-release, since local
+                    // data is a replica that reseeds itself, never the source of truth.
+                    .fallbackToDestructiveMigration(dropAllTables = true)
+                    .build().also { instance = it }
             }
     }
 }

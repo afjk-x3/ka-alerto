@@ -29,4 +29,6 @@ data class Event(
     val origin: String,
     val hopCount: Int,
     val note: String?,
+    /** Only set on `type = "dispute"` events: cleared_now | worse | shallower | wrong_location. */
+    val disputeReason: String? = null,
 )

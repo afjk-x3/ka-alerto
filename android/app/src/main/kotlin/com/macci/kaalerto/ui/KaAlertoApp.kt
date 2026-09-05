@@ -21,6 +21,9 @@ fun KaAlertoApp(modifier: Modifier = Modifier) {
             modifier = modifier,
             onStartReport = { lat, lon, accuracy -> screen = Screen.Report(lat, lon, accuracy) },
             onEnterPickLocation = { screen = Screen.PickLocation },
+            // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
+            // conflicted spot rather than a confirm/dispute — see detail/DetailSheet.kt.
+            onStartReportAt = { lat, lon -> screen = Screen.Report(lat, lon, null) },
         )
 
         Screen.PickLocation -> MapScreen(

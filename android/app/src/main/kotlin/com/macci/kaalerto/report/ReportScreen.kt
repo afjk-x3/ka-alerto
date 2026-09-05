@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.macci.kaalerto.data.severityTextFor
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
 

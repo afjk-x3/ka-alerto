@@ -4,7 +4,9 @@ import android.content.Context
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
+import com.macci.kaalerto.data.ttlMinutesFor
 import com.macci.kaalerto.identity.LocalIdentity
+import com.macci.kaalerto.location.geohashEncode
 import java.util.UUID
 
 /**
@@ -28,8 +30,9 @@ suspend fun submitReport(
         lat = lat,
         lon = lon,
         // No road-network graph exists yet, and BUILD_TASKS.md day 3 explicitly says to
-        // skip snap-to-road, so a freshly authored report has no featureRef.
-        featureRef = null,
+        // skip snap-to-road — a geohash cell is the fallback docs/03-architecture.md's
+        // own schema names, and it's what lets day 4's reducer group same-spot reports.
+        featureRef = geohashEncode(lat, lon),
         severity = severity,
         waterLevel = level.id,
         authorId = identity.authorId,
