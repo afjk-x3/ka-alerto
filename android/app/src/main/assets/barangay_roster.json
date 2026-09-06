@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "demo": true,
+    "area": "Barangay San Juan Bautista, San Nicolas, Ilocos Norte",
+    "description": "Seats only, deliberately no names. The Sangguniang Barangay composition (one Punong Barangay, seven Kagawad, one SK Chairperson) is set by RA 7160 and is therefore real; WHO holds each seat in this barangay has not been collected, and inventing names for real elected officials would be fabrication. A device claims a seat and that claim travels under the claimant's own display name.",
+    "authoritySource": "PLACEHOLDER — this roster is not issued or verified by the barangay. Claiming a seat is an unverified assertion; see identity/RoleEvents.kt.",
+    "legalBasis": "RA 7160 (Local Government Code of 1991) Sec. 387 — composition of the sangguniang barangay."
+  },
+  "seats": [
+    { "id": "pb", "title": "Punong Barangay", "kind": "executive", "canPostOfficialStatus": true },
+    { "id": "kag-1", "title": "Kagawad — Purok 1", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "kag-2", "title": "Kagawad — Purok 2", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "kag-3", "title": "Kagawad — Purok 3", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "kag-4", "title": "Kagawad — Purok 4", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "kag-5", "title": "Kagawad — Purok 5", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "kag-6", "title": "Kagawad — Purok 6", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "kag-7", "title": "Kagawad — Purok 7", "kind": "sangguniang_barangay", "canPostOfficialStatus": true },
+    { "id": "sk", "title": "SK Chairperson", "kind": "sangguniang_kabataan", "canPostOfficialStatus": true }
+  ]
+}

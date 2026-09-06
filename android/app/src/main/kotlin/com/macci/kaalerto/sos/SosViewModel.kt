@@ -17,27 +17,18 @@ import kotlinx.coroutines.launch
 class SosViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = EventRepository(KaAlertoDatabase.getInstance(application).eventDao())
-    private var identity = LocalIdentity.getOrCreate(application)
-
-    private val _role = MutableStateFlow(LocalIdentity.role(application))
-    val role: StateFlow<String> = _role.asStateFlow()
-
-    /** Responder *or* official — both see the rescue queue. */
-    val isResponder: StateFlow<Boolean> = _role
-        .map { it != LocalIdentity.ROLE_RESIDENT }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, LocalIdentity.isResponder(application))
-
     /**
-     * Day 9's responder toggle, generalised to day 10's three roles. Re-reads the
-     * identity so events authored from here on carry the new role *and* the matching
-     * display name — an acknowledgement or an official ruling has to say what the
-     * person making it was acting as.
+     * Re-read on every use, not captured once.
+     *
+     * Day 9's `setRole` used to refresh this by hand; the 6 September role rebuild moved
+     * role ownership to [com.macci.kaalerto.identity.RoleViewModel], and a cached copy
+     * here would quietly keep authoring events as whatever this device was when the
+     * ViewModel was constructed — an acknowledgement stamped `authorRole = "resident"`
+     * from a phone that is now a responder. `authorId` never changes, so the flows below
+     * are unaffected either way; it is the role and the display name that move.
      */
-    fun setRole(role: String) {
-        LocalIdentity.setRole(getApplication(), role)
-        identity = LocalIdentity.getOrCreate(getApplication())
-        _role.value = role
-    }
+    private val identity: LocalIdentity.Identity
+        get() = LocalIdentity.getOrCreate(getApplication())
 
     /**
      * Every SOS this device knows of, folded from the event log on each change — the
@@ -52,11 +43,48 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
         .map { events -> SosReducer.activeOthers(events, identity.authorId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * The official queue: other people's open requests, grouped by proximity and ordered
+     * with `QueueOfficial.dc.html`'s false-alarm demotion applied. Folded from the same
+     * event stream as everything else, so an incoming mark from another official over
+     * the mesh reorders this list with no extra plumbing.
+     */
+    val incidents: StateFlow<List<SosIncident>> = repository.observeAll()
+        .map { events ->
+            officialQueue(SosReducer.activeOthers(events, identity.authorId), foldTriage(events))
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     val activeMine: StateFlow<SosSnapshot?> = repository.observeAll()
         .map { events -> SosReducer.activeMine(events, identity.authorId) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun snapshotOf(sosId: String): SosSnapshot? = snapshots.value.firstOrNull { it.sosId == sosId }
+
+    /**
+     * `QueueOfficial.dc.html`'s "Markahan: walang emergency", and its undo.
+     *
+     * Guarded on the *current* role rather than trusted from the screen: this is the one
+     * action in the app that makes a future emergency harder to see, so an official who
+     * has since been stood down must not still be able to author one. `foldTriage`
+     * enforces the same rule on receipt — this stops a bad write leaving the mark
+     * standing on the originating phone alone.
+     */
+    fun markFalseAlarm(incident: SosIncident, undo: Boolean) {
+        val author = identity
+        if (author.authorRole != LocalIdentity.ROLE_OFFICIAL) return
+        viewModelScope.launch {
+            repository.insert(
+                falseAlarmEvent(
+                    official = author,
+                    request = incident.primary,
+                    subjectAuthorId = incident.primary.authorId,
+                    nowMs = System.currentTimeMillis(),
+                    undo = undo,
+                ),
+            )
+        }
+    }
 
     /**
      * Writes the request and returns its id immediately. FR-4.3 and

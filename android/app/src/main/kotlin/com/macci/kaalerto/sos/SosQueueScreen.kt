@@ -46,16 +46,20 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun SosQueueScreen(
-    requests: List<SosSnapshot>,
+    incidents: List<SosIncident>,
     myLat: Double?,
     myLon: Double?,
     onAcknowledge: (String) -> Unit,
     onEnRoute: (String) -> Unit,
+    /** True for the official tier — QueueOfficial.dc.html's extra column of judgement. */
+    isOfficial: Boolean = false,
+    onMarkFalseAlarm: ((SosIncident) -> Unit)? = null,
+    onUndoFalseAlarm: ((SosIncident) -> Unit)? = null,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
-    val open = requests.filter { it.isActive }
+    val open = incidents.flatMap { it.all }
 
     Column(
         modifier = modifier
@@ -77,7 +81,7 @@ fun SosQueueScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "Responder · ${com.macci.kaalerto.demo.DemoArea.BARANGAY_NAME}",
+                    "${if (isOfficial) "Kagawad" else "Responder"} · ${com.macci.kaalerto.demo.DemoArea.BARANGAY_NAME}",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -130,9 +134,12 @@ fun SosQueueScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                open.forEach { request ->
+                incidents.forEach { incident ->
+                    val request = incident.primary
                     RequestCard(
                         request = request,
+                        incident = incident,
+                        isOfficial = isOfficial,
                         distanceMeters = if (myLat != null && myLon != null) {
                             haversineMeters(myLat, myLon, request.lat, request.lon)
                         } else {
@@ -140,6 +147,8 @@ fun SosQueueScreen(
                         },
                         onAcknowledge = { onAcknowledge(request.sosId) },
                         onEnRoute = { onEnRoute(request.sosId) },
+                        onMarkFalseAlarm = onMarkFalseAlarm?.let { act -> { act(incident) } },
+                        onUndoFalseAlarm = onUndoFalseAlarm?.let { act -> { act(incident) } },
                     )
                 }
                 Spacer(Modifier.size(8.dp))
@@ -171,9 +180,13 @@ fun SosQueueScreen(
 @Composable
 private fun RequestCard(
     request: SosSnapshot,
+    incident: SosIncident,
+    isOfficial: Boolean,
     distanceMeters: Double?,
     onAcknowledge: () -> Unit,
     onEnRoute: () -> Unit,
+    onMarkFalseAlarm: (() -> Unit)?,
+    onUndoFalseAlarm: (() -> Unit)?,
 ) {
     val colors = LocalKaAlertoColors.current
     val claimed = request.state.rank >= SosState.ACKNOWLEDGED.rank
@@ -229,6 +242,13 @@ private fun RequestCard(
                     if (request.context.isEmpty) Chip("Walang dagdag na detalye")
                 }
 
+                if (incident.size > 1) NearbyReportsNote(incident)
+                if (incident.falseAlarm != null) {
+                    FalseAlarmBanner(incident, isOfficial, onUndoFalseAlarm)
+                } else if (isOfficial && incident.priorFalseAlarms > 0) {
+                    PriorMarksNote(incident.priorFalseAlarms)
+                }
+
                 if (claimed) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(13.dp),
@@ -258,10 +278,119 @@ private fun RequestCard(
                         AckButton("Nakita ko", filled = false, onClick = onAcknowledge)
                     }
                 }
+
+                // Last, and visually quietest, on purpose: the card's job is to get
+                // someone dispatched. Marking is the exception, not the default read.
+                if (isOfficial && incident.falseAlarm == null && onMarkFalseAlarm != null) {
+                    Column(
+                        modifier = Modifier.padding(start = 13.dp, end = 13.dp, bottom = 13.dp),
+                    ) {
+                        AckButton("Markahan: walang emergency", filled = false, onClick = onMarkFalseAlarm)
+                    }
+                }
             }
         }
     }
 }
+
+/**
+ * QueueOfficial.dc.html's "3 ulat mula sa iisang bahay — isang insidente", with the
+ * claim it can actually support.
+ *
+ * The artboard says *house*; GPS cannot. Accuracy on this build has been seen between
+ * ±5 m and ±100 m, so the note states the radius and the worst accuracy in the group and
+ * lets the official decide. Every grouped request is listed underneath — a queue that
+ * hid one because something nearby looked like it would be the worst bug this screen
+ * could have.
+ */
+@Composable
+private fun NearbyReportsNote(incident: SosIncident) {
+    val colors = LocalKaAlertoColors.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 13.dp, end = 13.dp, top = 10.dp)
+            .background(colors.recessedSurface)
+            .padding(11.dp),
+    ) {
+        Text(
+            "${incident.size} ulat sa loob ng ${SAME_INCIDENT_RADIUS_M.toInt()} m — maaaring iisang insidente",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        incident.worstAccuracyM?.let {
+            Text(
+                "Hanggang ±${it.roundToInt()} m ang tiyak ng lokasyon — maaari itong magkahiwalay na bahay.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.size(6.dp))
+        incident.all.forEach { request ->
+            Text(
+                "· ${"%.4f, %.4f".format(request.lat, request.lon)} · ${request.context.people ?: "?"} tao",
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** A standing mark, always named to whoever made it, and liftable by any official. */
+@Composable
+private fun FalseAlarmBanner(
+    incident: SosIncident,
+    isOfficial: Boolean,
+    onUndo: (() -> Unit)?,
+) {
+    val colors = LocalKaAlertoColors.current
+    val mark = incident.falseAlarm ?: return
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 13.dp, end = 13.dp, top = 10.dp)
+            .background(colors.warningBg)
+            .padding(11.dp),
+    ) {
+        Text(
+            "Minarkahan: walang emergency",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = colors.warningFg,
+        )
+        Text(
+            "${mark.byName} · ${timeFormat.format(java.util.Date(mark.atMs))}. " +
+                "Nasa ibaba ito ng listahan — hindi tinanggal.",
+            fontSize = 12.sp,
+            color = colors.warningFg,
+        )
+        if (isOfficial && onUndo != null) {
+            Spacer(Modifier.size(8.dp))
+            AckButton("Bawiin ang marka", filled = false, onClick = onUndo)
+        }
+    }
+}
+
+/**
+ * The artboard's "bababa ang pagkakasunod ng susunod na request ng device na ito", shown
+ * rather than applied silently. A responder looking at a demoted request is entitled to
+ * know it is demoted, and that the demotion is about the device's history and not about
+ * this request, which nobody has judged.
+ */
+@Composable
+private fun PriorMarksNote(priorFalseAlarms: Int) {
+    Text(
+        "$priorFalseAlarms naunang maling alarma mula sa device na ito. Nasa ibaba ito ng " +
+            "listahan — pero hindi pa nasusuri ang request na ito.",
+        fontSize = 12.sp,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 13.dp, end = 13.dp, top = 10.dp),
+    )
+}
+
+private val timeFormat = java.text.SimpleDateFormat("h:mm a", java.util.Locale.US)
 
 @Composable
 private fun AckButton(label: String, filled: Boolean, onClick: () -> Unit) {

@@ -108,6 +108,14 @@ fun MapScreen(
     onOpenRoles: (() -> Unit)? = null,
     onOpenEvac: (() -> Unit)? = null,
     onOpenOfficialStatus: ((featureRef: String) -> Unit)? = null,
+    /**
+     * Day 9's rescue queue. Non-null only for a responder or an official — and without
+     * it the queue has no inbound link but an incoming SOS alert, which is why switching
+     * role used to change nothing visible. See [RoleActionStrip].
+     */
+    onOpenQueue: (() -> Unit)? = null,
+    /** Open requests from other people, for the strip's count. */
+    openRequestCount: Int = 0,
     stormMode: Boolean = false,
     onToggleStormMode: (() -> Unit)? = null,
 ) {
@@ -203,6 +211,15 @@ fun MapScreen(
                 onRoleClick = onOpenRoles,
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        if (showChrome && onOpenQueue != null) {
+            RoleActionStrip(
+                role = role,
+                openRequestCount = openRequestCount,
+                onOpenQueue = onOpenQueue,
                 modifier = Modifier.fillMaxWidth(),
             )
         }

@@ -37,6 +37,9 @@ import com.macci.kaalerto.sos.SosNearbyScreen
 import com.macci.kaalerto.sos.SosQueueScreen
 import com.macci.kaalerto.sos.SosState
 import com.macci.kaalerto.sos.SosStatusScreen
+import com.macci.kaalerto.identity.ManualRoleScreen
+import com.macci.kaalerto.identity.RoleMode
+import com.macci.kaalerto.identity.RoleViewModel
 import com.macci.kaalerto.sos.SosViewModel
 import com.macci.kaalerto.sos.elapsedLabel
 import kotlinx.coroutines.delay
@@ -54,8 +57,13 @@ fun KaAlertoApp(
     val sosViewModel: SosViewModel = viewModel()
     val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
     val meshStatus by MeshState.status.collectAsStateWithLifecycle()
-    val isResponder by sosViewModel.isResponder.collectAsStateWithLifecycle()
-    val role by sosViewModel.role.collectAsStateWithLifecycle()
+    // Day 10's roles, rebuilt as a fold over the event log (identity/RoleReducer.kt).
+    // This device's role is derived, never set: what appears here is what every other
+    // phone in the barangay computes from the same events.
+    val roleViewModel: RoleViewModel = viewModel()
+    val roleState by roleViewModel.state.collectAsStateWithLifecycle()
+    val isResponder by roleViewModel.isResponder.collectAsStateWithLifecycle()
+    val role by roleViewModel.role.collectAsStateWithLifecycle()
     val incoming by sosViewModel.incoming.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -117,6 +125,11 @@ fun KaAlertoApp(
             onOpenRoles = { screen = Screen.Roles },
             onOpenEvac = { screen = Screen.EvacCentres },
             onOpenOfficialStatus = { featureRef -> screen = Screen.OfficialStatus(featureRef) },
+            // The rescue queue's only other way in is an incoming SOS alert, so without
+            // this a responder with no live emergency cannot reach the screen their role
+            // exists for. Null for a resident, which is what hides the strip.
+            onOpenQueue = if (isResponder) ({ screen = Screen.SosQueue }) else null,
+            openRequestCount = incoming.size,
             stormMode = stormMode,
             onToggleStormMode = onToggleStormMode,
         )
@@ -208,8 +221,15 @@ fun KaAlertoApp(
                     },
                     isResponder = isResponder,
                     onBecomeResponder = {
-                        sosViewModel.setRole(LocalIdentity.ROLE_RESPONDER)
-                        screen = Screen.SosQueue
+                        if (RoleMode.EVENT_SOURCED) {
+                            // No longer a self-grant. Applying is all a resident can do;
+                            // the role screen is where they find out if anyone answered.
+                            roleViewModel.applyAsResponder()
+                            screen = Screen.Roles
+                        } else {
+                            roleViewModel.setRoleForTesting(LocalIdentity.ROLE_RESPONDER)
+                            screen = Screen.SosQueue
+                        }
                     },
                     onOpenQueue = { screen = Screen.SosQueue },
                     onBack = { screen = Screen.Map },
@@ -217,12 +237,29 @@ fun KaAlertoApp(
             }
         }
 
-        Screen.Roles -> RoleScreen(
-            modifier = modifier,
-            current = role,
-            onSelect = { sosViewModel.setRole(it) },
-            onBack = { screen = Screen.Map },
-        )
+        // Two role screens, one flag. See identity/RoleMode.kt — the event-sourced flow
+        // is one-way by design, which is right for a barangay and wrong for a bench, so
+        // it is parked while the app is being exercised by hand.
+        Screen.Roles -> if (RoleMode.EVENT_SOURCED) {
+            RoleScreen(
+                modifier = modifier,
+                state = roleState,
+                myAuthorId = roleViewModel.myAuthorId,
+                unclaimedSeats = roleViewModel.unclaimedSeats(roleState),
+                onClaimSeat = { roleViewModel.claimSeat(it) },
+                onApply = { roleViewModel.applyAsResponder() },
+                onGrant = { roleViewModel.grant(it) },
+                onRevoke = { roleViewModel.revoke(it) },
+                onBack = { screen = Screen.Map },
+            )
+        } else {
+            ManualRoleScreen(
+                modifier = modifier,
+                current = role,
+                onSelect = { roleViewModel.setRoleForTesting(it) },
+                onBack = { screen = Screen.Map },
+            )
+        }
 
         Screen.EvacCentres -> {
             val centres = remember { loadEvacCentres(context) }
@@ -270,15 +307,22 @@ fun KaAlertoApp(
             }
         }
 
-        Screen.SosQueue -> SosQueueScreen(
-            modifier = modifier,
-            requests = incoming,
-            myLat = HomeLocationStore.get(context)?.lat,
-            myLon = HomeLocationStore.get(context)?.lon,
-            onAcknowledge = { sosViewModel.advance(it, SosState.ACKNOWLEDGED) },
-            onEnRoute = { sosViewModel.advance(it, SosState.EN_ROUTE) },
-            onBack = { screen = Screen.Map },
-        )
+        Screen.SosQueue -> {
+            val incidents by sosViewModel.incidents.collectAsStateWithLifecycle()
+            val isOfficial = role == LocalIdentity.ROLE_OFFICIAL
+            SosQueueScreen(
+                modifier = modifier,
+                incidents = incidents,
+                myLat = HomeLocationStore.get(context)?.lat,
+                myLon = HomeLocationStore.get(context)?.lon,
+                onAcknowledge = { sosViewModel.advance(it, SosState.ACKNOWLEDGED) },
+                onEnRoute = { sosViewModel.advance(it, SosState.EN_ROUTE) },
+                isOfficial = isOfficial,
+                onMarkFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = false) }) else null,
+                onUndoFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = true) }) else null,
+                onBack = { screen = Screen.Map },
+            )
+        }
 
         is Screen.SosRescueCard -> {
             val snapshot = snapshotFor(current.sosId)

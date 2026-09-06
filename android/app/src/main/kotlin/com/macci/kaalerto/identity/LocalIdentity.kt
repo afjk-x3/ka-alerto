@@ -14,11 +14,13 @@ import java.util.UUID
  * visible to every other device per CLAUDE.md's decision that report authorship is
  * public, so it must not look like a real person's name it never collected.
  *
- * **Roles are not self-granted in the real product.** A volunteer applies and the
- * barangay activates them; an official's authority comes from holding barangay office
- * (CLAUDE.md's decision table, `docs/03-architecture.md` §1.6.10's supersession note).
- * There is no barangay-side anything in this build, so [setRole] stands in for that
- * activation, and every screen that flips it says so in as many words.
+ * **Roles are not self-granted.** A volunteer applies and the barangay activates them;
+ * an official's authority comes from holding barangay office (CLAUDE.md's decision
+ * table, `docs/03-architecture.md` §1.6.10's supersession note). That is now the actual
+ * mechanism rather than a stand-in: roles are events, folded by [foldRoles] over the
+ * same append-only log as everything else, and this object no longer has a setter a
+ * screen can call. What is stored here is a *cache* of that fold — see
+ * [cacheDerivedRole].
  */
 object LocalIdentity {
     private const val PREFS_NAME = "kaalerto_identity"
@@ -38,7 +40,17 @@ object LocalIdentity {
 
     val ALL_ROLES = listOf(ROLE_RESIDENT, ROLE_RESPONDER, ROLE_OFFICIAL)
 
-    data class Identity(val authorId: String, val authorName: String, val authorRole: String)
+    data class Identity(
+        val authorId: String,
+        val authorName: String,
+        val authorRole: String,
+        /**
+         * The four characters kept across roles, so [displayName] can re-form the name
+         * when a role changes. Defaulted from [authorId] the same way [getOrCreate]
+         * derives it, so a hand-built Identity in a test does not have to restate it.
+         */
+        val suffix: String = authorId.takeLast(4).uppercase(),
+    )
 
     fun getOrCreate(context: Context): Identity {
         val prefs = prefs(context)
@@ -55,7 +67,7 @@ object LocalIdentity {
         }
 
         val role = role(context)
-        return Identity(authorId, displayName(role, suffix), role)
+        return Identity(authorId, displayName(role, suffix), role, suffix)
     }
 
     /**
@@ -78,7 +90,36 @@ object LocalIdentity {
 
     fun isOfficial(context: Context): Boolean = role(context) == ROLE_OFFICIAL
 
-    fun setRole(context: Context, role: String) {
+    /**
+     * Write down what [foldRoles] most recently said this device's role is.
+     *
+     * This is a projection, not a source of truth — delete it and the next fold puts it
+     * back. It exists because the guardrail in CLAUDE.md says the author's name and role
+     * are embedded in an event *at creation*, so a receiving device renders them offline
+     * with no lookup; and because the submitters that need it ([com.macci.kaalerto.report.submitReport],
+     * `ConfirmDisputeSubmit`, `SosEvents`, `OfficialSubmit`, `EvacSubmit`) are on the
+     * write path, where "nothing may await the network" applies just as much as on the
+     * render path. Re-folding the whole log inside each of them to answer a question
+     * already answered a frame ago would be the wrong trade.
+     *
+     * Only [RoleViewModel] calls this, and only with a value it just derived.
+     */
+    fun cacheDerivedRole(context: Context, role: String) {
+        if (role(context) == role) return
+        prefs(context).edit().putString(KEY_ROLE, role).apply()
+    }
+
+    /**
+     * The superseded day-10 self-grant, alive only while [RoleMode.EVENT_SOURCED] is
+     * `false` so that one device can walk every role by hand.
+     *
+     * Delete this together with [ManualRoleScreen] when the flag flips. It is exactly
+     * the thing CLAUDE.md's decision table says roles must not be — a role you can give
+     * yourself — and leaving it reachable in a shipped build would undo the rebuild
+     * regardless of what the fold says.
+     */
+    fun setRoleForTesting(context: Context, role: String) {
+        check(!RoleMode.EVENT_SOURCED) { "Roles are event-sourced; nothing may set one directly." }
         prefs(context).edit().putString(KEY_ROLE, role).apply()
     }
 

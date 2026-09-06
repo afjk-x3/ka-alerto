@@ -38,6 +38,7 @@ class SosQrTest {
             trend = "Tumataas",
         ),
         authorName = "Residente A1B2",
+        authorId = "local-a1b2",
         isMine = true,
         arrivedByMesh = false,
         hopCount = 0,
