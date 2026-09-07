@@ -86,6 +86,8 @@ fun OnboardingScreen(
     /** The home pin, found by GPS on entry. Null while looking, or if nothing came. */
     home: Pair<Double, Double>?,
     accuracyMeters: Float?,
+    /** Readable label for [home], when one could be resolved. Null offline. */
+    placeName: String?,
     locating: Boolean,
     onLocate: () -> Unit,
     onPickOnMap: () -> Unit,
@@ -263,9 +265,14 @@ fun OnboardingScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(Modifier.weight(1f)) {
+                            // Name on top, coordinates beneath. The name is the thing a
+                            // person can actually check against what they see out of the
+                            // window; the coordinates are what the app stores and acts on,
+                            // and stay visible so the label is never the only evidence.
                             Text(
                                 when {
-                                    home != null -> "%.5f, %.5f".format(home.first, home.second)
+                                    placeName != null -> placeName
+                                    home != null -> "Nakuha ang lokasyon"
                                     locating -> "Hinahanap ang lokasyon mo…"
                                     else -> "Hindi makuha ang lokasyon"
                                 },
@@ -276,14 +283,32 @@ fun OnboardingScreen(
                             Text(
                                 when {
                                     home != null && accuracyMeters != null ->
-                                        "GPS ±${accuracyMeters.toInt()} m · tingnan kung tama"
-                                    home != null -> "Nakatakda · tingnan kung tama"
+                                        "%.5f, %.5f · GPS ±%d m".format(
+                                            home.first,
+                                            home.second,
+                                            accuracyMeters.toInt(),
+                                        )
+                                    home != null -> "%.5f, %.5f · nakatakda".format(home.first, home.second)
                                     locating -> "Sandali lang"
                                     else -> "Ituro na lang sa mapa"
                                 },
                                 fontSize = 12.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (home != null) {
+                                Text(
+                                    if (placeName != null) {
+                                        "Tingnan kung tama"
+                                    } else {
+                                        // Offline the geocoder returns nothing. Say that,
+                                        // rather than leaving a blank where a name was.
+                                        "Walang pangalan ng lugar offline — tingnan sa mapa"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         Spacer(Modifier.size(10.dp))
                         Text(
@@ -318,8 +343,13 @@ fun OnboardingScreen(
                                 color = colors.warningFg,
                             )
                             Text(
-                                "Ang mapa at mga ulat ay para sa ${DemoArea.BARANGAY_NAME} lang. " +
-                                    "Puwede ka pa ring mag-SOS, pero walang mapa at ulat sa lugar mo.",
+                                // Corrected once the home pack existed: there *will*
+                                // be a map now, so saying there will not be would be
+                                // the same false statement in the other direction.
+                                "Ida-download ang mapa ng lugar mo pagpindot mo ng Magsimula, " +
+                                    "habang may signal ka pa. Pero ang mga ulat ng baha ay para sa " +
+                                    "${DemoArea.BARANGAY_NAME} lang — walang ulat sa lugar mo. " +
+                                    "Gumagana pa rin ang SOS.",
                                 fontSize = 12.sp,
                                 color = colors.warningFg,
                             )

@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.location.describePlace
 import com.macci.kaalerto.location.fetchAccurateLocation
 import com.macci.kaalerto.location.fetchCurrentLocation
 import org.maplibre.android.geometry.LatLng
@@ -25,7 +26,10 @@ import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.evac.submitEvacStatus
 import com.macci.kaalerto.identity.RoleScreen
 import com.macci.kaalerto.map.MapScreen
+import com.macci.kaalerto.map.HOME_REGION_NAME
 import com.macci.kaalerto.map.MapViewModel
+import com.macci.kaalerto.map.OfflineMapPack
+import com.macci.kaalerto.map.boundsAround
 import com.macci.kaalerto.official.OfficialStatusScreen
 import com.macci.kaalerto.official.submitOfficialStatus
 import kotlinx.coroutines.launch
@@ -77,6 +81,7 @@ fun KaAlertoApp(
         mutableStateOf(HomeLocationStore.get(appContext)?.let { it.lat to it.lon })
     }
     var draftAccuracy by remember { mutableStateOf<Float?>(null) }
+    var draftPlaceName by remember { mutableStateOf<String?>(null) }
     var locatingHome by remember { mutableStateOf(false) }
     val sosViewModel: SosViewModel = viewModel()
     val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
@@ -114,6 +119,12 @@ fun KaAlertoApp(
     // The pin finds itself. Runs on entry to the form and on an explicit retry, and
     // is bounded by the fetcher's own 6 s budget, so a phone with no lock lands on
     // "Ituro na lang sa mapa" rather than a spinner that never resolves.
+    // The label follows the pin, whether the pin came from GPS or from a tap on the map.
+    LaunchedEffect(draftHome) {
+        val pin = draftHome
+        draftPlaceName = if (pin == null) null else describePlace(appContext, pin.first, pin.second)
+    }
+
     LaunchedEffect(screen is Screen.Onboarding) {
         if (screen is Screen.Onboarding && draftHome == null && !locatingHome) {
             locatingHome = true
@@ -329,6 +340,7 @@ fun KaAlertoApp(
             onBarangayChange = { draftBarangay = it },
             home = draftHome,
             accuracyMeters = draftAccuracy,
+            placeName = draftPlaceName,
             locating = locatingHome,
             onLocate = {
                 scope.launch {
@@ -350,6 +362,21 @@ fun KaAlertoApp(
                 // for somebody to discover the map long-press.
                 draftHome?.let { (lat, lon) ->
                     HomeLocationStore.set(context, lat, lon, HomeLocationStore.DEFAULT_RADIUS_METERS)
+                    // A second pack, around wherever this person actually lives. Only
+                    // when they are outside the frozen demo area — inside it the demo
+                    // pack already covers them, and a duplicate would be wasted bytes.
+                    //
+                    // Registration is the right moment and close to the only one: the
+                    // artboard's "I-download habang may signal pa" is exactly this, and
+                    // somebody who has just installed the app is the likeliest they will
+                    // ever be to have a connection.
+                    if (!DemoArea.bounds.contains(LatLng(lat, lon))) {
+                        OfflineMapPack(
+                            appContext,
+                            regionName = HOME_REGION_NAME,
+                            bounds = boundsAround(lat, lon),
+                        ).ensureDownloaded()
+                    }
                 }
                 screen = current.resume ?: Screen.Map
             },

@@ -3,6 +3,8 @@ package com.macci.kaalerto.map
 import android.content.Context
 import android.util.Log
 import com.macci.kaalerto.demo.DemoArea
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +15,31 @@ import org.maplibre.android.offline.OfflineRegionStatus
 import org.maplibre.android.offline.OfflineTilePyramidRegionDefinition
 
 private const val TAG = "OfflineMapPack"
+
+/** Metadata name for the pack built around a resident's own home. */
+const val HOME_REGION_NAME = "kaalerto-home-area"
+
+/**
+ * Half-width of the home pack, in metres. ~1.5 km each way covers the walk a flood
+ * actually changes — the routes somebody takes to a shop, a school, higher ground —
+ * without turning a registration screen into a several-minute download on a phone that
+ * may be on a metered connection.
+ */
+private const val HOME_HALF_EXTENT_M = 1_500.0
+
+/**
+ * A square bbox around a point. Latitude degrees are near enough constant; longitude
+ * degrees shrink with latitude, hence the cosine — without it the box would be far too
+ * narrow in the north of the country and too wide near the equator.
+ */
+fun boundsAround(lat: Double, lon: Double, halfExtentMeters: Double = HOME_HALF_EXTENT_M): LatLngBounds {
+    val latDelta = halfExtentMeters / 111_320.0
+    val lonDelta = halfExtentMeters / (111_320.0 * kotlin.math.cos(Math.toRadians(lat)).coerceAtLeast(0.01))
+    return LatLngBounds.Builder()
+        .include(LatLng(lat + latDelta, lon + lonDelta))
+        .include(LatLng(lat - latDelta, lon - lonDelta))
+        .build()
+}
 
 /**
  * State of the offline tile pack for [DemoArea].
@@ -67,8 +94,18 @@ sealed interface PackState {
  * never trigger this on stage. If [OfflineManager] proves unreliable, the documented
  * fallback is to bundle tiles in `assets/` and point a local style at them — the
  * bulletproof path, at the cost of a larger APK.
+ *
+ * **Region-parameterised since 7 September**, so the same machinery serves two packs: the
+ * frozen demo area, and a small one around wherever the resident actually lives. There
+ * cannot be a *bundled* pack "for outside the demo area" — an offline region is a bbox ×
+ * zoom range, and the Philippines at z10-14 is on the order of 300,000 tiles, several GB.
+ * A pack around one person's home is a few dozen. See [boundsAround].
  */
-class OfflineMapPack(context: Context) {
+class OfflineMapPack(
+    context: Context,
+    private val regionName: String = DemoArea.REGION_NAME,
+    private val bounds: LatLngBounds = DemoArea.bounds,
+) {
 
     // MapLibre holds this for the process lifetime; use the application context so a
     // rotated activity cannot leak through it.
@@ -109,7 +146,7 @@ class OfflineMapPack(context: Context) {
     private fun create() {
         val definition = OfflineTilePyramidRegionDefinition(
             DemoArea.STYLE_URL,
-            DemoArea.bounds,
+            bounds,
             DemoArea.MIN_ZOOM,
             DemoArea.MAX_ZOOM,
             // Pixel ratio is baked into the pack. Use the densest we expect to demo on:
@@ -120,7 +157,7 @@ class OfflineMapPack(context: Context) {
 
         manager.createOfflineRegion(
             definition,
-            DemoArea.REGION_NAME.toByteArray(Charsets.UTF_8),
+            regionName.toByteArray(Charsets.UTF_8),
             object : OfflineManager.CreateOfflineRegionCallback {
                 override fun onCreate(offlineRegion: OfflineRegion) = adopt(offlineRegion)
 
@@ -190,7 +227,7 @@ class OfflineMapPack(context: Context) {
     }
 
     private fun OfflineRegion.isOurs(): Boolean =
-        runCatching { String(metadata, Charsets.UTF_8) }.getOrNull() == DemoArea.REGION_NAME
+        runCatching { String(metadata, Charsets.UTF_8) }.getOrNull() == regionName
 
     private fun OfflineRegionStatus.toPackState(): PackState = when {
         isComplete -> PackState.Ready(completedTileCount, completedTileSize)
