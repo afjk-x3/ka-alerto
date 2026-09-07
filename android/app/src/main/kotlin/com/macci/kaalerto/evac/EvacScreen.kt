@@ -78,7 +78,7 @@ fun EvacScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
         ) {
             Text(
-                "Evacuation centre",
+                "Mga silungan",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
