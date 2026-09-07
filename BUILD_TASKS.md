@@ -77,7 +77,7 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 - [x] Location input (`location/LocationFetcher.kt`, wired through `map/MapScreen.kt`'s FAB and pick-mode): one-shot `FusedLocationProviderClient.getCurrentLocation` primary, falling back to a map-tap mode (tap listener on the existing MapLibre view, not a second map) on missing permission or no fix. No snap-to-road, per the bullet.
 - [x] Auto-derive severity from the selected depth, shown in a tappable banner; tapping opens a manual override dialog (`SeverityOverrideDialog` in `ReportScreen.kt`) that takes precedence until the depth selection changes again.
 - [x] `report/ReportSubmit.kt` writes directly to `EventRepository` (day 2) on submit; the map's existing `Flow`-backed marker rendering picks it up with no extra plumbing.
-- **Known gap, not scheduled anywhere:** no registration/onboarding screen exists yet (PRD §9), so `identity/LocalIdentity.kt` is a stand-in — a per-install generated placeholder name/id, clearly not a real collected identity. Real registration should land before this goes near an actual user.
+- [x] **Built 7 Sep 2026 (was: "known gap, not scheduled anywhere").** `identity/OnboardingScreen.kt` — name + barangay, shown as an authoring gate rather than a first screen; the map stays readable and SOS is never gated. Original note kept for the record: no registration/onboarding screen existed (PRD §9), so `identity/LocalIdentity.kt` is a stand-in — a per-install generated placeholder name/id, clearly not a real collected identity. Real registration should land before this goes near an actual user.
 - **DoD:** In airplane mode, file a report in <15 seconds and see it on the map
 
 ### Day 4: Confirm/dispute + reducer — DONE, verified 5 Sep 2026

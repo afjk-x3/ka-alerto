@@ -116,6 +116,14 @@ fun MapScreen(
      * role used to change nothing visible. See [RoleActionStrip].
      */
     onOpenQueue: (() -> Unit)? = null,
+    /**
+     * Non-null when this device has not registered (PRD §9). The detail sheet's
+     * confirm/dispute route here instead of authoring, carrying the feature so the sheet
+     * can be reopened on the way back — see [focusFeatureRef].
+     */
+    onNeedsRegistration: ((featureRef: String) -> Unit)? = null,
+    /** A feature to select on entry, so a gated action resumes where it was interrupted. */
+    focusFeatureRef: String? = null,
     /** Open requests from other people, for the strip's count. */
     openRequestCount: Int = 0,
     stormMode: Boolean = false,
@@ -131,6 +139,10 @@ fun MapScreen(
     // simply never navigated. Observed on device as the red button doing nothing.
     var locatingSos by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
+    // Reopens the sheet somebody was in when the registration gate interrupted them.
+    LaunchedEffect(focusFeatureRef) {
+        if (focusFeatureRef != null) selectedFeatureRef = focusFeatureRef
+    }
     var homeDraft by remember { mutableStateOf<HomeDraft?>(null) }
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
     var selectedSeverities by remember { mutableStateOf(ALL_SEVERITIES.toSet()) }
@@ -375,6 +387,9 @@ fun MapScreen(
         DetailSheet(
             summary = selectedSummary,
             onDismiss = { selectedFeatureRef = null },
+            onNeedsRegistration = onNeedsRegistration?.let { needs ->
+                { needs(selectedSummary.featureRef) }
+            },
             onCheckInPerson = { lat, lon ->
                 selectedFeatureRef = null
                 onStartReportAt?.invoke(lat, lon)

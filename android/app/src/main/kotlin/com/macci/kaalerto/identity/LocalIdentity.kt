@@ -28,6 +28,19 @@ object LocalIdentity {
     private const val KEY_AUTHOR_SUFFIX = "author_suffix"
     private const val KEY_ROLE = "role"
 
+    /**
+     * The name as typed, e.g. "Juan Dela Cruz". **Local to this device and nothing else.**
+     *
+     * The user's decision (7 Sep) was to keep the full name rather than only the derived
+     * short form, so that the display rule can change later. That makes containment a
+     * structural job rather than a matter of care: this key is read by exactly one
+     * function ([registeredFullName], for pre-filling the edit field), [Identity] carries
+     * only [displayFormOf] of it, and `IdentityPrivacyTest` asserts no event ever leaves
+     * with the surname on it. Do not add a second reader without re-checking that test.
+     */
+    private const val KEY_FULL_NAME = "full_name"
+    private const val KEY_HOME_BARANGAY = "home_barangay"
+
     const val ROLE_RESIDENT = "resident"
     const val ROLE_RESPONDER = "responder"
 
@@ -52,6 +65,33 @@ object LocalIdentity {
         val suffix: String = authorId.takeLast(4).uppercase(),
     )
 
+    /** Whether PRD §9's registration has been completed on this device. */
+    fun isRegistered(context: Context): Boolean =
+        !prefs(context).getString(KEY_FULL_NAME, null).isNullOrBlank()
+
+    /** For pre-filling the edit field only — never for an event. See [KEY_FULL_NAME]. */
+    fun registeredFullName(context: Context): String =
+        prefs(context).getString(KEY_FULL_NAME, null).orEmpty()
+
+    fun homeBarangay(context: Context): String =
+        prefs(context).getString(KEY_HOME_BARANGAY, null).orEmpty()
+
+    /**
+     * Registration, and re-registration when someone corrects a typo.
+     *
+     * `authorId` is deliberately untouched: it is what the mesh dedupes on, what the role
+     * fold keys on, and what the false-alarm history counts against. Changing identity
+     * here would orphan every one of those. Only the *name* moves, and only for events
+     * authored from here on — the ones already on other phones keep what they were sent
+     * with, because the log is append-only and the screen says so.
+     */
+    fun register(context: Context, fullName: String, homeBarangay: String) {
+        prefs(context).edit()
+            .putString(KEY_FULL_NAME, fullName.trim())
+            .putString(KEY_HOME_BARANGAY, homeBarangay.trim())
+            .apply()
+    }
+
     fun getOrCreate(context: Context): Identity {
         val prefs = prefs(context)
         var authorId = prefs.getString(KEY_AUTHOR_ID, null)
@@ -67,7 +107,8 @@ object LocalIdentity {
         }
 
         val role = role(context)
-        return Identity(authorId, displayName(role, suffix), role, suffix)
+        val registered = displayFormOf(prefs.getString(KEY_FULL_NAME, null).orEmpty())
+        return Identity(authorId, displayName(role, suffix, registered), role, suffix)
     }
 
     /**
@@ -77,10 +118,22 @@ object LocalIdentity {
      * kung sino ang nag-post". The four-character suffix is kept across roles so the
      * same person stays recognisably the same person on a receiving device.
      */
-    fun displayName(role: String, suffix: String): String = when (role) {
-        ROLE_OFFICIAL -> "Kagawad $suffix"
-        ROLE_RESPONDER -> "Responder $suffix"
-        else -> "Residente $suffix"
+    fun displayName(role: String, suffix: String, registered: String = ""): String {
+        // Before registration this is the day-3 stopgap: a generated four-character
+        // placeholder that is deliberately not a guess at a real name.
+        if (registered.isBlank()) return when (role) {
+            ROLE_OFFICIAL -> "Kagawad $suffix"
+            ROLE_RESPONDER -> "Responder $suffix"
+            else -> "Residente $suffix"
+        }
+        // After it, the role title still rides along for the two roles where an action
+        // has to be attributable *as* an official or responder act — OfficialVerify's
+        // "M. Reyes, Kagawad". A resident is just their name.
+        return when (role) {
+            ROLE_OFFICIAL -> "Kagawad $registered"
+            ROLE_RESPONDER -> "Responder $registered"
+            else -> registered
+        }
     }
 
     fun role(context: Context): String = prefs(context).getString(KEY_ROLE, null) ?: ROLE_RESIDENT

@@ -371,10 +371,13 @@ private fun SectionLabel(text: String) {
 fun ManualRoleScreen(
     current: String,
     onSelect: (String) -> Unit,
+    onEditName: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val registered = displayFormOf(LocalIdentity.registeredFullName(context))
 
     Column(
         modifier = modifier
@@ -423,6 +426,55 @@ fun ManualRoleScreen(
                     badge = roleBadge(role),
                     selected = role == current,
                     onClick = { onSelect(role) },
+                )
+            }
+        }
+
+        // PRD §9's name, and the one place to correct it. Editable on purpose: a typo
+        // caught an hour later would otherwise be permanent in front of the barangay.
+        // Events already relayed keep the name they were sent with — the log is
+        // append-only — and the onboarding screen says exactly that.
+        Column(
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                "PANGALAN MO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(1.dp, colors.border)
+                    .clickable(onClick = onEditName)
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        registered.ifBlank { "Wala pang pangalan" },
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        if (registered.isBlank()) {
+                            "Hinihingi kapag mag-uulat ka"
+                        } else {
+                            "Ito ang nakikita ng lahat sa mga ulat mo"
+                        },
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Text(
+                    "Baguhin",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
                 )
             }
         }

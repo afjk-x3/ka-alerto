@@ -37,7 +37,9 @@ import com.macci.kaalerto.sos.SosNearbyScreen
 import com.macci.kaalerto.sos.SosQueueScreen
 import com.macci.kaalerto.sos.SosState
 import com.macci.kaalerto.sos.SosStatusScreen
+import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.identity.ManualRoleScreen
+import com.macci.kaalerto.identity.OnboardingScreen
 import com.macci.kaalerto.identity.RoleMode
 import com.macci.kaalerto.identity.RoleViewModel
 import com.macci.kaalerto.sos.SosViewModel
@@ -86,6 +88,8 @@ fun KaAlertoApp(
     // fires again on the unchanged state, and the user is bounced straight back with no
     // way to reach "Ligtas na ako".
     var rescueCardRaisedFor by remember { mutableStateOf<String?>(null) }
+    // The feature whose sheet the registration gate interrupted, reopened on return.
+    var reopenFeatureRef by remember { mutableStateOf<String?>(null) }
 
     // One clock for every SOS screen's elapsed counter, rather than a ticker per screen.
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -104,14 +108,25 @@ fun KaAlertoApp(
     val snapshotsLoaded = snapshots.isNotEmpty()
     fun snapshotFor(id: String) = snapshots.firstOrNull { it.sosId == id }
 
+    /**
+     * PRD §9's gate. Anything that *authors* an event under this device's name goes
+     * through here first; reading the map, and the whole SOS path, never do.
+     *
+     * The screen it would have gone to is carried into [Screen.Onboarding] so finishing
+     * the form resumes it — the interrupted action may be somebody standing in rising
+     * water, and making them find their way back to it is not a neutral cost.
+     */
+    fun gated(destination: Screen): Screen =
+        if (LocalIdentity.isRegistered(context)) destination else Screen.Onboarding(destination)
+
     when (val current = screen) {
         Screen.Map -> MapScreen(
             modifier = modifier,
-            onStartReport = { lat, lon, accuracy -> screen = Screen.Report(lat, lon, accuracy) },
-            onEnterPickLocation = { screen = Screen.PickLocation },
+            onStartReport = { lat, lon, accuracy -> screen = gated(Screen.Report(lat, lon, accuracy)) },
+            onEnterPickLocation = { screen = gated(Screen.PickLocation) },
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
             // conflicted spot rather than a confirm/dispute — see detail/DetailSheet.kt.
-            onStartReportAt = { lat, lon -> screen = Screen.Report(lat, lon, null) },
+            onStartReportAt = { lat, lon -> screen = gated(Screen.Report(lat, lon, null)) },
             // Day 8: an already-running request reopens its status rather than starting
             // a second one — five people pressing SOS is one rescue
             // (docs/03-architecture.md §6.5, duplicate collapse), and the same person
@@ -130,6 +145,15 @@ fun KaAlertoApp(
             // exists for. Null for a resident, which is what hides the strip.
             onOpenQueue = if (isResponder) ({ screen = Screen.SosQueue }) else null,
             openRequestCount = incoming.size,
+            onNeedsRegistration = if (LocalIdentity.isRegistered(context)) {
+                null
+            } else {
+                { featureRef ->
+                    reopenFeatureRef = featureRef
+                    screen = Screen.Onboarding(Screen.Map)
+                }
+            },
+            focusFeatureRef = reopenFeatureRef,
             stormMode = stormMode,
             onToggleStormMode = onToggleStormMode,
         )
@@ -137,7 +161,7 @@ fun KaAlertoApp(
         Screen.PickLocation -> MapScreen(
             modifier = modifier,
             pickMode = true,
-            onLocationPicked = { latLng -> screen = Screen.Report(latLng.latitude, latLng.longitude, null) },
+            onLocationPicked = { latLng -> screen = gated(Screen.Report(latLng.latitude, latLng.longitude, null)) },
             onCancelPick = { screen = Screen.Map },
         )
 
@@ -240,6 +264,32 @@ fun KaAlertoApp(
         // Two role screens, one flag. See identity/RoleMode.kt — the event-sourced flow
         // is one-way by design, which is right for a barangay and wrong for a bench, so
         // it is parked while the app is being exercised by hand.
+        is Screen.Onboarding -> OnboardingScreen(
+            modifier = modifier,
+            // Resuming, not just dismissing — see `gated`.
+            onDone = {
+                screen = current.resume ?: Screen.Map
+            },
+            // The escape hatch is the whole reason the gate is defensible: nobody is
+            // ever held behind this form during an emergency.
+            onSos = {
+                scope.launch {
+                    val location = fetchCurrentLocation(context)
+                    val existing = activeSos
+                    screen = if (existing != null) {
+                        Screen.SosStatus(existing.sosId)
+                    } else {
+                        Screen.SosHold(
+                            location?.latitude ?: DemoArea.centre.latitude,
+                            location?.longitude ?: DemoArea.centre.longitude,
+                            location?.accuracy,
+                        )
+                    }
+                }
+            },
+            onCancel = { screen = Screen.Map },
+        )
+
         Screen.Roles -> if (RoleMode.EVENT_SOURCED) {
             RoleScreen(
                 modifier = modifier,
@@ -257,6 +307,7 @@ fun KaAlertoApp(
                 modifier = modifier,
                 current = role,
                 onSelect = { roleViewModel.setRoleForTesting(it) },
+                onEditName = { screen = Screen.Onboarding(Screen.Roles) },
                 onBack = { screen = Screen.Map },
             )
         }

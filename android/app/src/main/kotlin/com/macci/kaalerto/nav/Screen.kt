@@ -24,6 +24,15 @@ sealed interface Screen {
     data class SosNearby(val sosId: String) : Screen
     data object SosQueue : Screen
 
+    /**
+     * PRD §9's registration (7 Sep). [resume] is the screen the person was on their way
+     * to when the gate stopped them — normally a [Report] with the GPS fix already
+     * taken, so finishing the form lands them where they were going rather than back at
+     * the map with the fetch to do again. Null when the screen was opened deliberately,
+     * e.g. to correct a typo from the role screen.
+     */
+    data class Onboarding(val resume: Screen?) : Screen
+
     /** Day 10 — the role switch, an official's ruling on one feature, and the centres. */
     data object Roles : Screen
     data class OfficialStatus(val featureRef: String) : Screen

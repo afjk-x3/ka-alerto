@@ -104,6 +104,12 @@ fun DetailSheet(
     onCheckInPerson: (lat: Double, lon: Double) -> Unit,
     /** Non-null only for a barangay official — day 10's ruling screen for this feature. */
     onOfficialStatus: (() -> Unit)? = null,
+    /**
+     * Non-null when this device has not registered. A confirm or a dispute is an
+     * authored event carrying this person's name, so it goes through PRD §9's gate
+     * first; the sheet reopens on the way back rather than dropping what they were doing.
+     */
+    onNeedsRegistration: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -201,6 +207,7 @@ fun DetailSheet(
                         label = if (submitting) "Kinukuha…" else "Tama",
                         icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
+                            if (onNeedsRegistration != null) return@ActionBar onNeedsRegistration()
                             if (submitting) return@ActionBar
                             submitting = true
                             scope.launch {
@@ -215,7 +222,10 @@ fun DetailSheet(
                     ActionBar(
                         label = if (submitting) "Kinukuha…" else "Iba na",
                         icon = { tint -> XIcon(tint, Modifier.size(18.dp)) },
-                        onClick = { showDisputeDialog = true },
+                        onClick = {
+                            if (onNeedsRegistration != null) onNeedsRegistration()
+                            else showDisputeDialog = true
+                        },
                         background = MaterialTheme.colorScheme.background,
                         contentColor = MaterialTheme.colorScheme.onBackground,
                         border = BorderStroke(1.5.dp, colors.borderEmphasis),
