@@ -34,6 +34,15 @@ sealed interface Screen {
     data class Onboarding(val resume: Screen?) : Screen
 
     /**
+     * The drawer's "Ang profile ko" (7 Sep) — editing an already-registered identity.
+     * Separate from [Onboarding]: a first run is a required gate with no cancel, and an
+     * edit is neither required nor gate-shaped. [resume] is never null here — a profile
+     * edit always has an origin screen to return to, unlike a first-run gate, which may
+     * be the very first screen the app ever shows.
+     */
+    data class Profile(val resume: Screen) : Screen
+
+    /**
      * Pick-mode over the real map, for confirming the home pin during registration.
      * Separate from [PickLocation] only in where it returns to — the map itself, and
      * day 3's tap-to-pick, are the same. Works offline because it reads the same tile

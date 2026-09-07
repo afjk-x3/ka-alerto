@@ -87,9 +87,9 @@ fun HamburgerButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
  * "Papel mo sa barangay" and "Mga silungan" are the exact routes the role badge and the
  * floating shelter button already open — this is a second way to reach them, not a
  * replacement, per the day-10 and day-10.1 controls staying where they are. "Ang
- * profile ko" opens the same registration screen already used to edit a name
- * (`RoleScreen`'s "Baguhin" does this today); a dedicated profile screen would have
- * duplicated the name + home-pin editing `OnboardingScreen` already does correctly.
+ * profile ko" opens `identity/ProfileScreen.kt` — a dedicated editing screen, separate
+ * from the first-run gate (`OnboardingScreen`) since 7 Sep. `RoleScreen`'s "Baguhin"
+ * opens the same screen.
  */
 @Composable
 fun NavDrawer(
