@@ -42,6 +42,16 @@ object LocalIdentity {
     private const val KEY_FIRST_NAME = "first_name"
     private const val KEY_LAST_NAME = "last_name"
     private const val KEY_HOME_BARANGAY = "home_barangay"
+    /**
+     * Optional, unvalidated, and read by nothing today. Day 12's SMS fallback is the
+     * eventual reader — it needs a number to send from and receive on — but that build
+     * day does not exist yet, so this field cannot be required or format-checked
+     * without gating a screen on a rule nothing enforces the reason for. PH mobile
+     * numbers come in enough shapes (09XXXXXXXXX, +639XXXXXXXXX, spaced or not) that a
+     * validator written now, against no real consumer, is more likely to reject a true
+     * number than catch a false one.
+     */
+    private const val KEY_PHONE = "phone"
 
     const val ROLE_RESIDENT = "resident"
     const val ROLE_RESPONDER = "responder"
@@ -95,6 +105,9 @@ object LocalIdentity {
     fun homeBarangay(context: Context): String =
         prefs(context).getString(KEY_HOME_BARANGAY, null).orEmpty()
 
+    fun registeredPhone(context: Context): String =
+        prefs(context).getString(KEY_PHONE, null).orEmpty()
+
     /**
      * Registration, and re-registration when someone corrects a typo.
      *
@@ -104,13 +117,20 @@ object LocalIdentity {
      * authored from here on — the ones already on other phones keep what they were sent
      * with, because the log is append-only and the screen says so.
      */
-    fun register(context: Context, firstName: String, lastName: String, homeBarangay: String) {
+    fun register(
+        context: Context,
+        firstName: String,
+        lastName: String,
+        phone: String,
+        homeBarangay: String,
+    ) {
         prefs(context).edit()
             .putString(KEY_FIRST_NAME, firstName.trim())
             .putString(KEY_LAST_NAME, lastName.trim())
             // The pre-split key is cleared rather than left behind, so nothing can read a
             // stale full name after the person has corrected how it splits.
             .remove(KEY_FULL_NAME)
+            .putString(KEY_PHONE, phone.trim())
             .putString(KEY_HOME_BARANGAY, homeBarangay.trim())
             .apply()
     }

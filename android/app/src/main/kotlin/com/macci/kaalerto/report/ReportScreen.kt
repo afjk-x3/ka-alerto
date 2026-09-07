@@ -57,6 +57,7 @@ fun ReportScreen(
     onChangeLocation: () -> Unit,
     onBack: () -> Unit,
     onSubmitted: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -89,6 +90,10 @@ fun ReportScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Bumalik")
             }
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 8.dp),
+            )
             Column {
                 Text("Gaano kalalim?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text("How deep is the water?", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

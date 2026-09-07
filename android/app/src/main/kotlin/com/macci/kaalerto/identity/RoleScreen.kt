@@ -56,6 +56,7 @@ fun RoleScreen(
     onGrant: (RoleApplication) -> Unit,
     onRevoke: (RoleGrantRecord) -> Unit,
     onBack: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -69,19 +70,26 @@ fun RoleScreen(
             .fillMaxSize()
             .background(colors.canvas),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                "Papel mo sa barangay",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Text("Your role", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column {
+                Text(
+                    "Papel mo sa barangay",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text("Your role", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
 
         Column(
@@ -373,6 +381,7 @@ fun ManualRoleScreen(
     onSelect: (String) -> Unit,
     onEditName: () -> Unit,
     onBack: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -387,19 +396,26 @@ fun ManualRoleScreen(
             .fillMaxSize()
             .background(colors.canvas),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
                 .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.Top,
         ) {
-            Text(
-                "Papel mo sa barangay",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Text("Your role", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column {
+                Text(
+                    "Papel mo sa barangay",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text("Your role", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
 
         Row(

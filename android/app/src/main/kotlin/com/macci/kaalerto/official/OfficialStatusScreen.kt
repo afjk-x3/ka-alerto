@@ -69,6 +69,7 @@ fun OfficialStatusScreen(
     officialName: String,
     onPost: (String) -> Unit,
     onBack: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -92,6 +93,10 @@ fun OfficialStatusScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 38.dp, bottom = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 10.dp),
+            )
             Column(Modifier.weight(1f)) {
                 Text(
                     "Opisyal na status",

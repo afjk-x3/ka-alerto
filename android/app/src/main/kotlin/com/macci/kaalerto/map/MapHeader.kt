@@ -47,6 +47,7 @@ fun MapHeader(
     onRoleClick: (() -> Unit)?,
     stormMode: Boolean,
     onModeIconClick: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -57,6 +58,10 @@ fun MapHeader(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        com.macci.kaalerto.nav.HamburgerButton(
+            onClick = onOpenMenu,
+            modifier = Modifier.padding(end = 6.dp),
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 DemoArea.BARANGAY_NAME,

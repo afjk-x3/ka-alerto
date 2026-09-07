@@ -56,6 +56,7 @@ fun SosQueueScreen(
     onMarkFalseAlarm: ((SosIncident) -> Unit)? = null,
     onUndoFalseAlarm: ((SosIncident) -> Unit)? = null,
     onBack: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -73,6 +74,10 @@ fun SosQueueScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 38.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 10.dp),
+            )
             Column(Modifier.weight(1f)) {
                 Text(
                     "Humihingi ng tulong",

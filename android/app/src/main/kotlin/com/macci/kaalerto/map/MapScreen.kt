@@ -137,6 +137,8 @@ fun MapScreen(
     openRequestCount: Int = 0,
     stormMode: Boolean = false,
     onToggleStormMode: (() -> Unit)? = null,
+    /** Non-null on the Map screen only when normal chrome is showing — see [showChrome]. */
+    onOpenMenu: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -238,6 +240,7 @@ fun MapScreen(
                 onRoleClick = onOpenRoles,
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
+                onOpenMenu = onOpenMenu ?: {},
                 modifier = Modifier.fillMaxWidth(),
             )
         }

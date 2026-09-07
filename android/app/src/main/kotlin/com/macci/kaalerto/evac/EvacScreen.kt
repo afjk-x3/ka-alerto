@@ -62,6 +62,7 @@ fun EvacScreen(
     isOfficial: Boolean,
     onUpdate: (centreId: String, status: EvacStatus, occupancy: Int?) -> Unit,
     onBack: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -72,22 +73,29 @@ fun EvacScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.Top,
         ) {
-            Text(
-                "Mga silungan",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Text(
-                "Pinakamalapit muna · nasa phone mo na ito",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column {
+                Text(
+                    "Mga silungan",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    "Pinakamalapit muna · nasa phone mo na ito",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
 

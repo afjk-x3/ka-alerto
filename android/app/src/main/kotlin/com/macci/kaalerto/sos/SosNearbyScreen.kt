@@ -57,6 +57,7 @@ fun SosNearbyScreen(
     onBecomeResponder: () -> Unit,
     onOpenQueue: () -> Unit,
     onBack: () -> Unit,
+    onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -67,22 +68,29 @@ fun SosNearbyScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.Top,
         ) {
-            Text(
-                "May humihingi ng tulong",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+            com.macci.kaalerto.nav.HamburgerButton(
+                onClick = onOpenMenu,
+                modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Text(
-                "Malapit sa iyo · $ageLabel ang nakaraan",
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column {
+                Text(
+                    "May humihingi ng tulong",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    "Malapit sa iyo · $ageLabel ang nakaraan",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
 

@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,6 +21,7 @@ import com.macci.kaalerto.location.fetchAccurateLocation
 import com.macci.kaalerto.location.fetchCurrentLocation
 import org.maplibre.android.geometry.LatLng
 import com.macci.kaalerto.identity.LocalIdentity
+import com.macci.kaalerto.identity.displayFormOf
 import androidx.compose.runtime.rememberCoroutineScope
 import com.macci.kaalerto.evac.EvacScreen
 import com.macci.kaalerto.evac.evacStates
@@ -48,6 +51,7 @@ import com.macci.kaalerto.identity.ManualRoleScreen
 import com.macci.kaalerto.identity.OnboardingScreen
 import com.macci.kaalerto.identity.RoleMode
 import com.macci.kaalerto.identity.RoleViewModel
+import com.macci.kaalerto.nav.NavDrawer
 import com.macci.kaalerto.sos.SosViewModel
 import com.macci.kaalerto.sos.elapsedLabel
 import kotlinx.coroutines.delay
@@ -87,6 +91,16 @@ fun KaAlertoApp(
         mutableStateOf(HomeLocationStore.get(appContext)?.let { it.lat to it.lon })
     }
     var draftAccuracy by remember { mutableStateOf<Float?>(null) }
+    var draftPhone by remember { mutableStateOf(LocalIdentity.registeredPhone(appContext)) }
+    // The hamburger drawer, shared by every screen that shows one — see NavDrawer.kt
+    // for why this lives here rather than being duplicated per screen.
+    var drawerOpen by remember { mutableStateOf(false) }
+    // PickHome is a standalone top-level screen with no resume field of its own, so
+    // without this, picking a location from a profile edit opened anywhere other than
+    // Map or Roles would drop the original destination and land back on the map — a
+    // regression "Ang profile ko" would have introduced by making Onboarding openable
+    // from every screen instead of just those two.
+    var onboardingResume by remember { mutableStateOf<Screen>(Screen.Map) }
     var draftPlaceName by remember { mutableStateOf<String?>(null) }
     var locatingHome by remember { mutableStateOf(false) }
     val sosViewModel: SosViewModel = viewModel()
@@ -181,6 +195,7 @@ fun KaAlertoApp(
     fun gated(destination: Screen): Screen =
         if (LocalIdentity.isRegistered(context)) destination else Screen.Onboarding(destination)
 
+    Box(modifier = Modifier.fillMaxSize()) {
     when (val current = screen) {
         Screen.Map -> MapScreen(
             modifier = modifier,
@@ -218,6 +233,7 @@ fun KaAlertoApp(
             focusFeatureRef = reopenFeatureRef,
             stormMode = stormMode,
             onToggleStormMode = onToggleStormMode,
+            onOpenMenu = { drawerOpen = true },
         )
 
         Screen.PickLocation -> MapScreen(
@@ -242,6 +258,7 @@ fun KaAlertoApp(
                 onChangeLocation = { screen = Screen.PickLocation },
                 onBack = { screen = Screen.Map },
                 onSubmitted = { screen = Screen.Map },
+                onOpenMenu = { drawerOpen = true },
             )
         }
 
@@ -319,6 +336,7 @@ fun KaAlertoApp(
                     },
                     onOpenQueue = { screen = Screen.SosQueue },
                     onBack = { screen = Screen.Map },
+                    onOpenMenu = { drawerOpen = true },
                 )
             }
         }
@@ -341,17 +359,23 @@ fun KaAlertoApp(
                 draftHome = latLng.latitude to latLng.longitude
                 // Hand-placed, so the GPS accuracy no longer describes it.
                 draftAccuracy = null
-                screen = Screen.Onboarding(Screen.Map)
+                screen = Screen.Onboarding(onboardingResume)
             },
-            onCancelPick = { screen = Screen.Onboarding(Screen.Map) },
+            onCancelPick = { screen = Screen.Onboarding(onboardingResume) },
         )
 
-        is Screen.Onboarding -> OnboardingScreen(
+        is Screen.Onboarding -> {
+            // Captured on every recomposition of this branch, so PickHome (a separate
+            // top-level screen — see onboardingResume above) can restore it later.
+            onboardingResume = current.resume ?: Screen.Map
+            OnboardingScreen(
             modifier = modifier,
             firstName = draftFirstName,
             onFirstNameChange = { draftFirstName = it },
             lastName = draftLastName,
             onLastNameChange = { draftLastName = it },
+            phone = draftPhone,
+            onPhoneChange = { draftPhone = it },
             barangay = draftBarangay,
             onBarangayChange = {
                 draftBarangay = it
@@ -377,7 +401,7 @@ fun KaAlertoApp(
             onPickOnMap = { screen = Screen.PickHome },
             // Resuming, not just dismissing — see `gated`.
             onDone = {
-                LocalIdentity.register(context, draftFirstName, draftLastName, draftBarangay)
+                LocalIdentity.register(context, draftFirstName, draftLastName, draftPhone, draftBarangay)
                 // Registering also sets day 5's home radius, so the notification primer
                 // on this very screen is true from the first launch instead of waiting
                 // for somebody to discover the map long-press.
@@ -424,7 +448,16 @@ fun KaAlertoApp(
             } else {
                 null
             },
+            // Never on a first run — the drawer's "Mapa" row would be a way around a
+            // gate PRD §9 says is required. Real once editing, because at that point
+            // leaving is already one tap away via Kanselahin.
+            onOpenMenu = if (LocalIdentity.isRegistered(context)) {
+                ({ drawerOpen = true })
+            } else {
+                null
+            },
         )
+        }
 
         Screen.Roles -> if (RoleMode.EVENT_SOURCED) {
             RoleScreen(
@@ -437,6 +470,7 @@ fun KaAlertoApp(
                 onGrant = { roleViewModel.grant(it) },
                 onRevoke = { roleViewModel.revoke(it) },
                 onBack = { screen = Screen.Map },
+                onOpenMenu = { drawerOpen = true },
             )
         } else {
             ManualRoleScreen(
@@ -445,6 +479,7 @@ fun KaAlertoApp(
                 onSelect = { roleViewModel.setRoleForTesting(it) },
                 onEditName = { screen = Screen.Onboarding(Screen.Roles) },
                 onBack = { screen = Screen.Map },
+                onOpenMenu = { drawerOpen = true },
             )
         }
 
@@ -470,6 +505,7 @@ fun KaAlertoApp(
                     scope.launch { submitEvacStatus(context, centre, status, occupancy) }
                 },
                 onBack = { screen = Screen.Map },
+                onOpenMenu = { drawerOpen = true },
             )
         }
 
@@ -490,6 +526,7 @@ fun KaAlertoApp(
                         screen = Screen.Map
                     },
                     onBack = { screen = Screen.Map },
+                    onOpenMenu = { drawerOpen = true },
                 )
             }
         }
@@ -508,6 +545,7 @@ fun KaAlertoApp(
                 onMarkFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = false) }) else null,
                 onUndoFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = true) }) else null,
                 onBack = { screen = Screen.Map },
+                onOpenMenu = { drawerOpen = true },
             )
         }
 
@@ -523,5 +561,29 @@ fun KaAlertoApp(
                 )
             }
         }
+    }
+
+    val identity = LocalIdentity.getOrCreate(appContext)
+    NavDrawer(
+        open = drawerOpen,
+        myDisplayName = displayFormOf(
+            LocalIdentity.registeredFirstName(appContext),
+            LocalIdentity.registeredLastName(appContext),
+        ).ifBlank { identity.authorName },
+        myRole = role,
+        onDismiss = { drawerOpen = false },
+        onOpenMap = { screen = Screen.Map },
+        onOpenRoles = { screen = Screen.Roles },
+        // Resumes to whatever was showing when the drawer was opened, the same rule the
+        // registration gate itself follows — editing your profile from mid-report should
+        // not strand you back at the map once you are done. Guarded against nesting:
+        // opening the drawer while already editing the profile must not wrap Onboarding
+        // inside its own resume target.
+        onOpenProfile = {
+            val target = screen
+            screen = if (target is Screen.Onboarding) target else Screen.Onboarding(target)
+        },
+        onOpenEvac = { screen = Screen.EvacCentres },
+    )
     }
 }

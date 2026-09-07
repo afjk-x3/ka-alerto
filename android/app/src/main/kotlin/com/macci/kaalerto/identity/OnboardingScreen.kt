@@ -83,6 +83,9 @@ fun OnboardingScreen(
     onFirstNameChange: (String) -> Unit,
     lastName: String,
     onLastNameChange: (String) -> Unit,
+    /** Optional, unvalidated — see LocalIdentity.KEY_PHONE for why. */
+    phone: String,
+    onPhoneChange: (String) -> Unit,
     barangay: String,
     onBarangayChange: (String) -> Unit,
     /** True once the barangay came from the geocoder rather than a default. */
@@ -98,6 +101,8 @@ fun OnboardingScreen(
     onDone: () -> Unit,
     onSos: () -> Unit,
     onCancel: (() -> Unit)?,
+    /** Non-null only when editing (never on a first-run gate) — see HamburgerButton's doc. */
+    onOpenMenu: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -131,19 +136,34 @@ fun OnboardingScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 8.dp)) {
-                Text(
-                    if (alreadyRegistered) "Pangalan mo" else "I-set up ang KaAlerto",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    "Pangalan at barangay lang. Walang password, walang email.",
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+            Row(
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                if (onOpenMenu != null) {
+                    com.macci.kaalerto.nav.HamburgerButton(
+                        onClick = onOpenMenu,
+                        modifier = Modifier.padding(end = 12.dp, top = 3.dp),
+                    )
+                }
+                Column {
+                    Text(
+                        if (alreadyRegistered) "Profile mo" else "I-set up ang KaAlerto",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text(
+                        if (alreadyRegistered) {
+                            "Pangalan, numero, at bahay mo."
+                        } else {
+                            "Pangalan at barangay lang. Walang password, walang email."
+                        },
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
             }
 
             // The artboard's escape hatch, and the reason this screen can exist at all:
@@ -285,6 +305,56 @@ fun OnboardingScreen(
                         } else {
                             "Lalabas bilang $display sa mga ulat mo"
                         },
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // ---- phone (optional) ----
+                //
+                // Nothing reads this yet. Day 12's SMS fallback is the eventual
+                // consumer, and it is not built, so this cannot be required or
+                // validated against a rule that has no enforcer today. Marked
+                // "opsyonal" rather than left silently optional, so its absence from
+                // "Kailangan ng pangalan..." further down does not read as an oversight.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FieldLabel("NUMERO NG CELLPHONE (OPSYONAL)")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.5.dp, colors.border)
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                    ) {
+                        BasicTextField(
+                            value = phone,
+                            onValueChange = onPhoneChange,
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(
+                                fontSize = 17.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = "Numero ng cellphone" },
+                        )
+                        if (phone.isEmpty()) {
+                            Text(
+                                "09171234567",
+                                fontSize = 17.sp,
+                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.border,
+                            )
+                        }
+                    }
+                    Text(
+                        // Says plainly that nothing reads it yet, rather than leaving
+                        // an optional field with no reason given for existing.
+                        "Gagamitin sa SMS kapag wala nang data — hindi pa gawa.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
