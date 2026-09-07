@@ -30,7 +30,7 @@ class SosAckTest {
     }
 
     private val fullContext = SosContext(
-        people = "5–8",
+        people = "5-8",
         companions = listOf("Bata"),
         medical = listOf("Gamot sa puso"),
         water = "Dibdib",
@@ -58,7 +58,7 @@ class SosAckTest {
 
         // QueueVolunteer.dc.html's own footer: a registered volunteer gets "lokasyon at
         // bilang ng tao". Strip those too and the queue screen is useless.
-        assertEquals("5–8", context.people)
+        assertEquals("5-8", context.people)
         assertEquals(listOf("Bata"), context.companions)
         assertEquals("Dibdib", context.water)
         assertEquals("Tumataas", context.trend)

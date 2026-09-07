@@ -236,7 +236,7 @@ private fun RequestCard(
                     // count and the companions in one string for the status screen,
                     // whose column is already labelled "Tao". Reusing it here produced
                     // "5-8 - Bata - Matanda tao", with the unit stranded at the end.
-                    request.context.people?.let { Chip("$it tao") }
+                    request.context.people?.let { Chip("${SosContext.peopleLabel(it)} tao") }
                     request.context.companions.takeIf { it.isNotEmpty() }?.let { Chip(it.joinToString(" · ")) }
                     waterSummary(request.context)?.let { Chip(it) }
                     if (request.context.isEmpty) Chip("Walang dagdag na detalye")
@@ -329,7 +329,7 @@ private fun NearbyReportsNote(incident: SosIncident) {
         Spacer(Modifier.size(6.dp))
         incident.all.forEach { request ->
             Text(
-                "· ${"%.4f, %.4f".format(request.lat, request.lon)} · ${request.context.people ?: "?"} tao",
+                "· ${"%.4f, %.4f".format(request.lat, request.lon)} · ${request.context.people?.let(SosContext::peopleLabel) ?: "?"} tao",
                 fontSize = 12.sp,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

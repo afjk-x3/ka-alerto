@@ -29,7 +29,7 @@ class SosTriageTest {
         authorId: String,
         at: Pair<Double, Double> = houseA,
         minutesAgo: Long = 5,
-        people: String? = "2–4",
+        people: String? = "2-4",
         state: SosState = SosState.BEACONING,
     ) = SosSnapshot(
         sosId = id,
@@ -109,10 +109,10 @@ class SosTriageTest {
     @Test
     fun `people buckets are listed, never summed`() {
         val q = officialQueue(
-            listOf(snapshot("s1", "dev-a", people = "2–4"), snapshot("s2", "dev-b", people = "5–8")),
+            listOf(snapshot("s1", "dev-a", people = "2-4"), snapshot("s2", "dev-b", people = "5-8")),
             TriageState(),
         )
-        assertEquals(listOf("2–4", "5–8"), q.single().peopleBuckets)
+        assertEquals(listOf("2-4", "5-8"), q.single().peopleBuckets)
     }
 
     @Test

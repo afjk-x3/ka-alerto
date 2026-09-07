@@ -34,6 +34,17 @@ sealed interface ChannelStatus {
 data class SosChannelRow(val channel: SosChannel, val status: ChannelStatus)
 
 /**
+ * True when at least one channel is actually carrying this request right now.
+ *
+ * Needed because `UNREACHABLE` is a single state covering two very different situations:
+ * the mesh is up and nobody has answered yet, or nothing is transmitting at all. Wording
+ * both as "your phone keeps broadcasting" made the banner contradict the three rows
+ * directly beneath it, which is the same false-progress the rest of the build avoids.
+ */
+fun List<SosChannelRow>.anyBroadcasting(): Boolean =
+    any { it.status is ChannelStatus.Broadcasting }
+
+/**
  * The channel rows as they honestly stand right now.
  *
  * The mesh row is real: it reads the live [MeshStatus] the day 6-7 service publishes.

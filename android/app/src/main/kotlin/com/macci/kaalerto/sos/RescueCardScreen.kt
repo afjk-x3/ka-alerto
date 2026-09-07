@@ -146,7 +146,7 @@ fun RescueCardScreen(
             Column(modifier = Modifier.weight(1f).padding(16.dp)) {
                 CardLabel("TAO")
                 Text(
-                    snapshot.context.people ?: "?",
+                    snapshot.context.people?.let(SosContext::peopleLabel) ?: "?",
                     fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     color = SosColors.CardInk,

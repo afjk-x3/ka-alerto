@@ -88,13 +88,13 @@ class SosStateTest {
     @Test
     fun `amendments merge field by field instead of replacing`() {
         val sos = request()
-        val first = sosAmendEvent(sos.id, me, sos.lat, sos.lon, SosContext(people = "5–8"), now + 5_000)
+        val first = sosAmendEvent(sos.id, me, sos.lat, sos.lon, SosContext(people = "5-8"), now + 5_000)
         val second = sosAmendEvent(sos.id, me, sos.lat, sos.lon, SosContext(water = "Dibdib"), now + 9_000)
 
         val snapshot = SosReducer.snapshot(sos.id, listOf(sos, first, second), me.authorId)!!
 
         // The water answer must not erase the people count sent four seconds earlier.
-        assertEquals("5–8", snapshot.context.people)
+        assertEquals("5-8", snapshot.context.people)
         assertEquals("Dibdib", snapshot.context.water)
     }
 

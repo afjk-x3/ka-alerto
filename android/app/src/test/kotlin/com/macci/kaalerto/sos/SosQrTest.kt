@@ -31,7 +31,7 @@ class SosQrTest {
         accuracyMeters = 6f,
         state = SosState.UNREACHABLE,
         context = SosContext(
-            people = "5–8",
+            people = "5-8",
             companions = listOf("Bata", "Matanda"),
             medical = listOf("Gamot sa puso"),
             water = "Dibdib",

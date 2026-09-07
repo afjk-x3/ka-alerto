@@ -60,13 +60,14 @@ fun SosStatusScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            HeadlineRow(snapshot.state)
+            val channels = sosChannelRows(meshStatus)
+            HeadlineRow(snapshot.state, channels.anyBroadcasting())
 
             Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
                 SectionLabel("BAWAT DAAN")
                 Spacer(Modifier.size(11.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    sosChannelRows(meshStatus).forEach { ChannelRow(it) }
+                    channels.forEach { ChannelRow(it) }
                 }
             }
 
@@ -135,8 +136,8 @@ fun SosStatusScreen(
 
 /** §6.2's requester-facing text, verbatim, for the state this request is actually in. */
 @Composable
-private fun HeadlineRow(state: SosState) {
-    val (fil, en) = requesterText(state)
+private fun HeadlineRow(state: SosState, broadcasting: Boolean) {
+    val (fil, en) = requesterText(state, broadcasting)
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -154,16 +155,28 @@ private fun HeadlineRow(state: SosState) {
 
 /**
  * The state table from `docs/03-architecture.md` §6.2, which is careful about a
- * specific thing: `UNREACHABLE` is never worded as a failure. "Still trying. Your phone
- * keeps broadcasting." — never "failed".
+ * specific thing: `UNREACHABLE` is never worded as a failure — never "failed".
+ *
+ * [broadcasting] splits that state in two, because it covers two situations a requester
+ * needs to tell apart. With a live channel, the phone genuinely is calling out and
+ * nobody has answered yet. With none — radios off, and SMS and server unbuilt — nothing
+ * is transmitting, and saying "patuloy ang pag-broadcast" over three rows that all read
+ * "hindi magamit" is the false progress §6.4.4 forbids. Neither wording is a failure;
+ * only one of them is a claim the app cannot support.
  */
-fun requesterText(state: SosState): Pair<String, String> = when (state) {
+fun requesterText(state: SosState, broadcasting: Boolean = true): Pair<String, String> = when (state) {
     SosState.DRAFT, SosState.QUEUED ->
         "Naka-save. Sinusubukang ipadala…" to "Saved. Trying to send…"
     SosState.BEACONING ->
         "Walang signal. Tumatawag ang phone mo sa mga kalapit na phone." to "No signal. Your phone is calling out to nearby phones."
     SosState.UNREACHABLE ->
-        "Sinusubukan pa rin. Patuloy ang pag-broadcast ng phone mo." to "Still trying. Your phone keeps broadcasting."
+        if (broadcasting) {
+            "Sinusubukan pa rin. Patuloy ang pag-broadcast ng phone mo." to
+                "Still trying. Your phone keeps broadcasting."
+        } else {
+            "Walang maabot ngayon. Awtomatikong susubok ulit ang phone mo." to
+                "Nothing to reach right now. Your phone will keep retrying."
+        }
     SosState.RELAYED ->
         "May mga kalapit na phone na dala ang hiling mo." to "Nearby phones are carrying your request."
     SosState.DELIVERED ->
@@ -300,7 +313,8 @@ private fun SectionLabel(text: String) {
 
 /** "5 · 2 bata" — the artboard's own compact form. */
 fun peopleSummary(context: SosContext): String? {
-    val people = context.people ?: return context.companions.joinToString(" · ").ifEmpty { null }
+    val people = context.people?.let(SosContext::peopleLabel)
+        ?: return context.companions.joinToString(" · ").ifEmpty { null }
     val companions = context.companions.joinToString(" · ")
     return if (companions.isEmpty()) people else "$people · $companions"
 }

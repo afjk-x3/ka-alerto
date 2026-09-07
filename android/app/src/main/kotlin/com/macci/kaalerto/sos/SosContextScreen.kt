@@ -101,6 +101,7 @@ fun SosContextScreen(
             Question("Ilan kayo diyan?") {
                 OptionGrid(
                     options = SosContext.PEOPLE_OPTIONS,
+                    labelOf = SosContext::peopleLabel,
                     selected = setOfNotNull(draft.people),
                     onTap = { update(draft.copy(people = it)) },
                 )
@@ -208,6 +209,8 @@ private fun OptionGrid(
     onTap: (String) -> Unit,
     selectedBackground: Color = SosColors.PrimaryText,
     selectedText: Color = SosColors.Background,
+    /** Display form of an option. The option itself is what gets stored and sent. */
+    labelOf: (String) -> String = { it },
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         options.forEach { option ->
@@ -222,7 +225,7 @@ private fun OptionGrid(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    option,
+                    labelOf(option),
                     fontSize = 14.sp,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
                     color = if (isSelected) selectedText else SosColors.SecondaryText,

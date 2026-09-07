@@ -91,7 +91,7 @@ object SosAlertNotifier {
      */
     private fun subtitle(distanceMeters: Double?, snapshot: SosSnapshot): String {
         val where = distanceMeters?.let { "Humigit-kumulang ${roundDistance(it)} m ang layo" } ?: "Malapit sa iyo"
-        val people = snapshot.context.people?.let { " · $it tao" }.orEmpty()
+        val people = snapshot.context.people?.let { " · ${SosContext.peopleLabel(it)} tao" }.orEmpty()
         return where + people
     }
 

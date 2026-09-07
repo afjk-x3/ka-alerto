@@ -44,7 +44,20 @@ data class SosContext(
     )
 
     companion object {
-        val PEOPLE_OPTIONS = listOf("1", "2–4", "5–8", "9+")
+        /**
+         * The values that are **stored and transmitted**. ASCII on purpose.
+         *
+         * These used to be the display labels, en dashes and all, used directly as the
+         * payload value — so `"2–4"` went into the event, into the rescue card's QR and
+         * onto the mesh as U+2013. That is three bytes in UTF-8 and is not in the GSM
+         * 7-bit alphabet *at all*, which would have broken day 12's 160-character SMS
+         * packing on a field a rescuer actually reads. [peopleLabel] puts the typography
+         * back at the point of display, where it belongs.
+         */
+        val PEOPLE_OPTIONS = listOf("1", "2-4", "5-8", "9+")
+
+        /** Display form of a [PEOPLE_OPTIONS] value — en dash for a range, never stored. */
+        fun peopleLabel(value: String): String = value.replace('-', '–')
         val COMPANION_OPTIONS = listOf("Bata", "Matanda", "PWD")
         const val MEDICAL_NONE = "Wala"
         val MEDICAL_OPTIONS = listOf("Gamot sa puso", "Buntis", "Sugatan", MEDICAL_NONE)

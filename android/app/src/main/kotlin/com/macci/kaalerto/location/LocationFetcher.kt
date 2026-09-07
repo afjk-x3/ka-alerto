@@ -11,29 +11,77 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
- * One-shot "where am I right now" for report authoring — not continuous tracking.
+ * How long to wait for a *fresh* fix before falling back to the last known one.
  *
- * Returns null on missing permission or no fix, and does not throw either way: both
- * are the map-tap fallback's cue to take over (BUILD_TASKS.md day 3 — "GPS primary,
- * map-tap fallback"), not error conditions the caller needs to branch on separately.
+ * `getCurrentLocation` forces a new fix and will happily wait a long time for one — that
+ * is the right trade for a survey app and the wrong one here. Six seconds is roughly the
+ * limit of what someone holding a red SOS button will read as "working" rather than
+ * "broken", and it is well short of the 30 s at which the SOS state machine gives up on
+ * every channel and raises the rescue card.
+ */
+private const val FRESH_FIX_TIMEOUT_MS = 6_000L
+
+/**
+ * Anything older than this is not worth showing as "where I am". Ten minutes is the same
+ * window `SosAlertWatcher.FRESH_ON_STARTUP_MS` uses for "this emergency is still live".
+ */
+private const val LAST_KNOWN_MAX_AGE_MS = 10L * 60 * 1000
+
+/**
+ * One-shot "where am I right now" for report and SOS authoring — not continuous tracking.
+ *
+ * **GPS first, last known second, null third**, and it is bounded at every step. That
+ * ordering was always the documented intent; until 6 September 2026 the code only did the
+ * first part. `getCurrentLocation(PRIORITY_HIGH_ACCURACY)` was awaited with no deadline
+ * and no fallback, so on a phone with no fresh lock neither listener ever fired, the
+ * coroutine suspended forever, and the caller never resumed — observed on device as the
+ * red SOS button doing *nothing at all*, twice, with no spinner and no error. That is the
+ * product's headline claim failing silently on exactly the phone least likely to hold a
+ * lock: indoors, under a roof, in a storm.
+ *
+ * Returns null on missing permission, on no fix within the budget with nothing recent
+ * cached, and on failure. It does not throw in any of those cases: for a report, null is
+ * the map-tap fallback's cue (BUILD_TASKS.md day 3); for an SOS, the caller sends at the
+ * demo-area centre rather than refusing, because a request with a rough position beats no
+ * request at all (`docs/03-architecture.md` §6.1).
  */
 @SuppressLint("MissingPermission") // guarded by the explicit permission check below
 suspend fun fetchCurrentLocation(context: Context): Location? {
-    val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+    if (!hasLocationPermission(context)) return null
+
+    val client = LocationServices.getFusedLocationProviderClient(context)
+
+    val fresh = withTimeoutOrNull(FRESH_FIX_TIMEOUT_MS) {
+        val cancellationTokenSource = CancellationTokenSource()
+        suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { cancellationTokenSource.cancel() }
+            client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
+                .addOnSuccessListener { location -> continuation.resume(location) }
+                .addOnFailureListener { continuation.resume(null) }
+        }
+    }
+    if (fresh != null) return fresh
+
+    // The fallback the doc comments have promised since day 3. A fix from four minutes
+    // ago is a far better answer than none — the water moved, the house did not.
+    val lastKnown = withTimeoutOrNull(FRESH_FIX_TIMEOUT_MS) {
+        suspendCancellableCoroutine<Location?> { continuation ->
+            client.lastLocation
+                .addOnSuccessListener { location -> continuation.resume(location) }
+                .addOnFailureListener { continuation.resume(null) }
+        }
+    }
+    return lastKnown?.takeIf {
+        val age = System.currentTimeMillis() - it.time
+        age in 0..LAST_KNOWN_MAX_AGE_MS
+    }
+}
+
+private fun hasLocationPermission(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
             PackageManager.PERMISSION_GRANTED
-    if (!hasPermission) return null
-
-    val client = LocationServices.getFusedLocationProviderClient(context)
-    val cancellationTokenSource = CancellationTokenSource()
-
-    return suspendCancellableCoroutine { continuation ->
-        continuation.invokeOnCancellation { cancellationTokenSource.cancel() }
-        client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cancellationTokenSource.token)
-            .addOnSuccessListener { location -> continuation.resume(location) }
-            .addOnFailureListener { continuation.resume(null) }
-    }
-}

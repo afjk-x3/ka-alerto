@@ -125,6 +125,9 @@ fun MapScreen(
     val packState by pack.state.collectAsStateWithLifecycle()
     val featureSummaries by viewModel.featureSummaries.collectAsStateWithLifecycle()
     var locatingReport by remember { mutableStateOf(false) }
+    // The SOS button had no pending state at all: it awaited a fix and, if none came,
+    // simply never navigated. Observed on device as the red button doing nothing.
+    var locatingSos by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
     var homeDraft by remember { mutableStateOf<HomeDraft?>(null) }
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
@@ -198,11 +201,12 @@ fun MapScreen(
     val showChrome = !pickMode && homeDraft == null
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Map-Normal.dc.html's header ("Brgy. ... · synced/report status") is only
-        // honest to show once the offline pack is actually ready — see PackStatusBanner.
-        if (packState !is PackState.Ready) {
-            PackStatusBanner(state = packState, modifier = Modifier.fillMaxWidth())
-        } else if (onToggleStormMode != null) {
+        // The pack banner used to *replace* the header, which took the role badge and
+        // the mesh line with it — on a fresh install with no network that left the role
+        // screen unreachable entirely. The header's content (connectivity, report count,
+        // peers) is true whether or not tiles have downloaded, and the banner directly
+        // beneath it says the map has not; stacking them is both honest and navigable.
+        if (onToggleStormMode != null) {
             MapHeader(
                 isOnline = isOnline,
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
@@ -211,6 +215,13 @@ fun MapScreen(
                 onRoleClick = onOpenRoles,
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (packState !is PackState.Ready) {
+            PackStatusBanner(
+                state = packState,
+                isOnline = isOnline,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -303,14 +314,18 @@ fun MapScreen(
             onStartReport != null -> MapActionBar(
                 label = if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat",
                 sosActive = sosActive,
+                locatingSos = locatingSos,
                 onSos = onStartSos?.let { start ->
                     {
+                        if (locatingSos) return@let
+                        locatingSos = true
                         scope.launch {
                             // Best fix available, but never a blocker: §6.1 has the
                             // request going out at t+0 with the last known position and
                             // refining afterwards. A null here still opens the hold
                             // screen at the demo centre rather than refusing.
                             val location = fetchCurrentLocation(context)
+                            locatingSos = false
                             start(
                                 location?.latitude ?: DemoArea.centre.latitude,
                                 location?.longitude ?: DemoArea.centre.longitude,
@@ -409,6 +424,7 @@ private fun MapActionBar(
     onClick: () -> Unit,
     onSos: (() -> Unit)?,
     sosActive: Boolean,
+    locatingSos: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -452,7 +468,11 @@ private fun MapActionBar(
                     color = SosColors.CardBackground,
                 )
                 Text(
-                    if (sosActive) "aktibo" else "pindutin",
+                    when {
+                        locatingSos -> "sandali…"
+                        sosActive -> "aktibo"
+                        else -> "pindutin"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = SosColors.CriticalText,
                 )
@@ -465,20 +485,33 @@ private fun MapActionBar(
  * Honest status, per the project's rule against implying a capability the app does not
  * have. A half-downloaded pack must not look like a working offline map — that is the
  * one claim that cannot break on stage.
+ *
+ * **A download that cannot start must not render as one that is at 0%.** On a first run
+ * with no network this sat at "Downloading offline map · 0% / 0 tiles (estimating total)"
+ * indefinitely, which is exactly the spinner `docs/03-architecture.md` §6.4.4 forbids —
+ * and needlessly, because the app already knows connectivity is false. It now says it is
+ * waiting for a connection, and says the parts that *do* work meanwhile: reports and SOS
+ * never needed tiles. (The download itself is fine and resumes on its own the moment a
+ * connection returns — this was only ever a copy problem.)
  */
 @Composable
-private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
-    val (headline: String, detail: String?) = when (state) {
-        PackState.Unknown -> "Checking offline map…" to null
-        PackState.Absent -> "No offline map yet" to "Starting download. This needs a connection once."
-        is PackState.Downloading -> {
+private fun PackStatusBanner(state: PackState, isOnline: Boolean, modifier: Modifier = Modifier) {
+    val stalled = !isOnline && state is PackState.Downloading && state.completedTiles == 0L
+    val (headline: String, detail: String?) = when {
+        stalled -> "Naghihintay ng koneksyon" to
+            "Hindi pa na-download ang mapa. Gumagana pa rin ang pag-uulat at ang SOS."
+        state is PackState.Unknown -> "Tinitingnan ang offline na mapa…" to null
+        state is PackState.Absent -> "Wala pang offline na mapa" to
+            (if (isOnline) "Sinisimulan ang download." else "Kailangan ng koneksyon nang isang beses.")
+        state is PackState.Downloading -> {
             val pct = state.fraction?.let { " · ${(it * 100).toInt()}%" }.orEmpty()
-            "Downloading offline map$pct" to
-                "${state.completedTiles} tiles${if (!state.isPrecise) " (estimating total)" else ""}"
+            "Dina-download ang mapa$pct" to
+                "${state.completedTiles} tile${if (!state.isPrecise) " (tinatantiya ang kabuuan)" else ""}"
         }
-        is PackState.Ready ->
-            "Offline map ready" to "${state.tileCount} tiles · works with no signal"
-        is PackState.Failed -> "Offline map failed" to state.reason
+        state is PackState.Ready ->
+            "Handa na ang offline na mapa" to "${state.tileCount} tile · gumagana kahit walang signal"
+        state is PackState.Failed -> "Hindi na-download ang mapa" to (state as PackState.Failed).reason
+        else -> "" to null
     }
 
     Column(
@@ -499,7 +532,9 @@ private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (state is PackState.Downloading) {
+        // No bar while stalled: a progress indicator under "waiting for a connection" is
+        // the same implied-activity problem as the 0%% headline it replaced.
+        if (state is PackState.Downloading && !stalled) {
             val fraction = state.fraction
             if (fraction != null) {
                 LinearProgressIndicator(
