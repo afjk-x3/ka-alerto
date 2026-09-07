@@ -124,6 +124,8 @@ fun MapScreen(
     onNeedsRegistration: ((featureRef: String) -> Unit)? = null,
     /** A feature to select on entry, so a gated action resumes where it was interrupted. */
     focusFeatureRef: String? = null,
+    /** True when [pickMode] is placing a home pin rather than a report location. */
+    pickingHome: Boolean = false,
     /** Open requests from other people, for the strip's count. */
     openRequestCount: Int = 0,
     stormMode: Boolean = false,
@@ -327,6 +329,7 @@ fun MapScreen(
         when {
             pickMode -> PickLocationBanner(
                 onCancel = { onCancelPick?.invoke() },
+                forHome = pickingHome,
                 modifier = Modifier.fillMaxWidth(),
             )
             homeDraft != null -> HomeRadiusOverlay(
@@ -415,20 +418,36 @@ fun MapScreen(
 
 /** Shown only while [MapScreen]'s pickMode is active — GPS's fallback path (BUILD_TASKS.md day 3). */
 @Composable
-private fun PickLocationBanner(onCancel: () -> Unit, modifier: Modifier = Modifier) {
+// Pick-mode serves two callers now — day 3's report location and registration's home
+// pin — so it must not say "report" in both. Telling somebody setting their house
+// that they are placing a flood report is the kind of small wrongness that makes a
+// person distrust the next screen too.
+private fun PickLocationBanner(
+    onCancel: () -> Unit,
+    forHome: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Row(
         modifier = modifier.background(MaterialTheme.colorScheme.inverseSurface).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                "Tapikin ang mapa para itakda ang lokasyon",
+                if (forHome) {
+                    "Tapikin ang mapa para ituro ang bahay mo"
+                } else {
+                    "Tapikin ang mapa para itakda ang lokasyon"
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
             )
             Text(
-                "Tap the map to set the report location",
+                if (forHome) {
+                    "Tap the map to set your home"
+                } else {
+                    "Tap the map to set the report location"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
             )

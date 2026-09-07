@@ -54,21 +54,24 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 /**
  * PRD §9's registration, from `design/artboards/Onboarding.dc.html`.
  *
- * **Not the first screen.** The decision (7 Sep) is that the map is readable by anyone
- * immediately and this appears the first time somebody tries to *author* something — a
- * report, a confirm, a dispute, an official ruling. Blocking a stranger from seeing where
- * the water is in order to collect a name they could type as "x" would be hostile in the
- * exact moment the app exists for, and it would produce worse data, not better: a form in
- * the way of an emergency gets filled with anything. Asking at the point of authorship is
- * where the social cost the name exists for actually lives. **SOS is never gated**, here
- * or anywhere.
+ * **The first screen on an unregistered device**, per PRD §9's "required at first run".
+ * The authoring gate in `KaAlertoApp.gated` stays as a second line of defence, so the
+ * invariant "nothing is ever authored anonymously" holds even if routing changes.
+ *
+ * **SOS is never gated**, which is what makes a hard gate defensible rather than
+ * hostile. With no way past this screen, the red banner is not a courtesy — it is the
+ * only thing reachable, and somebody installing mid-flood depends on it.
  *
  * Two departures from the artboard, both deliberate:
  *
- * 1. **The barangay is not filled from GPS.** The artboard says "Nakuha sa GPS mo",
- *    which needs reverse geocoding, which needs a network — on the one screen most
- *    likely to be used without one. It is pre-filled from [DemoArea] instead and the
- *    label says so rather than claiming a fix found it.
+ * 1. **GPS gives a pin, not a barangay name.** The artboard's "Nakuha sa GPS mo" implies
+ *    a place name, which needs reverse geocoding and therefore a network, on the one
+ *    screen most likely to be used without one. A *coordinate* needs neither, and it is
+ *    what the app actually consumes: the pin seeds day 5's home radius, which is what
+ *    makes the "Abiso — baha malapit sa bahay mo" row true. It is found automatically,
+ *    shown with its accuracy, and adjustable on the real map ([Screen.PickHome]) — the
+ *    same tap-to-pick day 3 already built for reports. The barangay *name* beside it is
+ *    pre-filled and editable, and says plainly that GPS did not choose it.
  * 2. **No SMS row.** The artboard offers four permissions; SMS is build day 12. A setup
  *    screen is where people expect every switch to work, so a dead one reads as broken
  *    rather than as scheduled — and §6.4.4's rule against implying a capability applies
@@ -76,9 +79,19 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
  */
 @Composable
 fun OnboardingScreen(
+    fullName: String,
+    onNameChange: (String) -> Unit,
+    barangay: String,
+    onBarangayChange: (String) -> Unit,
+    /** The home pin, found by GPS on entry. Null while looking, or if nothing came. */
+    home: Pair<Double, Double>?,
+    accuracyMeters: Float?,
+    locating: Boolean,
+    onLocate: () -> Unit,
+    onPickOnMap: () -> Unit,
     onDone: () -> Unit,
     onSos: () -> Unit,
-    onCancel: () -> Unit,
+    onCancel: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -86,11 +99,6 @@ fun OnboardingScreen(
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = remember { FocusRequester() }
 
-    // Pre-filled when this is a correction rather than a first registration.
-    var fullName by remember { mutableStateOf(LocalIdentity.registeredFullName(context)) }
-    var barangay by remember {
-        mutableStateOf(LocalIdentity.homeBarangay(context).ifBlank { DemoArea.BARANGAY_NAME })
-    }
     var editingBarangay by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
 
@@ -181,7 +189,7 @@ fun OnboardingScreen(
                         // its container.
                         BasicTextField(
                             value = fullName,
-                            onValueChange = { fullName = it; showError = false },
+                            onValueChange = { onNameChange(it); showError = false },
                             singleLine = true,
                             textStyle = LocalTextStyle.current.copy(
                                 fontSize = 17.sp,
@@ -229,6 +237,66 @@ fun OnboardingScreen(
                     }
                 }
 
+                // ---- where you live ----
+                //
+                // The artboard's "Nakuha sa GPS mo" is honoured here as a *pin*, not
+                // as a place name. Turning a fix into "Brgy. San Juan Bautista" needs
+                // reverse geocoding and therefore a network, on the one screen most
+                // likely to be used without one — but a coordinate needs neither, and
+                // a coordinate is what the app actually uses: it seeds day 5's home
+                // radius, which is what makes the "Abiso" row below true.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    FieldLabel("BAHAY MO")
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.5.dp, colors.border)
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                when {
+                                    home != null -> "%.5f, %.5f".format(home.first, home.second)
+                                    locating -> "Hinahanap ang lokasyon mo…"
+                                    else -> "Hindi makuha ang lokasyon"
+                                },
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                            Text(
+                                when {
+                                    home != null && accuracyMeters != null ->
+                                        "GPS ±${accuracyMeters.toInt()} m · tingnan kung tama"
+                                    home != null -> "Nakatakda · tingnan kung tama"
+                                    locating -> "Sandali lang"
+                                    else -> "Ituro na lang sa mapa"
+                                },
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.size(10.dp))
+                        Text(
+                            if (home == null && !locating) "Subukan ulit" else "Ituro sa mapa",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .clickable {
+                                    if (home == null && !locating) onLocate() else onPickOnMap()
+                                }
+                                .padding(vertical = 8.dp),
+                        )
+                    }
+                    Text(
+                        "Dito ka aabisuhan kapag may baha malapit sa bahay mo.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
                 // ---- barangay ----
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     FieldLabel("BARANGAY")
@@ -242,7 +310,7 @@ fun OnboardingScreen(
                         if (editingBarangay) {
                             BasicTextField(
                                 value = barangay,
-                                onValueChange = { barangay = it },
+                                onValueChange = onBarangayChange,
                                 singleLine = true,
                                 textStyle = LocalTextStyle.current.copy(
                                     fontSize = 17.sp,
@@ -282,9 +350,11 @@ fun OnboardingScreen(
                         }
                     }
                     Text(
-                        // Not "Nakuha sa GPS mo": nothing here read a fix. Saying so
-                        // would be the same false claim the rest of the build avoids.
-                        "Ito ang demo area ng app. Pindutin ang Baguhin kung iba ang sa iyo.",
+                        // The pin above is the real datum; this is the readable label
+                        // beside it. The app cannot name a barangay from a coordinate
+                        // offline, so this is pre-filled rather than derived, and says
+                        // so instead of implying GPS chose it.
+                        "Hindi ito nakukuha sa GPS — pakitama kung iba ang sa iyo.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -328,7 +398,6 @@ fun OnboardingScreen(
                         if (!usable) {
                             showError = true
                         } else {
-                            LocalIdentity.register(context, fullName, barangay)
                             onDone()
                         }
                     },
@@ -341,18 +410,24 @@ fun OnboardingScreen(
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clickable(onClick = onCancel),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    "Bumalik sa mapa",
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            // No way out but forward — except SOS. PRD §9 makes this required at
+            // first run, so a "skip" here would be the decision table's "fully
+            // skippable" option, which was considered and rejected. A cancel appears
+            // only when this is an edit rather than a first registration.
+            if (onCancel != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .clickable(onClick = onCancel),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "Kanselahin",
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

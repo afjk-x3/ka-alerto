@@ -33,6 +33,15 @@ sealed interface Screen {
      */
     data class Onboarding(val resume: Screen?) : Screen
 
+    /**
+     * Pick-mode over the real map, for confirming the home pin during registration.
+     * Separate from [PickLocation] only in where it returns to — the map itself, and
+     * day 3's tap-to-pick, are the same. Works offline because it reads the same tile
+     * pack everything else does; no reverse geocoding is involved, since a coordinate
+     * is the thing being captured, not a place name.
+     */
+    data object PickHome : Screen
+
     /** Day 10 — the role switch, an official's ruling on one feature, and the centres. */
     data object Roles : Screen
     data class OfficialStatus(val featureRef: String) : Screen

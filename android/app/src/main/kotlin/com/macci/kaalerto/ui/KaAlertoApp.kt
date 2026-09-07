@@ -55,7 +55,27 @@ fun KaAlertoApp(
     /** Set when the activity was opened by tapping day 9's nearby-SOS alert. */
     openSosId: String? = null,
 ) {
-    var screen by remember { mutableStateOf<Screen>(Screen.Map) }
+    val appContext = LocalContext.current
+    // PRD §9 is literal: registration is required at first run, so an unregistered
+    // device opens on the form rather than the map. The SOS banner on that form stops
+    // being a courtesy at this point and becomes the only thing reachable — which is
+    // exactly why it is there, and why it must never be gated.
+    var screen by remember {
+        mutableStateOf<Screen>(
+            if (LocalIdentity.isRegistered(appContext)) Screen.Map else Screen.Onboarding(Screen.Map),
+        )
+    }
+    // The registration draft lives here, not inside the screen: confirming the home pin
+    // navigates to the map and back, and a name typed before that must survive the trip.
+    var draftName by remember { mutableStateOf(LocalIdentity.registeredFullName(appContext)) }
+    var draftBarangay by remember {
+        mutableStateOf(LocalIdentity.homeBarangay(appContext).ifBlank { DemoArea.BARANGAY_NAME })
+    }
+    var draftHome by remember {
+        mutableStateOf(HomeLocationStore.get(appContext)?.let { it.lat to it.lon })
+    }
+    var draftAccuracy by remember { mutableStateOf<Float?>(null) }
+    var locatingHome by remember { mutableStateOf(false) }
     val sosViewModel: SosViewModel = viewModel()
     val activeSos by sosViewModel.activeMine.collectAsStateWithLifecycle()
     val meshStatus by MeshState.status.collectAsStateWithLifecycle()
@@ -67,7 +87,7 @@ fun KaAlertoApp(
     val isResponder by roleViewModel.isResponder.collectAsStateWithLifecycle()
     val role by roleViewModel.role.collectAsStateWithLifecycle()
     val incoming by sosViewModel.incoming.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val context = appContext
     val scope = rememberCoroutineScope()
     // One MapViewModel for the whole switch, so the official screen folds the same
     // event stream the map does rather than opening a second subscription.
@@ -88,6 +108,21 @@ fun KaAlertoApp(
     // fires again on the unchanged state, and the user is bounced straight back with no
     // way to reach "Ligtas na ako".
     var rescueCardRaisedFor by remember { mutableStateOf<String?>(null) }
+
+    // The pin finds itself. Runs on entry to the form and on an explicit retry, and
+    // is bounded by the fetcher's own 6 s budget, so a phone with no lock lands on
+    // "Ituro na lang sa mapa" rather than a spinner that never resolves.
+    LaunchedEffect(screen is Screen.Onboarding) {
+        if (screen is Screen.Onboarding && draftHome == null && !locatingHome) {
+            locatingHome = true
+            val fix = fetchCurrentLocation(appContext)
+            if (fix != null) {
+                draftHome = fix.latitude to fix.longitude
+                draftAccuracy = fix.accuracy
+            }
+            locatingHome = false
+        }
+    }
     // The feature whose sheet the registration gate interrupted, reopened on return.
     var reopenFeatureRef by remember { mutableStateOf<String?>(null) }
 
@@ -264,10 +299,49 @@ fun KaAlertoApp(
         // Two role screens, one flag. See identity/RoleMode.kt — the event-sourced flow
         // is one-way by design, which is right for a barangay and wrong for a bench, so
         // it is parked while the app is being exercised by hand.
+        Screen.PickHome -> MapScreen(
+            modifier = modifier,
+            pickMode = true,
+            pickingHome = true,
+            onLocationPicked = { latLng ->
+                draftHome = latLng.latitude to latLng.longitude
+                // Hand-placed, so the GPS accuracy no longer describes it.
+                draftAccuracy = null
+                screen = Screen.Onboarding(Screen.Map)
+            },
+            onCancelPick = { screen = Screen.Onboarding(Screen.Map) },
+        )
+
         is Screen.Onboarding -> OnboardingScreen(
             modifier = modifier,
+            fullName = draftName,
+            onNameChange = { draftName = it },
+            barangay = draftBarangay,
+            onBarangayChange = { draftBarangay = it },
+            home = draftHome,
+            accuracyMeters = draftAccuracy,
+            locating = locatingHome,
+            onLocate = {
+                scope.launch {
+                    locatingHome = true
+                    val fix = fetchCurrentLocation(appContext)
+                    if (fix != null) {
+                        draftHome = fix.latitude to fix.longitude
+                        draftAccuracy = fix.accuracy
+                    }
+                    locatingHome = false
+                }
+            },
+            onPickOnMap = { screen = Screen.PickHome },
             // Resuming, not just dismissing — see `gated`.
             onDone = {
+                LocalIdentity.register(context, draftName, draftBarangay)
+                // Registering also sets day 5's home radius, so the notification primer
+                // on this very screen is true from the first launch instead of waiting
+                // for somebody to discover the map long-press.
+                draftHome?.let { (lat, lon) ->
+                    HomeLocationStore.set(context, lat, lon, HomeLocationStore.DEFAULT_RADIUS_METERS)
+                }
                 screen = current.resume ?: Screen.Map
             },
             // The escape hatch is the whole reason the gate is defensible: nobody is
@@ -287,7 +361,12 @@ fun KaAlertoApp(
                     }
                 }
             },
-            onCancel = { screen = Screen.Map },
+            // Only an edit can be cancelled; a first run cannot (PRD §9).
+            onCancel = if (LocalIdentity.isRegistered(context)) {
+                ({ screen = current.resume ?: Screen.Map })
+            } else {
+                null
+            },
         )
 
         Screen.Roles -> if (RoleMode.EVENT_SOURCED) {
