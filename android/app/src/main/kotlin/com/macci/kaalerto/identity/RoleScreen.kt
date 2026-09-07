@@ -377,7 +377,10 @@ fun ManualRoleScreen(
 ) {
     val colors = LocalKaAlertoColors.current
     val context = androidx.compose.ui.platform.LocalContext.current
-    val registered = displayFormOf(LocalIdentity.registeredFullName(context))
+    val registered = displayFormOf(
+        LocalIdentity.registeredFirstName(context),
+        LocalIdentity.registeredLastName(context),
+    )
 
     Column(
         modifier = modifier

@@ -39,6 +39,8 @@ object LocalIdentity {
      * with the surname on it. Do not add a second reader without re-checking that test.
      */
     private const val KEY_FULL_NAME = "full_name"
+    private const val KEY_FIRST_NAME = "first_name"
+    private const val KEY_LAST_NAME = "last_name"
     private const val KEY_HOME_BARANGAY = "home_barangay"
 
     const val ROLE_RESIDENT = "resident"
@@ -66,12 +68,29 @@ object LocalIdentity {
     )
 
     /** Whether PRD §9's registration has been completed on this device. */
-    fun isRegistered(context: Context): Boolean =
-        !prefs(context).getString(KEY_FULL_NAME, null).isNullOrBlank()
+    fun isRegistered(context: Context): Boolean = registeredFirstName(context).isNotBlank()
 
-    /** For pre-filling the edit field only — never for an event. See [KEY_FULL_NAME]. */
-    fun registeredFullName(context: Context): String =
-        prefs(context).getString(KEY_FULL_NAME, null).orEmpty()
+    /**
+     * For pre-filling the edit fields only — never for an event. See [KEY_FULL_NAME].
+     *
+     * Falls back to splitting the old single [KEY_FULL_NAME] on its first space, so a
+     * device registered before the fields were separated keeps its name instead of being
+     * asked again. Best effort by definition: the split is exactly the guess the two
+     * fields exist to stop making, which is why it applies only to already-stored names
+     * and never to anything typed from here on.
+     */
+    fun registeredFirstName(context: Context): String {
+        val prefs = prefs(context)
+        prefs.getString(KEY_FIRST_NAME, null)?.takeIf { it.isNotBlank() }?.let { return it }
+        return prefs.getString(KEY_FULL_NAME, null).orEmpty().trim().substringBefore(' ')
+    }
+
+    fun registeredLastName(context: Context): String {
+        val prefs = prefs(context)
+        prefs.getString(KEY_LAST_NAME, null)?.let { return it }
+        val legacy = prefs.getString(KEY_FULL_NAME, null).orEmpty().trim()
+        return if (legacy.contains(' ')) legacy.substringAfter(' ').trim() else ""
+    }
 
     fun homeBarangay(context: Context): String =
         prefs(context).getString(KEY_HOME_BARANGAY, null).orEmpty()
@@ -85,9 +104,13 @@ object LocalIdentity {
      * authored from here on — the ones already on other phones keep what they were sent
      * with, because the log is append-only and the screen says so.
      */
-    fun register(context: Context, fullName: String, homeBarangay: String) {
+    fun register(context: Context, firstName: String, lastName: String, homeBarangay: String) {
         prefs(context).edit()
-            .putString(KEY_FULL_NAME, fullName.trim())
+            .putString(KEY_FIRST_NAME, firstName.trim())
+            .putString(KEY_LAST_NAME, lastName.trim())
+            // The pre-split key is cleared rather than left behind, so nothing can read a
+            // stale full name after the person has corrected how it splits.
+            .remove(KEY_FULL_NAME)
             .putString(KEY_HOME_BARANGAY, homeBarangay.trim())
             .apply()
     }
@@ -107,7 +130,7 @@ object LocalIdentity {
         }
 
         val role = role(context)
-        val registered = displayFormOf(prefs.getString(KEY_FULL_NAME, null).orEmpty())
+        val registered = displayFormOf(registeredFirstName(context), registeredLastName(context))
         return Identity(authorId, displayName(role, suffix, registered), role, suffix)
     }
 

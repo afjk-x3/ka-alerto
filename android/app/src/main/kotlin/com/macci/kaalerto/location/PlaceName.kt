@@ -12,6 +12,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
 /**
+ * What a coordinate resolves to.
+ *
+ * [barangay] is kept separate from [label] because the registration screen needs both,
+ * for different jobs: the label is what a person reads to recognise where they are, and
+ * the barangay is what gets *stored* against their reports. Handing back one joined
+ * string would have meant re-splitting it at the call site, which is the same guessing
+ * the name fields were separated to avoid.
+ */
+data class Place(val barangay: String?, val label: String)
+
+/**
  * A readable name for a coordinate — "Quiapo, Manila" — for the registration screen.
  *
  * **Best-effort, and null is a completely normal answer.** `Geocoder` on almost every
@@ -24,7 +35,7 @@ import kotlin.coroutines.resume
  * installed the app — which is the same reason the artboard puts the map download here.
  * So the name is worth asking for here and nowhere else.
  */
-suspend fun describePlace(context: Context, lat: Double, lon: Double): String? {
+suspend fun describePlace(context: Context, lat: Double, lon: Double): Place? {
     if (!Geocoder.isPresent()) return null
     val geocoder = Geocoder(context, Locale("fil", "PH"))
 
@@ -51,8 +62,20 @@ suspend fun describePlace(context: Context, lat: Double, lon: Double): String? {
         }
     }
 
-    return address?.let(::readableName)
+    return address?.let { Place(barangay = barangayOf(it), label = readableName(it) ?: return null) }
 }
+
+/**
+ * The barangay, as the geocoder understands it.
+ *
+ * `subLocality` is where a Philippine barangay normally lands. It is not guaranteed —
+ * some places return a district or nothing at all — so this is allowed to be null and
+ * the caller keeps whatever was already in the field rather than blanking it. Nothing
+ * downstream treats this as authoritative: it is a pre-fill the person can correct, and
+ * `submissions` still carry the coordinate as the real datum.
+ */
+private fun barangayOf(address: Address): String? =
+    address.subLocality?.takeIf { it.isNotBlank() }
 
 /**
  * Two levels, nearest first: "Quiapo, Manila". Deliberately not the full postal address —

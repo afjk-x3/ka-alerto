@@ -79,10 +79,14 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
  */
 @Composable
 fun OnboardingScreen(
-    fullName: String,
-    onNameChange: (String) -> Unit,
+    firstName: String,
+    onFirstNameChange: (String) -> Unit,
+    lastName: String,
+    onLastNameChange: (String) -> Unit,
     barangay: String,
     onBarangayChange: (String) -> Unit,
+    /** True once the barangay came from the geocoder rather than a default. */
+    barangayFromLocation: Boolean,
     /** The home pin, found by GPS on entry. Null while looking, or if nothing came. */
     home: Pair<Double, Double>?,
     accuracyMeters: Float?,
@@ -113,8 +117,8 @@ fun OnboardingScreen(
     // be near them. The app knows this at registration, so it says it then.
     val outsideDemoArea = home != null &&
         !DemoArea.bounds.contains(org.maplibre.android.geometry.LatLng(home.first, home.second))
-    val display = displayFormOf(fullName)
-    val usable = isUsableName(fullName)
+    val display = displayFormOf(firstName, lastName)
+    val usable = isUsableName(firstName)
 
     Column(
         modifier = modifier
@@ -182,6 +186,10 @@ fun OnboardingScreen(
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 // ---- name ----
+                //
+                // Two fields, not one. See NameFormat.kt: no rule over a single string
+                // can tell "Juan Carlos Santos" from "Juan Dela Cruz", and guessing wrong
+                // prints an initial that belongs to the person's own given name.
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     FieldLabel("PANGALAN")
                     Box(
@@ -198,8 +206,8 @@ fun OnboardingScreen(
                         // label, and Material's own decoration box cannot be talked out of
                         // its container.
                         BasicTextField(
-                            value = fullName,
-                            onValueChange = { onNameChange(it); showError = false },
+                            value = firstName,
+                            onValueChange = { onFirstNameChange(it); showError = false },
                             singleLine = true,
                             textStyle = LocalTextStyle.current.copy(
                                 fontSize = 17.sp,
@@ -217,11 +225,11 @@ fun OnboardingScreen(
                                 .focusRequester(focus)
                                 .semantics { contentDescription = "Pangalan mo" },
                         )
-                        if (fullName.isEmpty()) {
+                        if (firstName.isEmpty()) {
                             // A hint, never the label — the label above is the real one, so
                             // it does not vanish the moment somebody starts typing.
                             Text(
-                                "Juan Dela Cruz",
+                                "Juan",
                                 fontSize = 17.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = colors.border,
@@ -234,17 +242,52 @@ fun OnboardingScreen(
                             fontSize = 12.sp,
                             color = colors.criticalFg,
                         )
-                    } else {
-                        Text(
-                            if (display.isBlank()) {
-                                "Lalabas ang maikling anyo ng pangalan mo sa mga ulat."
-                            } else {
-                                "Lalabas bilang $display sa mga ulat mo"
-                            },
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
+
+                    FieldLabel("APELYIDO")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.5.dp, colors.border)
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                    ) {
+                        BasicTextField(
+                            value = lastName,
+                            onValueChange = onLastNameChange,
+                            singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Done,
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { keyboard?.hide() }),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .semantics { contentDescription = "Apelyido mo" },
+                        )
+                        if (lastName.isEmpty()) {
+                            Text(
+                                "Dela Cruz",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.border,
+                            )
+                        }
+                    }
+                    Text(
+                        if (display.isBlank()) {
+                            "Lalabas ang maikling anyo ng pangalan mo sa mga ulat."
+                        } else {
+                            "Lalabas bilang $display sa mga ulat mo"
+                        },
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 // ---- where you live ----
@@ -410,11 +453,14 @@ fun OnboardingScreen(
                         }
                     }
                     Text(
-                        // The pin above is the real datum; this is the readable label
-                        // beside it. The app cannot name a barangay from a coordinate
-                        // offline, so this is pre-filled rather than derived, and says
-                        // so instead of implying GPS chose it.
-                        "Hindi ito nakukuha sa GPS — pakitama kung iba ang sa iyo.",
+                        // Says where the value came from, because the two cases deserve
+                        // different amounts of trust: one was read off the location, the
+                        // other is just this build's demo area standing in.
+                        if (barangayFromLocation) {
+                            "Nakuha sa lokasyon mo — pindutin ang Baguhin kung mali."
+                        } else {
+                            "Hindi ito nakuha sa lokasyon mo — pakitama kung iba ang sa iyo."
+                        },
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

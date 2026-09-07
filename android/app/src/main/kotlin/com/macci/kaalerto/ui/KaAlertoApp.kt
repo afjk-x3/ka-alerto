@@ -73,10 +73,16 @@ fun KaAlertoApp(
     }
     // The registration draft lives here, not inside the screen: confirming the home pin
     // navigates to the map and back, and a name typed before that must survive the trip.
-    var draftName by remember { mutableStateOf(LocalIdentity.registeredFullName(appContext)) }
+    var draftFirstName by remember { mutableStateOf(LocalIdentity.registeredFirstName(appContext)) }
+    var draftLastName by remember { mutableStateOf(LocalIdentity.registeredLastName(appContext)) }
     var draftBarangay by remember {
         mutableStateOf(LocalIdentity.homeBarangay(appContext).ifBlank { DemoArea.BARANGAY_NAME })
     }
+    // The barangay follows the pin until somebody corrects it, and then stops following:
+    // a field that keeps overwriting a correction is worse than one that never filled
+    // itself, because the person has already told the app it was wrong once.
+    var barangayCorrected by remember { mutableStateOf(LocalIdentity.homeBarangay(appContext).isNotBlank()) }
+    var barangayFromLocation by remember { mutableStateOf(false) }
     var draftHome by remember {
         mutableStateOf(HomeLocationStore.get(appContext)?.let { it.lat to it.lon })
     }
@@ -119,10 +125,18 @@ fun KaAlertoApp(
     // The pin finds itself. Runs on entry to the form and on an explicit retry, and
     // is bounded by the fetcher's own 6 s budget, so a phone with no lock lands on
     // "Ituro na lang sa mapa" rather than a spinner that never resolves.
-    // The label follows the pin, whether the pin came from GPS or from a tap on the map.
+    // The label and the barangay both follow the pin, whether it came from GPS or from a
+    // tap on the map — moving the pin and leaving the barangay behind would quietly file
+    // reports against the wrong place.
     LaunchedEffect(draftHome) {
         val pin = draftHome
-        draftPlaceName = if (pin == null) null else describePlace(appContext, pin.first, pin.second)
+        val place = if (pin == null) null else describePlace(appContext, pin.first, pin.second)
+        draftPlaceName = place?.label
+        val resolved = place?.barangay
+        if (resolved != null && !barangayCorrected) {
+            draftBarangay = resolved
+            barangayFromLocation = true
+        }
     }
 
     LaunchedEffect(screen is Screen.Onboarding) {
@@ -334,10 +348,17 @@ fun KaAlertoApp(
 
         is Screen.Onboarding -> OnboardingScreen(
             modifier = modifier,
-            fullName = draftName,
-            onNameChange = { draftName = it },
+            firstName = draftFirstName,
+            onFirstNameChange = { draftFirstName = it },
+            lastName = draftLastName,
+            onLastNameChange = { draftLastName = it },
             barangay = draftBarangay,
-            onBarangayChange = { draftBarangay = it },
+            onBarangayChange = {
+                draftBarangay = it
+                barangayCorrected = true
+                barangayFromLocation = false
+            },
+            barangayFromLocation = barangayFromLocation,
             home = draftHome,
             accuracyMeters = draftAccuracy,
             placeName = draftPlaceName,
@@ -356,7 +377,7 @@ fun KaAlertoApp(
             onPickOnMap = { screen = Screen.PickHome },
             // Resuming, not just dismissing — see `gated`.
             onDone = {
-                LocalIdentity.register(context, draftName, draftBarangay)
+                LocalIdentity.register(context, draftFirstName, draftLastName, draftBarangay)
                 // Registering also sets day 5's home radius, so the notification primer
                 // on this very screen is true from the first launch instead of waiting
                 // for somebody to discover the map long-press.
