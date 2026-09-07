@@ -103,6 +103,14 @@ fun OnboardingScreen(
     var showError by remember { mutableStateOf(false) }
 
     val alreadyRegistered = remember { LocalIdentity.isRegistered(context) }
+
+    // Every fixture in this build — seeds, evacuation centres, routes, and the 8-tile
+    // offline pack — is frozen to one barangay. A pin outside it is not wrong, and is
+    // kept exactly as found; what would be wrong is letting somebody set a home there
+    // and discover only during a flood that the map is blank and no report will ever
+    // be near them. The app knows this at registration, so it says it then.
+    val outsideDemoArea = home != null &&
+        !DemoArea.bounds.contains(org.maplibre.android.geometry.LatLng(home.first, home.second))
     val display = displayFormOf(fullName)
     val usable = isUsableName(fullName)
 
@@ -295,6 +303,28 @@ fun OnboardingScreen(
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (outsideDemoArea) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(colors.warningBg)
+                                .padding(11.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                "Nasa labas ka ng saklaw ng demo na ito",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.warningFg,
+                            )
+                            Text(
+                                "Ang mapa at mga ulat ay para sa ${DemoArea.BARANGAY_NAME} lang. " +
+                                    "Puwede ka pa ring mag-SOS, pero walang mapa at ulat sa lugar mo.",
+                                fontSize = 12.sp,
+                                color = colors.warningFg,
+                            )
+                        }
+                    }
                 }
 
                 // ---- barangay ----

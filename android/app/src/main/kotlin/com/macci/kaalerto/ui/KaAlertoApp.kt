@@ -14,7 +14,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.location.fetchAccurateLocation
 import com.macci.kaalerto.location.fetchCurrentLocation
+import org.maplibre.android.geometry.LatLng
 import com.macci.kaalerto.identity.LocalIdentity
 import androidx.compose.runtime.rememberCoroutineScope
 import com.macci.kaalerto.evac.EvacScreen
@@ -115,7 +117,7 @@ fun KaAlertoApp(
     LaunchedEffect(screen is Screen.Onboarding) {
         if (screen is Screen.Onboarding && draftHome == null && !locatingHome) {
             locatingHome = true
-            val fix = fetchCurrentLocation(appContext)
+            val fix = fetchAccurateLocation(appContext)
             if (fix != null) {
                 draftHome = fix.latitude to fix.longitude
                 draftAccuracy = fix.accuracy
@@ -303,6 +305,13 @@ fun KaAlertoApp(
             modifier = modifier,
             pickMode = true,
             pickingHome = true,
+            // Open on the pin being corrected, and show where this phone actually is.
+            // Without both, somebody is asked to check a pin against a map of a place
+            // they are not in, with no dot to check it against.
+            // MapScreen turns the blue dot on from the permission state itself, so
+            // there is nothing to pass — the dot was never missing here, it was
+            // off-screen because the camera was in the wrong hemisphere of the country.
+            initialCamera = draftHome?.let { (lat, lon) -> LatLng(lat, lon) },
             onLocationPicked = { latLng ->
                 draftHome = latLng.latitude to latLng.longitude
                 // Hand-placed, so the GPS accuracy no longer describes it.
@@ -324,7 +333,7 @@ fun KaAlertoApp(
             onLocate = {
                 scope.launch {
                     locatingHome = true
-                    val fix = fetchCurrentLocation(appContext)
+                    val fix = fetchAccurateLocation(appContext)
                     if (fix != null) {
                         draftHome = fix.latitude to fix.longitude
                         draftAccuracy = fix.accuracy

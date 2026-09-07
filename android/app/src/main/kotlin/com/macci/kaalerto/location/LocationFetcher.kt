@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
@@ -78,6 +81,79 @@ suspend fun fetchCurrentLocation(context: Context): Location? {
         val age = System.currentTimeMillis() - it.time
         age in 0..LAST_KNOWN_MAX_AGE_MS
     }
+}
+
+
+/**
+ * How long registration is allowed to keep improving the home pin.
+ *
+ * Deliberately far longer than [FRESH_FIX_TIMEOUT_MS], because the two calls ask
+ * different questions. An SOS needs *a* position now and refines afterwards; setting a
+ * home happens once and is then used to decide, for months, whether a flood is near
+ * enough to wake somebody. A first GPS fix indoors commonly lands at ±50-100 m and
+ * tightens over the following seconds, so accepting the first one would quietly put a
+ * home up to a block from the house.
+ */
+private const val ACCURATE_FIX_WINDOW_MS = 15_000L
+
+/**
+ * Good enough to stop waiting. Roughly a house and its yard, which is the precision the
+ * 100-1000 m home radius can actually act on — holding somebody on a setup screen for
+ * digits nothing reads would be spending their time for nothing.
+ */
+private const val GOOD_ENOUGH_ACCURACY_M = 20f
+
+/**
+ * The most accurate fix obtainable within [ACCURATE_FIX_WINDOW_MS] — for setting a home,
+ * not for an emergency.
+ *
+ * Streams updates rather than taking one shot, keeps the tightest accuracy seen, and
+ * returns early once a fix is [GOOD_ENOUGH_ACCURACY_M] or better. `getCurrentLocation`
+ * hands back whichever fix arrives first, which on a cold start indoors is the *worst*
+ * of the series — the exact case this screen is most likely to be used in.
+ *
+ * Degrades rather than fails: the best seen so far if the window expires, then
+ * [fetchCurrentLocation]'s one-shot-then-last-known, then null.
+ */
+@SuppressLint("MissingPermission") // guarded by the permission check below
+suspend fun fetchAccurateLocation(context: Context): Location? {
+    if (!hasLocationPermission(context)) return null
+
+    val client = LocationServices.getFusedLocationProviderClient(context)
+    val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1_000L)
+        .setMinUpdateIntervalMillis(500L)
+        .setWaitForAccurateLocation(true)
+        .build()
+
+    var bestSoFar: Location? = null
+    var registered: LocationCallback? = null
+
+    val settled = try {
+        withTimeoutOrNull(ACCURATE_FIX_WINDOW_MS) {
+            suspendCancellableCoroutine { continuation ->
+                val callback = object : LocationCallback() {
+                    override fun onLocationResult(result: LocationResult) {
+                        val fix = result.lastLocation ?: return
+                        val best = bestSoFar
+                        if (best == null || fix.accuracy < best.accuracy) bestSoFar = fix
+                        if (fix.accuracy <= GOOD_ENOUGH_ACCURACY_M && continuation.isActive) {
+                            continuation.resume(bestSoFar)
+                        }
+                    }
+                }
+                registered = callback
+                continuation.invokeOnCancellation { client.removeLocationUpdates(callback) }
+                client.requestLocationUpdates(request, callback, context.mainLooper)
+            }
+        }
+    } finally {
+        // The window expiring is the normal exit here, not an error — but the callback
+        // must come off either way, or the GPS keeps running behind a screen nobody is
+        // looking at, on a phone this app assumes is already low on battery.
+        registered?.let { client.removeLocationUpdates(it) }
+    }
+
+    return settled ?: bestSoFar ?: fetchCurrentLocation(context)
 }
 
 private fun hasLocationPermission(context: Context): Boolean =

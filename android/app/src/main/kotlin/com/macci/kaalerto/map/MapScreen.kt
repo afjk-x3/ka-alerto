@@ -126,6 +126,13 @@ fun MapScreen(
     focusFeatureRef: String? = null,
     /** True when [pickMode] is placing a home pin rather than a report location. */
     pickingHome: Boolean = false,
+    /**
+     * Where the camera opens. Defaults to the frozen demo area, which is right for the
+     * map itself — every fixture lives there — and wrong for pick-mode: somebody
+     * confirming their own home was being shown San Nicolas regardless of where they
+     * actually were, and a single tap then silently relocated them there.
+     */
+    initialCamera: LatLng? = null,
     /** Open requests from other people, for the strip's count. */
     openRequestCount: Int = 0,
     stormMode: Boolean = false,
@@ -282,6 +289,7 @@ fun MapScreen(
                 geofenceRadius = geofenceRadius,
                 evacStates = evacStateList,
                 stormMode = stormMode,
+                initialCamera = initialCamera,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -623,6 +631,8 @@ private fun MapLibreMapView(
     evacStates: List<com.macci.kaalerto.evac.EvacState>,
     /** Day 5's declared condition. Re-tints the basemap — see map/StormMapStyle.kt. */
     stormMode: Boolean,
+    /** Where the camera opens; the frozen demo area when null. */
+    initialCamera: LatLng? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -647,7 +657,10 @@ private fun MapLibreMapView(
             applyStormTint(style, stormMode)
             if (!cameraPlaced) {
                 map.moveCamera(
-                    CameraUpdateFactory.newLatLngZoom(DemoArea.centre, DemoArea.INITIAL_ZOOM)
+                    CameraUpdateFactory.newLatLngZoom(
+                        initialCamera ?: DemoArea.centre,
+                        DemoArea.INITIAL_ZOOM,
+                    ),
                 )
                 cameraPlaced = true
             }
