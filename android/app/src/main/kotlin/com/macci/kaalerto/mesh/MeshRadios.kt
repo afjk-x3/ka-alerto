@@ -4,6 +4,8 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.location.LocationManager
 import androidx.core.location.LocationManagerCompat
+import com.macci.kaalerto.i18n.AppLanguage
+import com.macci.kaalerto.i18n.tr
 
 /**
  * Whether the radios the mesh actually rides on are switched on.
@@ -25,13 +27,12 @@ object MeshRadios {
         val ready: Boolean get() = bluetoothOn && locationOn
 
         /** Null when nothing is wrong. Otherwise, what the resident has to go and switch on. */
-        val message: String?
-            get() = when {
-                !bluetoothOn && !locationOn -> "Buksan ang Bluetooth at Location para sa mesh"
-                !bluetoothOn -> "Buksan ang Bluetooth para sa mesh"
-                !locationOn -> "Buksan ang Location para sa mesh"
-                else -> null
-            }
+        fun message(language: AppLanguage): String? = when {
+            !bluetoothOn && !locationOn -> tr(language, "Buksan ang Bluetooth at Location para sa mesh", "Turn on Bluetooth and Location for the mesh")
+            !bluetoothOn -> tr(language, "Buksan ang Bluetooth para sa mesh", "Turn on Bluetooth for the mesh")
+            !locationOn -> tr(language, "Buksan ang Location para sa mesh", "Turn on Location for the mesh")
+            else -> null
+        }
     }
 
     fun check(context: Context): Readiness {

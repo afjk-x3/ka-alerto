@@ -1,6 +1,8 @@
 package com.macci.kaalerto.identity
 
 import android.content.Context
+import androidx.compose.runtime.Composable
+import com.macci.kaalerto.i18n.tr
 import java.util.UUID
 
 /**
@@ -224,14 +226,19 @@ object LocalIdentity {
 }
 
 /** The short badge shown in the map header and on the official screens. */
+@Composable
 fun roleBadge(role: String): String = when (role) {
-    LocalIdentity.ROLE_OFFICIAL -> "KAGAWAD"
+    LocalIdentity.ROLE_OFFICIAL -> tr("KAGAWAD", "OFFICIAL")
     LocalIdentity.ROLE_RESPONDER -> "RESPONDER"
-    else -> "RESIDENTE"
+    else -> tr("RESIDENTE", "RESIDENT")
 }
 
+@Composable
 fun roleLabel(role: String): Pair<String, String> = when (role) {
-    LocalIdentity.ROLE_OFFICIAL -> "Barangay official" to "Kagawad — nakakapag-post ng opisyal na status"
-    LocalIdentity.ROLE_RESPONDER -> "Responder" to "Nakikita ang listahan ng humihingi ng tulong"
-    else -> "Residente" to "Nag-uulat at nagkukumpirma ng baha"
+    LocalIdentity.ROLE_OFFICIAL -> tr("Kagawad", "Barangay Official") to
+        tr("Nakakapag-post ng opisyal na status", "Can post an official status")
+    LocalIdentity.ROLE_RESPONDER -> tr("Responder", "Responder") to
+        tr("Nakikita ang listahan ng humihingi ng tulong", "Can see the list of people requesting help")
+    else -> tr("Residente", "Resident") to
+        tr("Nag-uulat at nagkukumpirma ng baha", "Reports and confirms flooding")
 }

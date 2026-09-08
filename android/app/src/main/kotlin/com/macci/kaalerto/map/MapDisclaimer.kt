@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /** Map-Normal.dc.html's "FR-1.12 guidance disclaimer" strip, copy verbatim. */
@@ -33,7 +34,10 @@ fun MapDisclaimer(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(end = 8.dp),
         )
         Text(
-            "Galing sa ulat ng residente. Maaaring may kulang o luma. Tingnan pa rin ang nasa harap mo.",
+            tr(
+                "Galing sa ulat ng residente. Maaaring may kulang o luma. Tingnan pa rin ang nasa harap mo.",
+                "From resident reports. May be incomplete or outdated. Still check what's in front of you.",
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

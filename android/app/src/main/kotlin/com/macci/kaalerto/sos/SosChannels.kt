@@ -1,5 +1,7 @@
 package com.macci.kaalerto.sos
 
+import androidx.compose.runtime.Composable
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.mesh.MeshStatus
 
 /**
@@ -19,6 +21,9 @@ enum class SosChannel(val fil: String, val en: String) {
     SMS("SMS", "SMS"),
     MESH("Mga kalapit na phone", "Nearby phones"),
 }
+
+@Composable
+fun SosChannel.label(): String = tr(fil, en)
 
 sealed interface ChannelStatus {
     /** No code attempts this channel yet. [buildDay] is when it is scheduled. */
@@ -66,21 +71,26 @@ fun sosChannelRows(mesh: MeshStatus): List<SosChannelRow> = listOf(
     ),
 )
 
-/** The one-line Filipino status shown on the right of each row. */
+/** The one-line status shown on the right of each row. */
+@Composable
 fun ChannelStatus.shortLabel(): String = when (this) {
-    is ChannelStatus.NotBuilt -> "Hindi pa gawa"
-    is ChannelStatus.Broadcasting -> if (peerCount > 0) "$peerCount konektado" else "Nagba-broadcast"
-    is ChannelStatus.Unavailable -> "Hindi magamit"
+    is ChannelStatus.NotBuilt -> tr("Hindi pa gawa", "Not built yet")
+    is ChannelStatus.Broadcasting -> if (peerCount > 0) tr("$peerCount konektado", "$peerCount connected") else tr("Nagba-broadcast", "Broadcasting")
+    is ChannelStatus.Unavailable -> tr("Hindi magamit", "Unavailable")
 }
 
 /** The explanatory second line. Says what is true, including when what is true is "nothing yet". */
+@Composable
 fun ChannelStatus.detail(): String = when (this) {
-    is ChannelStatus.NotBuilt -> "Wala pang code sa build na ito — $buildDay"
+    is ChannelStatus.NotBuilt -> tr("Wala pang code sa build na ito — $buildDay", "No code for this in this build yet — $buildDay")
     is ChannelStatus.Broadcasting ->
         if (peerCount > 0) {
-            "Inaalok ang SOS sa $peerCount kalapit na phone"
+            tr("Inaalok ang SOS sa $peerCount kalapit na phone", "Offering the SOS to $peerCount nearby phone(s)")
         } else {
-            "Naghahanap ng kalapit na phone"
+            tr("Naghahanap ng kalapit na phone", "Looking for nearby phones")
         }
+    // A dynamic runtime message (mesh radio error, or the literal fallback in
+    // sosChannelRows()) — left as-is rather than guessing a translation for text
+    // this function did not author.
     is ChannelStatus.Unavailable -> reason
 }

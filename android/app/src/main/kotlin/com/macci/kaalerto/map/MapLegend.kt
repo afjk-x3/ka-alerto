@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 
@@ -29,10 +30,10 @@ fun MapLegend(modifier: Modifier = Modifier) {
         border = BorderStroke(1.dp, colors.border),
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S3)), "Hindi madaanan")
-            LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S2)), "Hindi madaanan ng sasakyan")
-            LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S1)), "Madaanan, mag-ingat")
-            LegendRow(Color(0xFFB9A98F), "Luma na — kailangang tingnan", muted = true)
+            LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S3)), tr("Hindi madaanan", "Impassable"))
+            LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S2)), tr("Hindi madaanan ng sasakyan", "Impassable by vehicle"))
+            LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S1)), tr("Madaanan, mag-ingat", "Passable, be careful"))
+            LegendRow(Color(0xFFB9A98F), tr("Luma na — kailangang tingnan", "Stale — needs a look"), muted = true)
         }
     }
 }

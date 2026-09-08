@@ -1,6 +1,7 @@
 package com.macci.kaalerto.detail
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,6 +33,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -39,11 +42,14 @@ import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.data.severityTextFor
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.report.BODY_LEVELS
 import com.macci.kaalerto.report.BodyIllustration
+import com.macci.kaalerto.report.PhotoStore
 import com.macci.kaalerto.report.VEHICLE_LEVELS
 import com.macci.kaalerto.report.VehicleGlyph
 import com.macci.kaalerto.report.WaterLevelOption
+import com.macci.kaalerto.report.decodeReportPhotoPayload
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
@@ -54,46 +60,56 @@ private fun colorFor(severity: String): Color =
     Color(android.graphics.Color.parseColor(SeverityColors.forSeverity(severity)))
 
 /** Every report gives its author name and role, per the architecture guardrail that the name rides in the event, never a lookup. */
-private fun sourceLabel(event: Event): String = "${event.authorName} · ${roleLabel(event.authorRole)}"
+@Composable
+private fun sourceLabel(event: Event): String = "${event.authorName} · ${detailRoleLabel(event.authorRole)}"
 
-private fun roleLabel(role: String): String = when (role) {
-    "official" -> "Barangay official"
+@Composable
+private fun detailRoleLabel(role: String): String = when (role) {
+    "official" -> tr("Kagawad", "Barangay official")
     "responder" -> "Responder"
-    else -> "Resident"
+    else -> tr("Residente", "Resident")
 }
 
+@Composable
 private fun originLabel(event: Event): String = when (event.origin) {
     "mesh" -> "Mesh"
     "sms" -> "SMS"
-    "server" -> "Server"
-    "seed" -> "Seed data"
-    else -> "Direkta" // local — authored on this device
+    "server" -> tr("Server", "Server")
+    "seed" -> tr("Seed data", "Seed data")
+    else -> tr("Direkta", "Direct") // local — authored on this device
 }
 
 private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
 
+// Was English-only in both languages before this pass — CLAUDE.md's own known-issues
+// list flagged "18 min ago" as a stray English string on an otherwise-Filipino screen.
+@Composable
 private fun ageLabel(ms: Long): String {
     val minutes = ms / 60_000
     return when {
-        minutes < 1 -> "Ngayon lang"
-        minutes < 60 -> "$minutes min ago"
-        else -> "${minutes / 60}h ${minutes % 60}m ago"
+        minutes < 1 -> tr("Ngayon lang", "Just now")
+        minutes < 60 -> tr("$minutes min ang nakalipas", "$minutes min ago")
+        else -> tr("${minutes / 60}h ${minutes % 60}m ang nakalipas", "${minutes / 60}h ${minutes % 60}m ago")
     }
 }
 
+// Also flagged in CLAUDE.md's known issues: these were English-only regardless of
+// the rest of the screen being Filipino.
+@Composable
 private fun bucketLabel(bucket: String): String = when (bucket) {
-    "official" -> "Official"
-    "confirmed" -> "Confirmed"
-    "likely" -> "Likely"
-    else -> "Unverified"
+    "official" -> tr("Opisyal", "Official")
+    "confirmed" -> tr("Kumpirmado", "Confirmed")
+    "likely" -> tr("Malamang", "Likely")
+    else -> tr("Hindi pa beripikado", "Unverified")
 }
 
 /** Slug featureRefs (geohash cells) get a generic label; seed data's named-street slugs get prettified. */
+@Composable
 private fun featureDisplayName(featureRef: String): String =
     if (featureRef.contains('-')) {
         featureRef.split('-').joinToString(" ") { it.replaceFirstChar(Char::uppercase) }
     } else {
-        "Ulat sa lugar na ito"
+        tr("Ulat sa lugar na ito", "Report at this spot")
     }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -134,7 +150,11 @@ fun DetailSheet(
                 Column {
                     Text(featureDisplayName(summary.featureRef), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     if (summary.isStale) {
-                        Text("Naka-decay · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            tr("Naka-decay", "Decayed") + " · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs)}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
                 SeverityBadge(summary.severity)
@@ -147,10 +167,15 @@ fun DetailSheet(
                 Spacer(Modifier.height(12.dp))
             }
 
+            decodeReportPhotoPayload(latestReport?.payload)?.let { photo ->
+                PhotoStatusCard(photoHash = photo.photoHash)
+                Spacer(Modifier.height(12.dp))
+            }
+
             val anchorEvent = latestReport ?: summary.events.first()
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 InfoCard(modifier = Modifier.weight(1f)) {
-                    Text("HULING ULAT", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr("HULING ULAT", "LATEST REPORT"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(ageLabel(System.currentTimeMillis() - summary.lastEventMs), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
                         timeFormat.format(summary.lastEventMs),
@@ -160,7 +185,7 @@ fun DetailSheet(
                     )
                 }
                 InfoCard(modifier = Modifier.weight(1f)) {
-                    Text("PAANO DUMATING", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(tr("PAANO DUMATING", "HOW IT ARRIVED"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (anchorEvent.origin == "mesh") {
                             MeshIcon(tint = colors.safeFg, modifier = Modifier.size(15.dp))
@@ -184,10 +209,16 @@ fun DetailSheet(
             if (summary.isConflicted) {
                 ConflictSection(summary)
                 Spacer(Modifier.height(16.dp))
-                Text("Malapit ka ba? Tulungan mo kaming i-check.", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(
+                    tr("Malapit ka ba? Tulungan mo kaming i-check.", "Are you nearby? Help us check."),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
                 Spacer(Modifier.height(8.dp))
                 ActionBar(
-                    label = "I-check ko ngayon",
+                    label = tr("I-check ko ngayon", "I'll check it now"),
                     icon = { tint -> MagnifierIcon(tint, Modifier.size(20.dp)) },
                     onClick = { onCheckInPerson(summary.lat, summary.lon) },
                     background = MaterialTheme.colorScheme.primary,
@@ -196,7 +227,13 @@ fun DetailSheet(
             } else {
                 ConfidenceSection(summary)
                 Spacer(Modifier.height(16.dp))
-                Text("Nandiyan ka ba ngayon?", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                Text(
+                    tr("Nandiyan ka ba ngayon?", "Are you there right now?"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     ActionBar(
@@ -204,7 +241,7 @@ fun DetailSheet(
                         // take seconds. `submitting` used to only block a double-tap; a
                         // button that swallows the press and changes nothing reads as
                         // broken, which is the same failure the SOS button had.
-                        label = if (submitting) "Kinukuha…" else "Tama",
+                        label = if (submitting) tr("Kinukuha…", "Getting…") else tr("Tama", "Correct"),
                         icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
                             if (onNeedsRegistration != null) return@ActionBar onNeedsRegistration()
@@ -220,7 +257,7 @@ fun DetailSheet(
                         modifier = Modifier.weight(1f),
                     )
                     ActionBar(
-                        label = if (submitting) "Kinukuha…" else "Iba na",
+                        label = if (submitting) tr("Kinukuha…", "Getting…") else tr("Iba na", "It's different"),
                         icon = { tint -> XIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
                             if (onNeedsRegistration != null) onNeedsRegistration()
@@ -237,7 +274,7 @@ fun DetailSheet(
             if (onOfficialStatus != null) {
                 Spacer(Modifier.height(10.dp))
                 ActionBar(
-                    label = "Mag-post ng opisyal na status",
+                    label = tr("Mag-post ng opisyal na status", "Post an official status"),
                     icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
                     onClick = onOfficialStatus,
                     background = MaterialTheme.colorScheme.background,
@@ -247,7 +284,7 @@ fun DetailSheet(
             }
 
             Spacer(Modifier.height(20.dp))
-            Text("ULAT (${summary.events.size})", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("ULAT (${summary.events.size})", "REPORTS (${summary.events.size})"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             summary.events.take(5).forEach { event -> EventHistoryRow(event) }
             Spacer(Modifier.height(24.dp))
@@ -331,11 +368,44 @@ private fun ReadingCard(waterLevelId: String, severity: String) {
             }
             Spacer(Modifier.size(16.dp))
             val (fil, en) = severityTextFor(severity)
-            val label = bodyOption?.let { "Hanggang ${it.fil.lowercase()}" } ?: vehicleOption?.fil ?: fil
-            Column {
-                Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(en, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            val label = bodyOption?.let { tr("Hanggang ${it.fil.lowercase()}", "Up to ${it.en.lowercase()}") }
+                ?: vehicleOption?.let { tr(it.fil, it.en) }
+                ?: tr(fil, en)
+            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/**
+ * The photo's hash always rides with the event (report/ReportPhoto.kt); the photo
+ * itself only rides as far as this device's own storage — never over SMS or mesh
+ * relay. So this card has two honest states: a thumbnail on the device that took it,
+ * or a plain statement that a photo exists somewhere without one here — never a
+ * spinner pretending the image is still arriving, since nothing is fetching it.
+ */
+@Composable
+private fun PhotoStatusCard(photoHash: String) {
+    val context = LocalContext.current
+    val thumbnail = remember(photoHash) { PhotoStore.loadThumbnail(context, photoHash) }
+    InfoCard {
+        Text(tr("LARAWAN", "PHOTO"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(Modifier.height(6.dp))
+        if (thumbnail != null) {
+            Image(
+                bitmap = thumbnail.asImageBitmap(),
+                contentDescription = tr("Larawan ng ulat", "Report photo"),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxWidth().height(160.dp),
+            )
+        } else {
+            Text(
+                tr(
+                    "May larawang nakalakip, pero wala ito sa phone na ito — dumating lang ang hash, hindi ang larawan.",
+                    "A photo is attached, but it isn't on this phone — only its hash arrived, not the photo.",
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -389,7 +459,10 @@ private fun ConfidenceSection(summary: FeatureSummary) {
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "${summary.confirmCount} nag-confirm · ${summary.disputeCount} nag-dispute",
+                    tr(
+                        "${summary.confirmCount} nag-confirm · ${summary.disputeCount} nag-dispute",
+                        "${summary.confirmCount} confirmed · ${summary.disputeCount} disputed",
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -410,22 +483,20 @@ private fun ConflictSection(summary: FeatureSummary) {
             WarningTriangleIcon(tint = colors.criticalFg, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(12.dp))
             Column {
-                Text("Magkaibang ulat", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.criticalFg)
+                Text(tr("Magkaibang ulat", "Conflicting reports"), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = colors.criticalFg)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "Ituring na hindi madaanan hangga't walang nakakumpirma.",
+                    tr(
+                        "Ituring na hindi madaanan hangga't walang nakakumpirma.",
+                        "Treat as impassable until someone confirms.",
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    "Conflicting reports — treat as impassable.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
     Spacer(Modifier.height(16.dp))
-    Text("ANG DALAWANG ULAT", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(tr("ANG DALAWANG ULAT", "THE TWO REPORTS"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     Spacer(Modifier.height(8.dp))
     // The two positions that actually disagree, not the whole history — one from
     // each side of the split, most recent first, matching the artboard's framing.
@@ -438,7 +509,10 @@ private fun ConflictSection(summary: FeatureSummary) {
     }
     Spacer(Modifier.height(4.dp))
     Text(
-        "Hindi namin pinipili kung sino ang tama, at hindi rin namin pinagsasama. Ipinapakita namin ang hindi pagkakasundo.",
+        tr(
+            "Hindi namin pinipili kung sino ang tama, at hindi rin namin pinagsasama. Ipinapakita namin ang hindi pagkakasundo.",
+            "We don't pick who's right, and we don't average them together. We show the disagreement.",
+        ),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -449,6 +523,7 @@ private fun ConflictReportRow(event: Event) {
     val color = event.severity?.let { colorFor(it) } ?: Color.Gray
     // Callers only ever pass events already filtered to severity != null.
     val (fil, en) = severityTextFor(event.severity ?: "S0")
+    val severityText = tr(fil, en)
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(modifier = Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -459,9 +534,10 @@ private fun ConflictReportRow(event: Event) {
             )
             Spacer(Modifier.size(13.dp))
             Column(modifier = Modifier.weight(1f)) {
-                val levelLabel = event.waterLevel?.let { resolveLevelOption(it)?.fil ?: it }
-                Text(levelLabel?.let { "Hanggang $it" } ?: fil, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Text("$en · nasa lugar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val option = event.waterLevel?.let { resolveLevelOption(it) }
+                val levelLabel = option?.let { tr(it.fil, it.en) } ?: event.waterLevel
+                Text(levelLabel?.let { tr("Hanggang $it", "Up to $it") } ?: severityText, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(tr("$severityText · nasa lugar", "$severityText · on scene"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Box(modifier = Modifier.size(width = 10.dp, height = 34.dp).background(color))
         }
@@ -482,8 +558,8 @@ private fun EventHistoryRow(event: Event) {
         Spacer(Modifier.size(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             val label = when (event.type) {
-                "confirm" -> "Kumpirmasyon · ${sourceLabel(event)}"
-                "dispute" -> "Dispute (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
+                "confirm" -> "${tr("Kumpirmasyon", "Confirmation")} · ${sourceLabel(event)}"
+                "dispute" -> "${tr("Dispute", "Dispute")} (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
                 else -> sourceLabel(event)
             }
             Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
@@ -506,7 +582,7 @@ private fun DisputeReasonDialog(onSelect: (DisputeReason) -> Unit, onDismiss: ()
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Ano ang nangyari?") },
+        title = { Text(tr("Ano ang nangyari?", "What happened?")) },
         text = {
             Column {
                 reasons.forEach { (reason, copy) ->
@@ -517,14 +593,13 @@ private fun DisputeReasonDialog(onSelect: (DisputeReason) -> Unit, onDismiss: ()
                             .clickable { onSelect(reason) }
                             .padding(vertical = 10.dp),
                     ) {
-                        Text(fil, fontWeight = FontWeight.SemiBold)
-                        Text(en, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(tr(fil, en), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Kanselahin") }
+            TextButton(onClick = onDismiss) { Text(tr("Kanselahin", "Cancel")) }
         },
     )
 }
@@ -546,7 +621,7 @@ private fun OfficialBanner(summary: FeatureSummary) {
     val pending = summary.pendingSecondOfficial
     val accent = if (pending) colors.warningFg else colors.safeFg
     val background = if (pending) colors.warningBg else colors.safeBg
-    val (fil, _) = severityTextFor(summary.officialSeverity ?: "S0")
+    val (fil, en) = severityTextFor(summary.officialSeverity ?: "S0")
 
     Column(
         modifier = Modifier
@@ -558,14 +633,18 @@ private fun OfficialBanner(summary: FeatureSummary) {
             ConfidenceIcon("official", accent, Modifier.size(18.dp))
             Spacer(Modifier.size(9.dp))
             Text(
-                if (pending) "Opisyal na status — naghihintay ng pangalawang opisyal" else "Opisyal na status",
+                if (pending) {
+                    tr("Opisyal na status — naghihintay ng pangalawang opisyal", "Official status — waiting on a second official")
+                } else {
+                    tr("Opisyal na status", "Official status")
+                },
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 color = accent,
             )
         }
         Text(
-            fil,
+            tr(fil, en),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
@@ -576,7 +655,10 @@ private fun OfficialBanner(summary: FeatureSummary) {
         }
         if (summary.contradictingCount > 0) {
             Text(
-                "${summary.contradictingCount} residente ang nag-uulat ng mas malala kaysa sa opisyal na status. Nananatili silang nakikita.",
+                tr(
+                    "${summary.contradictingCount} residente ang nag-uulat ng mas malala kaysa sa opisyal na status. Nananatili silang nakikita.",
+                    "${summary.contradictingCount} residents are reporting worse than the official status. They stay visible.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp),

@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.sos.SosColors
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
@@ -66,7 +67,11 @@ fun RoleActionStrip(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                if (urgent) "Mga humihingi ng tulong" else "Walang humihingi ng tulong ngayon",
+                if (urgent) {
+                    tr("Mga humihingi ng tulong", "People requesting help")
+                } else {
+                    tr("Walang humihingi ng tulong ngayon", "No one is requesting help right now")
+                },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
                 color = if (urgent) SosColors.CardBackground else MaterialTheme.colorScheme.onBackground,
@@ -95,8 +100,11 @@ fun RoleActionStrip(
         if (role == LocalIdentity.ROLE_OFFICIAL) {
             Spacer(Modifier.size(6.dp))
             Text(
-                "Kagawad: pindutin ang isang marker para mag-post ng opisyal na status, " +
-                    "o ang bahay-bubong para sa mga evacuation centre.",
+                tr(
+                    "Kagawad: pindutin ang isang marker para mag-post ng opisyal na status, " +
+                        "o ang bahay-bubong para sa mga evacuation centre.",
+                    "Official: tap a marker to post an official status, or the roof icon for evacuation centres.",
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

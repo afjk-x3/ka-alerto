@@ -11,6 +11,8 @@ import com.macci.kaalerto.MainActivity
 import com.macci.kaalerto.R
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.severityTextFor
+import com.macci.kaalerto.i18n.LanguagePrefs
+import com.macci.kaalerto.i18n.tr
 
 /**
  * Fires a local notification for one flood report — BUILD_TASKS.md day 5: "notifications
@@ -26,7 +28,9 @@ object FloodNotifier {
             return
         }
 
+        val language = LanguagePrefs.get(context)
         val (fil, en) = severityTextFor(severity)
+        val severityLabel = tr(language, fil, en)
         val channel = if (severity == "S3") NotificationChannels.CHANNEL_CRITICAL else NotificationChannels.CHANNEL_NORMAL
         val priority = if (severity == "S3") NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
 
@@ -42,8 +46,8 @@ object FloodNotifier {
 
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("$severity — $fil")
-            .setContentText("${distanceMeters.toInt()} m mula sa bahay mo · $en")
+            .setContentTitle("$severity — $severityLabel")
+            .setContentText(tr(language, "${distanceMeters.toInt()} m mula sa bahay mo", "${distanceMeters.toInt()} m from your home"))
             .setPriority(priority)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)

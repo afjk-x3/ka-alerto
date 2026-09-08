@@ -161,9 +161,10 @@ class MeshService : Service() {
      * of being decided once at launch.
      */
     private fun syncRadioState() {
+        val language = com.macci.kaalerto.i18n.LanguagePrefs.get(this)
         if (!MeshPermissions.allGranted(this)) {
             stopNearby()
-            MeshState.setError("Kulang ang pahintulot para sa mesh")
+            MeshState.setError(com.macci.kaalerto.i18n.tr(language, "Kulang ang pahintulot para sa mesh", "Missing permission for the mesh"))
             return
         }
 
@@ -172,9 +173,9 @@ class MeshService : Service() {
             readiness.ready && !nearbyActive -> startNearby()
             !readiness.ready && nearbyActive -> {
                 stopNearby()
-                MeshState.setError(readiness.message.orEmpty())
+                MeshState.setError(readiness.message(language).orEmpty())
             }
-            !readiness.ready -> MeshState.setError(readiness.message.orEmpty())
+            !readiness.ready -> MeshState.setError(readiness.message(language).orEmpty())
         }
     }
 
@@ -186,7 +187,13 @@ class MeshService : Service() {
         // Without this, the notification falls through to "Naghahanap ng kalapit na
         // phone" — a false claim when the radio is actually off.  The error is cleared
         // by setRunning(true) when startNearby() succeeds again.
-        MeshState.setError("Buksan ang Bluetooth para sa mesh")
+        MeshState.setError(
+            com.macci.kaalerto.i18n.tr(
+                com.macci.kaalerto.i18n.LanguagePrefs.get(this),
+                "Buksan ang Bluetooth para sa mesh",
+                "Turn on Bluetooth for the mesh",
+            ),
+        )
     }
 
     private fun startNearby() {
@@ -213,7 +220,13 @@ class MeshService : Service() {
         // The radio preconditions were already checked, so reaching here means something
         // this code can't name — say only that, rather than guessing at a cause and
         // sending the resident to toggle a setting that was never the problem.
-        MeshState.setError("Hindi makapag-mesh ngayon")
+        MeshState.setError(
+            com.macci.kaalerto.i18n.tr(
+                com.macci.kaalerto.i18n.LanguagePrefs.get(this),
+                "Hindi makapag-mesh ngayon",
+                "Can't join the mesh right now",
+            ),
+        )
     }
 
     /**
@@ -378,20 +391,21 @@ class MeshService : Service() {
             PendingIntent.FLAG_IMMUTABLE,
         )
 
+        val language = com.macci.kaalerto.i18n.LanguagePrefs.get(this)
         val text = when {
             status.error != null -> status.error
-            status.peerCount > 0 -> "${status.peerCount} kalapit na phone ang nakakonekta"
-            else -> "Naghahanap ng kalapit na phone"
+            status.peerCount > 0 -> com.macci.kaalerto.i18n.tr(language, "${status.peerCount} kalapit na phone ang nakakonekta", "${status.peerCount} nearby phones connected")
+            else -> com.macci.kaalerto.i18n.tr(language, "Naghahanap ng kalapit na phone", "Looking for nearby phones")
         }
 
         return NotificationCompat.Builder(this, NotificationChannels.CHANNEL_MESH)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Mesh ng KaAlerto")
+            .setContentTitle(com.macci.kaalerto.i18n.tr(language, "Mesh ng KaAlerto", "KaAlerto mesh"))
             .setContentText(text)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(openApp)
-            .addAction(0, "Ihinto", stop)
+            .addAction(0, com.macci.kaalerto.i18n.tr(language, "Ihinto", "Stop"), stop)
             .build()
     }
 

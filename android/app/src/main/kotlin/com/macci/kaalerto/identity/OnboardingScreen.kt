@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.detail.CheckIcon
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.mesh.MeshPermissions
 import com.macci.kaalerto.sos.SosColors
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
@@ -111,13 +112,13 @@ fun OnboardingScreen(
         ) {
             Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 8.dp)) {
                 Text(
-                    "I-set up ang KaAlerto",
+                    tr("I-set up ang KaAlerto", "Set up KaAlerto"),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "Pangalan at barangay lang. Walang password, walang email.",
+                    tr("Pangalan at barangay lang. Walang password, walang email.", "Just a name and a barangay. No password, no email."),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
@@ -171,7 +172,7 @@ fun OnboardingScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    "Magsimula",
+                    tr("Magsimula", "Start"),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary,
@@ -197,7 +198,7 @@ private fun SosEscapeHatch(onSos: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "May emergency ka na ngayon? Huwag mo nang tapusin ito.",
+            tr("May emergency ka na ngayon? Huwag mo nang tapusin ito.", "Do you have an emergency right now? Don't finish this first."),
             fontSize = 12.sp,
             color = colors.criticalFg,
             modifier = Modifier.weight(1f),
@@ -243,10 +244,10 @@ private fun PermissionSection() {
     ) { meshed = MeshPermissions.allGranted(context) }
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel("PAPAYAGAN MO BA")
+        FieldLabel(tr("PAPAYAGAN MO BA", "WILL YOU ALLOW"))
         PermissionRow(
-            title = "Abiso",
-            detail = "Baha malapit sa bahay mo — kahit offline",
+            title = tr("Abiso", "Notifications"),
+            detail = tr("Baha malapit sa bahay mo — kahit offline", "Flooding near your home — even offline"),
             granted = notified,
         ) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -254,8 +255,8 @@ private fun PermissionSection() {
             }
         }
         PermissionRow(
-            title = "Mga kalapit na device",
-            detail = "Dito dumadaan ang ulat kapag walang cell site",
+            title = tr("Mga kalapit na device", "Nearby devices"),
+            detail = tr("Dito dumadaan ang ulat kapag walang cell site", "This is how reports travel when there's no cell site"),
             granted = meshed,
         ) {
             meshLauncher.launch(MeshPermissions.required())
@@ -287,7 +288,7 @@ private fun PermissionRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CheckIcon(colors.safeFg, Modifier.size(18.dp))
                 Spacer(Modifier.size(6.dp))
-                Text("Bukas", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.safeFg)
+                Text(tr("Bukas", "On"), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = colors.safeFg)
             }
         } else {
             Box(
@@ -296,7 +297,7 @@ private fun PermissionRow(
                     .clickable(onClick = onRequest)
                     .padding(horizontal = 14.dp, vertical = 10.dp),
             ) {
-                Text("Payagan", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                Text(tr("Payagan", "Allow"), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
             }
         }
     }

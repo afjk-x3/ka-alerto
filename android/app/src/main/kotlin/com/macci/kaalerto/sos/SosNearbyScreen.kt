@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.detail.MeshIcon
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /**
@@ -80,13 +81,13 @@ fun SosNearbyScreen(
             )
             Column {
                 Text(
-                    "May humihingi ng tulong",
+                    tr("May humihingi ng tulong", "Someone is requesting help"),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "Malapit sa iyo · $ageLabel ang nakaraan",
+                    tr("Malapit sa iyo · $ageLabel ang nakaraan", "Near you · $ageLabel ago"),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -118,14 +119,17 @@ fun SosNearbyScreen(
             ) {
                 Text(
                     distanceMeters
-                        ?.let { "Humigit-kumulang ${SosAlertNotifier.roundDistance(it)} m ang layo" }
-                        ?: "Malapit sa iyo",
+                        ?.let { tr("Humigit-kumulang ${SosAlertNotifier.roundDistance(it)} m ang layo", "Roughly ${SosAlertNotifier.roundDistance(it)} m away") }
+                        ?: tr("Malapit sa iyo", "Near you"),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "${DemoArea.BARANGAY_NAME}. Hindi ipinapakita ang eksaktong lokasyon o kung sino sila.",
+                    "${DemoArea.BARANGAY_NAME}. " + tr(
+                        "Hindi ipinapakita ang eksaktong lokasyon o kung sino sila.",
+                        "The exact location and who they are aren't shown.",
+                    ),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 6.dp),
@@ -135,12 +139,15 @@ fun SosNearbyScreen(
             InfoStrip(
                 background = colors.safeBg,
                 foreground = colors.safeFg,
-                text = "Dala rin ito ng phone mo papunta sa iba.",
+                text = tr("Dala rin ito ng phone mo papunta sa iba.", "Your phone is carrying this to others too."),
             )
             InfoStrip(
                 background = MaterialTheme.colorScheme.background,
                 foreground = MaterialTheme.colorScheme.onSurfaceVariant,
-                text = "Hindi kasama sa ipinapasa ang pangalan nila o ang detalyeng medikal — hindi iyon umaalis sa phone nila.",
+                text = tr(
+                    "Hindi kasama sa ipinapasa ang pangalan nila o ang detalyeng medikal — hindi iyon umaalis sa phone nila.",
+                    "Their name and medical detail aren't included in what's relayed — that never leaves their phone.",
+                ),
                 bordered = true,
             )
         }
@@ -159,7 +166,7 @@ fun SosNearbyScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "Buksan ang listahan ng tulong",
+                        tr("Buksan ang listahan ng tulong", "Open the help queue"),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary,
@@ -175,7 +182,7 @@ fun SosNearbyScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "Magparehistro bilang responder",
+                        tr("Magparehistro bilang responder", "Register as a responder"),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -185,7 +192,10 @@ fun SosNearbyScreen(
                 // barangay side in this build, so this says what the button really does
                 // rather than implying an approval step that does not exist.
                 Text(
-                    "Demo lang: sa totoong app, ang barangay ang nag-a-aktibo nito. Dito, agad kang magiging responder at makikita mo ang eksaktong lokasyon at bilang ng tao.",
+                    tr(
+                        "Demo lang: sa totoong app, ang barangay ang nag-a-aktibo nito. Dito, agad kang magiging responder at makikita mo ang eksaktong lokasyon at bilang ng tao.",
+                        "Demo only: in the real app, the barangay activates this. Here, you become a responder immediately and can see the exact location and headcount.",
+                    ),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -199,7 +209,7 @@ fun SosNearbyScreen(
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Bumalik sa mapa", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("Bumalik sa mapa", "Back to the map"), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -246,7 +256,7 @@ private fun CoarseAreaMap(modifier: Modifier = Modifier) {
             drawCircle(critical.copy(alpha = 0.10f), radius = outer * 0.58f, center = centre)
         }
         Text(
-            "humigit-kumulang dito",
+            tr("humigit-kumulang dito", "roughly here"),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF8E2020),

@@ -1,11 +1,15 @@
 package com.macci.kaalerto.nav
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -25,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.i18n.AppLanguage
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.identity.roleBadge
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
@@ -64,16 +70,29 @@ fun HamburgerIcon(tint: Color, modifier: Modifier = Modifier) {
  */
 @Composable
 fun HamburgerButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    // The drawn icon and the clickable area are deliberately different sizes. The outer
+    // box keeps the original 24dp layout footprint — the barangay-title truncation
+    // regression this caused once already was from growing *that* number, so it stays
+    // put. The inner box is a real 44-48dp Material touch target (matching the role
+    // badge's 48dp height and the Storm toggle's 48dp box in MapHeader) that overflows
+    // the outer box's bounds: Compose doesn't clip a Box's children to its own size by
+    // default, so the inner box renders — and receives taps — beyond the 24dp the row
+    // actually reserves for it. Tap target grows; nothing else in the header shrinks.
     Box(
-        modifier = modifier
-            .size(24.dp)
-            .clickable(onClick = onClick),
+        modifier = modifier.size(24.dp),
         contentAlignment = androidx.compose.ui.Alignment.Center,
     ) {
-        HamburgerIcon(
-            tint = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.size(width = 17.dp, height = 12.dp),
-        )
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clickable(onClick = onClick),
+            contentAlignment = androidx.compose.ui.Alignment.Center,
+        ) {
+            HamburgerIcon(
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(width = 17.dp, height = 12.dp),
+            )
+        }
     }
 }
 
@@ -101,6 +120,8 @@ fun NavDrawer(
     onOpenRoles: () -> Unit,
     onOpenProfile: () -> Unit,
     onOpenEvac: () -> Unit,
+    currentLanguage: AppLanguage,
+    onSetLanguage: (AppLanguage) -> Unit,
 ) {
     if (!open) return
     val colors = LocalKaAlertoColors.current
@@ -150,20 +171,73 @@ fun NavDrawer(
             modifier = Modifier.padding(vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
-            DrawerRow("Mapa", onClick = { onDismiss(); onOpenMap() })
-            DrawerRow("Papel mo sa barangay", onClick = { onDismiss(); onOpenRoles() })
-            DrawerRow("Ang profile ko", onClick = { onDismiss(); onOpenProfile() })
-            DrawerRow("Mga silungan", onClick = { onDismiss(); onOpenEvac() })
+            DrawerRow(tr("Mapa", "Map"), onClick = { onDismiss(); onOpenMap() })
+            DrawerRow(tr("Papel mo sa barangay", "Your role in the barangay"), onClick = { onDismiss(); onOpenRoles() })
+            DrawerRow(tr("Ang profile ko", "My profile"), onClick = { onDismiss(); onOpenProfile() })
+            DrawerRow(tr("Mga silungan", "Evacuation centres"), onClick = { onDismiss(); onOpenEvac() })
         }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .height(1.dp)
+                .background(colors.border),
+        )
+        LanguageToggleRow(currentLanguage, onSetLanguage)
         Box(Modifier.weight(1f))
         Text(
             // The two controls this drawer deliberately does not carry, said plainly
             // rather than leaving their absence unexplained. Storm and SOS both need to
             // be one tap away, not one drawer-open plus one tap.
-            "Ang Storm mode at SOS ay nasa mismong screen — hindi kailangang buksan ito.",
+            tr(
+                "Ang Storm mode at SOS ay nasa mismong screen — hindi kailangang buksan ito.",
+                "Storm mode and SOS both live on the screen itself — no need to open this.",
+            ),
             fontSize = 11.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(16.dp),
+        )
+    }
+}
+
+/** "Add a quick language toggle (to English) inside the sidebar" — a two-way switch, not a picker, since there are only two languages to switch between. */
+@Composable
+private fun LanguageToggleRow(current: AppLanguage, onSet: (AppLanguage) -> Unit) {
+    val colors = LocalKaAlertoColors.current
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            tr("WIKA", "LANGUAGE"),
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.6.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.padding(top = 6.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(BorderStroke(1.dp, colors.border)),
+        ) {
+            LanguageOption("Filipino", selected = current == AppLanguage.FIL, onClick = { onSet(AppLanguage.FIL) }, modifier = Modifier.weight(1f))
+            LanguageOption("English", selected = current == AppLanguage.EN, onClick = { onSet(AppLanguage.EN) }, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun LanguageOption(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+    ) {
+        Text(
+            label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
         )
     }
 }

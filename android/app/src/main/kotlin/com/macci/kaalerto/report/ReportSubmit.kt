@@ -21,18 +21,21 @@ suspend fun submitReport(
     severity: String,
     lat: Double,
     lon: Double,
-) {
+    /** Set only when a photo was captured/picked — see report/ReportPhoto.kt. */
+    photoHash: String? = null,
+): String {
     val identity = LocalIdentity.getOrCreate(context)
     val now = System.currentTimeMillis()
+    // No road-network graph exists yet, and BUILD_TASKS.md day 3 explicitly says to
+    // skip snap-to-road — a geohash cell is the fallback docs/03-architecture.md's
+    // own schema names, and it's what lets day 4's reducer group same-spot reports.
+    val featureRef = geohashEncode(lat, lon)
     val event = Event(
         id = "local-${UUID.randomUUID()}",
         type = "flood_report",
         lat = lat,
         lon = lon,
-        // No road-network graph exists yet, and BUILD_TASKS.md day 3 explicitly says to
-        // skip snap-to-road — a geohash cell is the fallback docs/03-architecture.md's
-        // own schema names, and it's what lets day 4's reducer group same-spot reports.
-        featureRef = geohashEncode(lat, lon),
+        featureRef = featureRef,
         severity = severity,
         waterLevel = level.id,
         authorId = identity.authorId,
@@ -43,7 +46,9 @@ suspend fun submitReport(
         origin = "local",
         hopCount = 0,
         note = null,
+        payload = photoHash?.let { ReportPhotoPayload(it).encode() },
     )
     val repository = EventRepository(KaAlertoDatabase.getInstance(context).eventDao())
     repository.insert(event)
+    return featureRef
 }

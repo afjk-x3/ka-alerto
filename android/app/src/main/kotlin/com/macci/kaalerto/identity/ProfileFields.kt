@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import org.maplibre.android.geometry.LatLng
 
@@ -80,9 +81,11 @@ internal fun NameFields(
     val focus = remember { FocusRequester() }
     val usable = isUsableName(firstName)
     val display = displayFormOf(firstName, lastName)
+    val firstNameDescription = tr("Pangalan mo", "Your given name")
+    val lastNameDescription = tr("Apelyido mo", "Your surname")
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel("PANGALAN")
+        FieldLabel(tr("PANGALAN", "GIVEN NAME"))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -116,7 +119,7 @@ internal fun NameFields(
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focus)
-                    .semantics { contentDescription = "Pangalan mo" },
+                    .semantics { contentDescription = firstNameDescription },
             )
             if (firstName.isEmpty()) {
                 // A hint, never the label — the label above is the real one, so it does
@@ -126,13 +129,13 @@ internal fun NameFields(
         }
         if (showError && !usable) {
             Text(
-                "Kailangan ng pangalan para may pananagutan ang ulat.",
+                tr("Kailangan ng pangalan para may pananagutan ang ulat.", "A name is needed so a report has someone accountable for it."),
                 fontSize = 12.sp,
                 color = colors.criticalFg,
             )
         }
 
-        FieldLabel("APELYIDO")
+        FieldLabel(tr("APELYIDO", "SURNAME"))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -156,7 +159,7 @@ internal fun NameFields(
                 keyboardActions = KeyboardActions(onDone = { keyboard?.hide() }),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .semantics { contentDescription = "Apelyido mo" },
+                    .semantics { contentDescription = lastNameDescription },
             )
             if (lastName.isEmpty()) {
                 Text("Dela Cruz", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.border)
@@ -164,9 +167,9 @@ internal fun NameFields(
         }
         Text(
             if (display.isBlank()) {
-                "Lalabas ang maikling anyo ng pangalan mo sa mga ulat."
+                tr("Lalabas ang maikling anyo ng pangalan mo sa mga ulat.", "The short form of your name will appear on reports.")
             } else {
-                "Lalabas bilang $display sa mga ulat mo"
+                tr("Lalabas bilang $display sa mga ulat mo", "Will appear as $display on your reports")
             },
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -182,8 +185,9 @@ internal fun NameFields(
 @Composable
 internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
     val colors = LocalKaAlertoColors.current
+    val phoneDescription = tr("Numero ng cellphone", "Cellphone number")
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel("NUMERO NG CELLPHONE (OPSYONAL)")
+        FieldLabel(tr("NUMERO NG CELLPHONE (OPSYONAL)", "CELLPHONE NUMBER (OPTIONAL)"))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -204,7 +208,7 @@ internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .semantics { contentDescription = "Numero ng cellphone" },
+                    .semantics { contentDescription = phoneDescription },
             )
             if (phone.isEmpty()) {
                 Text(
@@ -219,7 +223,7 @@ internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
         Text(
             // Says plainly that nothing reads it yet, rather than leaving an optional
             // field with no reason given for existing.
-            "Gagamitin sa SMS kapag wala nang data — hindi pa gawa.",
+            tr("Gagamitin sa SMS kapag wala nang data — hindi pa gawa.", "Will be used for SMS when there's no data — not built yet."),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -250,7 +254,7 @@ internal fun HomeSection(
     val outsideDemoArea = home != null && !DemoArea.bounds.contains(LatLng(home.first, home.second))
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel("BAHAY MO")
+        FieldLabel(tr("BAHAY MO", "YOUR HOME"))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -266,9 +270,9 @@ internal fun HomeSection(
                 Text(
                     when {
                         placeName != null -> placeName
-                        home != null -> "Nakuha ang lokasyon"
-                        locating -> "Hinahanap ang lokasyon mo…"
-                        else -> "Hindi makuha ang lokasyon"
+                        home != null -> tr("Nakuha ang lokasyon", "Location found")
+                        locating -> tr("Hinahanap ang lokasyon mo…", "Finding your location…")
+                        else -> tr("Hindi makuha ang lokasyon", "Couldn't get the location")
                     },
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -278,9 +282,9 @@ internal fun HomeSection(
                     when {
                         home != null && accuracyMeters != null ->
                             "%.5f, %.5f · GPS ±%d m".format(home.first, home.second, accuracyMeters.toInt())
-                        home != null -> "%.5f, %.5f · nakatakda".format(home.first, home.second)
-                        locating -> "Sandali lang"
-                        else -> "Ituro na lang sa mapa"
+                        home != null -> tr("%.5f, %.5f · nakatakda".format(home.first, home.second), "%.5f, %.5f · set".format(home.first, home.second))
+                        locating -> tr("Sandali lang", "Just a moment")
+                        else -> tr("Ituro na lang sa mapa", "Just point to it on the map")
                     },
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
@@ -289,11 +293,11 @@ internal fun HomeSection(
                 if (home != null) {
                     Text(
                         if (placeName != null) {
-                            "Tingnan kung tama"
+                            tr("Tingnan kung tama", "Check that this is right")
                         } else {
                             // Offline the geocoder returns nothing. Say that, rather
                             // than leaving a blank where a name was.
-                            "Walang pangalan ng lugar offline — tingnan sa mapa"
+                            tr("Walang pangalan ng lugar offline — tingnan sa mapa", "No place name offline — check on the map")
                         },
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -302,7 +306,7 @@ internal fun HomeSection(
             }
             Spacer(Modifier.size(10.dp))
             Text(
-                if (home == null && !locating) "Subukan ulit" else "Ituro sa mapa",
+                if (home == null && !locating) tr("Subukan ulit", "Try again") else tr("Ituro sa mapa", "Point on the map"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -312,7 +316,7 @@ internal fun HomeSection(
             )
         }
         Text(
-            "Dito ka aabisuhan kapag may baha malapit sa bahay mo.",
+            tr("Dito ka aabisuhan kapag may baha malapit sa bahay mo.", "You'll be notified here when flooding is near your home."),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -325,7 +329,7 @@ internal fun HomeSection(
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Text(
-                    "Nasa labas ka ng saklaw ng demo na ito",
+                    tr("Nasa labas ka ng saklaw ng demo na ito", "You're outside this demo's coverage area"),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.warningFg,
@@ -334,10 +338,15 @@ internal fun HomeSection(
                     // Corrected once the home pack existed: there *will* be a map now,
                     // so saying there will not be would be the same false statement in
                     // the other direction.
-                    "Ida-download ang mapa ng lugar mo pagpindot mo ng Magsimula, " +
-                        "habang may signal ka pa. Pero ang mga ulat ng baha ay para sa " +
-                        "${DemoArea.BARANGAY_NAME} lang — walang ulat sa lugar mo. " +
-                        "Gumagana pa rin ang SOS.",
+                    tr(
+                        "Ida-download ang mapa ng lugar mo pagpindot mo ng Magsimula, " +
+                            "habang may signal ka pa. Pero ang mga ulat ng baha ay para sa " +
+                            "${DemoArea.BARANGAY_NAME} lang — walang ulat sa lugar mo. " +
+                            "Gumagana pa rin ang SOS.",
+                        "The map of your area downloads once you tap Start, while you still " +
+                            "have signal. But flood reports are for ${DemoArea.BARANGAY_NAME} " +
+                            "only — none for your area. SOS still works.",
+                    ),
                     fontSize = 12.sp,
                     color = colors.warningFg,
                 )
@@ -355,6 +364,7 @@ internal fun BarangaySection(
     val colors = LocalKaAlertoColors.current
     val keyboard = LocalSoftwareKeyboardController.current
     var editingBarangay by remember { mutableStateOf(false) }
+    val barangayDescription = tr("Barangay mo", "Your barangay")
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FieldLabel("BARANGAY")
@@ -386,7 +396,7 @@ internal fun BarangaySection(
                     }),
                     modifier = Modifier
                         .weight(1f)
-                        .semantics { contentDescription = "Barangay mo" },
+                        .semantics { contentDescription = barangayDescription },
                 )
             } else {
                 Text(
@@ -397,7 +407,7 @@ internal fun BarangaySection(
                     modifier = Modifier.weight(1f),
                 )
                 Text(
-                    "Baguhin",
+                    tr("Baguhin", "Change"),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -412,9 +422,9 @@ internal fun BarangaySection(
             // amounts of trust: one was read off the location, the other is just this
             // build's demo area standing in.
             if (barangayFromLocation) {
-                "Nakuha sa lokasyon mo — pindutin ang Baguhin kung mali."
+                tr("Nakuha sa lokasyon mo — pindutin ang Baguhin kung mali.", "Taken from your location — tap Change if it's wrong.")
             } else {
-                "Hindi ito nakuha sa lokasyon mo — pakitama kung iba ang sa iyo."
+                tr("Hindi ito nakuha sa lokasyon mo — pakitama kung iba ang sa iyo.", "This wasn't taken from your location — please correct it if yours is different.")
             },
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -433,14 +443,18 @@ internal fun NameVisibilityDisclosure() {
         verticalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         Text(
-            "Makikita ng lahat ang pangalan mo sa mga ulat mo",
+            tr("Makikita ng lahat ang pangalan mo sa mga ulat mo", "Everyone will see your name on your reports"),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground,
         )
         Text(
-            "Ito ang nagpapanagot sa bawat ulat. Kapag nakarating na ito sa ibang phone, " +
-                "hindi na ito mababawi.",
+            tr(
+                "Ito ang nagpapanagot sa bawat ulat. Kapag nakarating na ito sa ibang phone, " +
+                    "hindi na ito mababawi.",
+                "This is what holds each report accountable. Once it has reached another " +
+                    "phone, it can no longer be taken back.",
+            ),
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

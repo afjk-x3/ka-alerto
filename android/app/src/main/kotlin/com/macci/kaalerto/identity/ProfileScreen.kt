@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.nav.HamburgerButton
 
 /**
@@ -87,13 +88,13 @@ fun ProfileScreen(
                 HamburgerButton(onClick = onOpenMenu, modifier = Modifier.padding(end = 12.dp, top = 3.dp))
                 Column {
                     Text(
-                        "Profile mo",
+                        tr("Profile mo", "Your profile"),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        "Pangalan, numero, at bahay mo.",
+                        tr("Pangalan, numero, at bahay mo.", "Your name, number, and home."),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -143,7 +144,7 @@ fun ProfileScreen(
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text("I-save", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(tr("I-save", "Save"), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
             }
             Box(
                 modifier = Modifier
@@ -152,7 +153,7 @@ fun ProfileScreen(
                     .clickable(onClick = onCancel),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Kanselahin", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("Kanselahin", "Cancel"), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

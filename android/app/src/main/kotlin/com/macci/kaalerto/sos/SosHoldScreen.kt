@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.i18n.tr
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.text.SimpleDateFormat
@@ -112,12 +113,11 @@ fun SosHoldScreen(
     ) {
         Spacer(Modifier.height(48.dp))
         Text(
-            "Humingi ng tulong",
+            tr("Humingi ng tulong", "Request rescue"),
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = SosColors.PrimaryText,
         )
-        Text("Request rescue", fontSize = 16.sp, color = SosColors.HoldSecondaryText)
 
         Box(
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -144,13 +144,16 @@ fun SosHoldScreen(
         }
 
         Text(
-            if (holding) "Huwag bitawan…" else "Pindutin at hawakan",
+            if (holding) tr("Huwag bitawan…", "Don't let go…") else tr("Pindutin at hawakan", "Press and hold"),
             fontSize = 17.sp,
             fontWeight = FontWeight.SemiBold,
             color = SosColors.PrimaryText,
         )
         Text(
-            "Kailangan ng mahabang pindot para hindi ito\nmaaksidenteng ma-send sa bulsa mo.",
+            tr(
+                "Kailangan ng mahabang pindot para hindi ito\nmaaksidenteng ma-send sa bulsa mo.",
+                "A long press is needed so this isn't accidentally\nsent from inside your pocket.",
+            ),
             fontSize = 14.sp,
             color = SosColors.HoldSecondaryText,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
@@ -173,7 +176,7 @@ fun SosHoldScreen(
                 .clickable(onClick = onCancel),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Kanselahin", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = SosColors.HoldSecondaryText)
+            Text(tr("Kanselahin", "Cancel"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = SosColors.HoldSecondaryText)
         }
     }
 }
@@ -226,8 +229,12 @@ private fun HoldRing(progress: Float, holding: Boolean, modifier: Modifier = Mod
                 letterSpacing = 2.sp,
                 color = SosColors.CardBackground,
             )
-            Text(if (holding) "Hawakan" else "Pindutin", fontSize = 17.sp, color = SosColors.CriticalText)
-            Text("keep holding", fontSize = 13.sp, color = SosColors.CriticalSoft)
+            Text(
+                if (holding) tr("Hawakan", "Hold") else tr("Pindutin", "Press"),
+                fontSize = 17.sp,
+                color = SosColors.CriticalText,
+            )
+            Text(tr("huwag bitawan", "keep holding"), fontSize = 13.sp, color = SosColors.CriticalSoft)
         }
     }
 }
@@ -244,7 +251,7 @@ private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modi
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            "IPAPADALA AGAD",
+            tr("IPAPADALA AGAD", "SENDING IMMEDIATELY"),
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.sp,
@@ -267,10 +274,13 @@ private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modi
         Row(verticalAlignment = Alignment.CenterVertically) {
             ClockGlyph(SosColors.SecondaryText, Modifier.size(18.dp))
             Spacer(Modifier.size(10.dp))
-            Text("${timeFormat.format(Date())} · ngayon", fontSize = 15.sp, color = SosColors.PrimaryText)
+            Text("${timeFormat.format(Date())} · " + tr("ngayon", "now"), fontSize = 15.sp, color = SosColors.PrimaryText)
         }
         Text(
-            "Madadagdagan mo ng detalye pagkatapos — hindi hinihintay ng pagpapadala.",
+            tr(
+                "Madadagdagan mo ng detalye pagkatapos — hindi hinihintay ng pagpapadala.",
+                "You can add detail afterward — sending doesn't wait for it.",
+            ),
             fontSize = 13.sp,
             color = SosColors.SecondaryText,
             modifier = Modifier.padding(top = 4.dp),

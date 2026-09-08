@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.i18n.tr
 
 /**
  * design/artboards/SOSContext.dc.html.
@@ -64,7 +65,7 @@ fun SosContextScreen(
             .background(SosColors.Background),
     ) {
         SosLiveBanner(
-            title = "Ipinapadala na ang SOS mo",
+            title = tr("Ipinapadala na ang SOS mo", "Your SOS is already going out"),
             subtitle = "$elapsedLabel · %.4f, %.4f".format(snapshot.lat, snapshot.lon),
         )
 
@@ -78,13 +79,16 @@ fun SosContextScreen(
             Spacer(Modifier.size(12.dp))
             Column {
                 Text(
-                    "Padala na ang lokasyon mo. Opsyonal lang ito.",
+                    tr("Padala na ang lokasyon mo. Opsyonal lang ito.", "Your location is already going out."),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = SosColors.PrimaryText,
                 )
                 Text(
-                    "Your location is already going out. Answering only adds detail — it never delays the request.",
+                    tr(
+                        "Ang pagsagot ay dagdag detalye lang — hindi ito ipinagpapaliban ng hiling.",
+                        "Answering only adds detail — it never delays the request.",
+                    ),
                     fontSize = 13.sp,
                     color = SosColors.SecondaryText,
                 )
@@ -98,7 +102,7 @@ fun SosContextScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Question("Ilan kayo diyan?") {
+            Question(tr("Ilan kayo diyan?", "How many of you are there?")) {
                 OptionGrid(
                     options = SosContext.PEOPLE_OPTIONS,
                     labelOf = SosContext::peopleLabel,
@@ -116,7 +120,7 @@ fun SosContextScreen(
                 )
             }
 
-            Question("May kailangan bang medikal?") {
+            Question(tr("May kailangan bang medikal?", "Any medical needs?")) {
                 OptionRow(
                     options = SosContext.MEDICAL_OPTIONS,
                     selected = draft.medical.toSet(),
@@ -129,7 +133,7 @@ fun SosContextScreen(
                 )
             }
 
-            Question("Gaano kataas ang tubig?") {
+            Question(tr("Gaano kataas ang tubig?", "How high is the water?")) {
                 OptionGrid(
                     options = SosContext.WATER_OPTIONS,
                     selected = setOfNotNull(draft.water),
@@ -157,7 +161,10 @@ fun SosContextScreen(
             Box(Modifier.size(width = 3.dp, height = 34.dp).background(SosColors.Mesh))
             Spacer(Modifier.size(11.dp))
             Text(
-                "Bawat sagot ay sumusunod agad sa naunang padala — hindi na inuulit ang lokasyon.",
+                tr(
+                    "Bawat sagot ay sumusunod agad sa naunang padala — hindi na inuulit ang lokasyon.",
+                    "Each answer follows right after what was already sent — the location isn't repeated.",
+                ),
                 fontSize = 13.sp,
                 color = SosColors.SecondaryText,
             )
@@ -172,7 +179,7 @@ fun SosContextScreen(
                 .clickable(onClick = onDone),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Tapos na — ipakita ang status", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SosColors.Background)
+            Text(tr("Tapos na — ipakita ang status", "Done — show the status"), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SosColors.Background)
         }
         Box(
             modifier = Modifier
@@ -183,7 +190,7 @@ fun SosContextScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "Laktawan — hayaan lang itong tumakbo",
+                tr("Laktawan — hayaan lang itong tumakbo", "Skip — just let it run"),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = SosColors.HoldSecondaryText,

@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.Canvas
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.identity.roleBadge
 import com.macci.kaalerto.detail.MeshIcon
 import com.macci.kaalerto.mesh.MeshStatus
@@ -79,14 +80,16 @@ fun MapHeader(
                 )
                 Spacer(Modifier.size(6.dp))
                 val statusText = if (isOnline) {
-                    "May koneksyon · $reportsToday ulat ngayong araw"
+                    tr("May koneksyon · $reportsToday ulat ngayong araw", "Online · $reportsToday reports today")
                 } else {
-                    "Walang signal · $reportsToday ulat ngayong araw"
+                    tr("Walang signal · $reportsToday ulat ngayong araw", "No signal · $reportsToday reports today")
                 }
                 Text(
                     statusText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
             MeshStatusLine(meshStatus)
@@ -146,13 +149,19 @@ private fun MeshStatusLine(status: MeshStatus) {
     val tint = if (status.error != null) colors.warningFg else MaterialTheme.colorScheme.onSurfaceVariant
     val text = when {
         status.error != null -> status.error
-        status.peerCount > 0 -> "${status.peerCount} kalapit na phone"
-        else -> "Naghahanap ng kalapit na phone"
+        status.peerCount > 0 -> tr("${status.peerCount} kalapit na phone", "${status.peerCount} nearby phones")
+        else -> tr("Naghahanap ng kalapit na phone", "Looking for nearby phones")
     }
 
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
         MeshIcon(tint = tint, modifier = Modifier.size(13.dp))
         Spacer(Modifier.size(6.dp))
-        Text(text, style = MaterialTheme.typography.bodySmall, color = tint)
+        Text(
+            text,
+            style = MaterialTheme.typography.bodySmall,
+            color = tint,
+            maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        )
     }
 }

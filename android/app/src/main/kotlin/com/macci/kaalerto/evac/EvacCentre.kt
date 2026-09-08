@@ -1,8 +1,10 @@
 package com.macci.kaalerto.evac
 
 import android.content.Context
+import androidx.compose.runtime.Composable
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.haversineMeters
+import com.macci.kaalerto.i18n.tr
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -31,16 +33,20 @@ data class EvacCentre(
 private data class EvacFile(val centres: List<EvacCentre> = emptyList())
 
 /** Three states, from EvacCentres-Normal.dc.html's own badges. */
-enum class EvacStatus(val key: String, val fil: String) {
-    ACCEPTING("accepting", "Tumatanggap"),
-    NEARLY_FULL("nearly_full", "Halos puno"),
-    NOT_OPEN("not_open", "Hindi pa bukas"),
+enum class EvacStatus(val key: String, val fil: String, val en: String) {
+    ACCEPTING("accepting", "Tumatanggap", "Accepting"),
+    NEARLY_FULL("nearly_full", "Halos puno", "Nearly full"),
+    NOT_OPEN("not_open", "Hindi pa bukas", "Not open yet"),
     ;
 
     companion object {
         fun from(key: String?): EvacStatus = values().firstOrNull { it.key == key } ?: NOT_OPEN
     }
 }
+
+/** [EvacStatus.fil]/[EvacStatus.en] resolved by [com.macci.kaalerto.i18n.LocalAppLanguage]. */
+@Composable
+fun EvacStatus.label(): String = tr(fil, en)
 
 /** What an official posts about a centre — BUILD_TASKS.md day 10's "tiny event". */
 @Serializable

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.i18n.tr
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -90,6 +91,10 @@ fun RescueCardScreen(
                 .background(SosColors.Critical)
                 .padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 14.dp),
         ) {
+            // Deliberately not language-toggled, unlike the rest of this screen: the
+            // whole point of the rescue card is to be read by whoever finds the phone —
+            // possibly not the resident who set the language — so both lines stay on
+            // screen regardless of the i18n toggle.
             Text("KAILANGAN NG SAGIP", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = SosColors.CardBackground)
             Text("RESCUE NEEDED · show this screen", fontSize = 15.sp, color = SosColors.CriticalText)
         }
@@ -104,7 +109,10 @@ fun RescueCardScreen(
             BatteryGlyph(SosColors.CardBackground, Modifier.size(17.dp))
             Spacer(Modifier.size(9.dp))
             Text(
-                "Mabilis kumonsumo ng baterya ang screen na ito. Puti at pinakamaliwanag para makita ka.",
+                tr(
+                    "Mabilis kumonsumo ng baterya ang screen na ito. Puti at pinakamaliwanag para makita ka.",
+                    "This screen drains the battery fast. White and at full brightness so you can be seen.",
+                ),
                 fontSize = 12.sp,
                 color = SosColors.CardBackground,
             )
@@ -115,7 +123,7 @@ fun RescueCardScreen(
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp),
         ) {
-            CardLabel("LOKASYON")
+            CardLabel(tr("LOKASYON", "LOCATION"))
             Text(
                 "%.4f".format(snapshot.lat),
                 fontFamily = FontFamily.Monospace,
@@ -144,7 +152,7 @@ fun RescueCardScreen(
 
         Row(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f).padding(16.dp)) {
-                CardLabel("TAO")
+                CardLabel(tr("TAO", "PEOPLE"))
                 Text(
                     snapshot.context.people?.let(SosContext::peopleLabel) ?: "?",
                     fontSize = 30.sp,
@@ -152,16 +160,16 @@ fun RescueCardScreen(
                     color = SosColors.CardInk,
                 )
                 Text(
-                    snapshot.context.companions.joinToString(" · ").ifEmpty { "Hindi sinabi" },
+                    snapshot.context.companions.joinToString(" · ").ifEmpty { tr("Hindi sinabi", "Not stated") },
                     fontSize = 14.sp,
                     color = SosColors.CardInk,
                 )
             }
             Box(Modifier.size(width = 2.dp, height = 96.dp).background(SosColors.CardInk))
             Column(modifier = Modifier.weight(1f).padding(16.dp)) {
-                CardLabel("TUBIG")
+                CardLabel(tr("TUBIG", "WATER"))
                 Text(
-                    snapshot.context.water ?: "Hindi sinabi",
+                    snapshot.context.water ?: tr("Hindi sinabi", "Not stated"),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = SosColors.CardInk,
@@ -206,9 +214,17 @@ fun RescueCardScreen(
             )
             Spacer(Modifier.size(16.dp))
             Column {
-                Text("I-scan ito kung may app ka", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SosColors.CardInk)
                 Text(
-                    "Scanning this passes the rescue request to your phone, even with no network.",
+                    tr("I-scan ito kung may app ka", "Scan this if you have the app"),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SosColors.CardInk,
+                )
+                Text(
+                    tr(
+                        "Ipinapasa nito ang hiling ng saklolo sa phone mo, kahit walang network.",
+                        "Scanning this passes the rescue request to your phone, even with no network.",
+                    ),
                     fontSize = 14.sp,
                     color = SosColors.CardMuted,
                 )
@@ -216,7 +232,10 @@ fun RescueCardScreen(
         }
 
         Text(
-            "Ipinadala ${timeFormat.format(Date(snapshot.startedAtMs))} · patuloy pa rin ang pag-broadcast",
+            tr(
+                "Ipinadala ${timeFormat.format(Date(snapshot.startedAtMs))} · patuloy pa rin ang pag-broadcast",
+                "Sent ${timeFormat.format(Date(snapshot.startedAtMs))} · still broadcasting",
+            ),
             fontSize = 15.sp,
             color = SosColors.CardMuted,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
@@ -246,7 +265,7 @@ fun RescueCardScreen(
                 SpeakerGlyph(SosColors.CardBackground, Modifier.size(22.dp))
                 Spacer(Modifier.size(9.dp))
                 Text(
-                    if (sounding) "Itigil" else "Patunugin",
+                    if (sounding) tr("Itigil", "Stop") else tr("Patunugin", "Sound"),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = SosColors.CardBackground,
@@ -265,7 +284,7 @@ fun RescueCardScreen(
                     .clickable(onClick = onBack),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Bumalik", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SosColors.CardInk)
+                Text(tr("Bumalik", "Back"), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SosColors.CardInk)
             }
         }
     }

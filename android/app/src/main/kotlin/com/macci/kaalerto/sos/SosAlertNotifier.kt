@@ -13,6 +13,8 @@ import androidx.core.content.ContextCompat
 import com.macci.kaalerto.MainActivity
 import com.macci.kaalerto.R
 import com.macci.kaalerto.data.haversineMeters
+import com.macci.kaalerto.i18n.LanguagePrefs
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.notification.NotificationChannels
 import kotlin.math.roundToInt
 
@@ -63,10 +65,11 @@ object SosAlertNotifier {
             null
         }
 
+        val language = LanguagePrefs.get(context)
         val builder = NotificationCompat.Builder(context, NotificationChannels.CHANNEL_SOS)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("May humihingi ng tulong")
-            .setContentText(subtitle(distance, snapshot))
+            .setContentTitle(tr(language, "May humihingi ng tulong", "Someone is requesting help"))
+            .setContentText(subtitle(distance, snapshot, language))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setColor(0xFFC42B2B.toInt())
@@ -89,9 +92,12 @@ object SosAlertNotifier {
      * distance and explicitly not "kung sino sila" — this string is the first thing they
      * see, so it must not be the first place the exact position leaks.
      */
-    private fun subtitle(distanceMeters: Double?, snapshot: SosSnapshot): String {
-        val where = distanceMeters?.let { "Humigit-kumulang ${roundDistance(it)} m ang layo" } ?: "Malapit sa iyo"
-        val people = snapshot.context.people?.let { " · ${SosContext.peopleLabel(it)} tao" }.orEmpty()
+    private fun subtitle(distanceMeters: Double?, snapshot: SosSnapshot, language: com.macci.kaalerto.i18n.AppLanguage): String {
+        val where = distanceMeters?.let {
+            tr(language, "Humigit-kumulang ${roundDistance(it)} m ang layo", "Roughly ${roundDistance(it)} m away")
+        } ?: tr(language, "Malapit sa iyo", "Near you")
+        val peopleUnit = tr(language, "tao", "people")
+        val people = snapshot.context.people?.let { " · ${SosContext.peopleLabel(it)} $peopleUnit" }.orEmpty()
         return where + people
     }
 

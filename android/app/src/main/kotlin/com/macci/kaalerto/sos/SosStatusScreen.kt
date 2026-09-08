@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.mesh.MeshStatus
 
 /**
@@ -51,7 +52,7 @@ fun SosStatusScreen(
             .background(SosColors.Background),
     ) {
         SosLiveBanner(
-            title = if (snapshot.isActive) "Aktibo ang SOS mo" else "Sarado na ang SOS mo",
+            title = if (snapshot.isActive) tr("Aktibo ang SOS mo", "Your SOS is active") else tr("Sarado na ang SOS mo", "Your SOS is closed"),
             subtitle = elapsedLabel,
         )
 
@@ -64,7 +65,7 @@ fun SosStatusScreen(
             HeadlineRow(snapshot.state, channels.anyBroadcasting())
 
             Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
-                SectionLabel("BAWAT DAAN")
+                SectionLabel(tr("BAWAT DAAN", "EVERY CHANNEL"))
                 Spacer(Modifier.size(11.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     channels.forEach { ChannelRow(it) }
@@ -89,7 +90,7 @@ fun SosStatusScreen(
                     .clickable(onClick = onShowRescueCard),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Ipakita ang rescue card", fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = SosColors.PrimaryText)
+                Text(tr("Ipakita ang rescue card", "Show the rescue card"), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = SosColors.PrimaryText)
             }
 
             // Lets the last control scroll clear of the fixed footer. Without it the
@@ -113,10 +114,10 @@ fun SosStatusScreen(
             ) {
                 SafeShieldGlyph(SosColors.PrimaryText, Modifier.size(20.dp))
                 Spacer(Modifier.size(9.dp))
-                Text("Ligtas na ako", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = SosColors.PrimaryText)
+                Text(tr("Ligtas na ako", "I'm safe"), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = SosColors.PrimaryText)
             }
             Text(
-                "Patuloy ang pag-broadcast hangga't hindi mo ito isinasara.",
+                tr("Patuloy ang pag-broadcast hangga't hindi mo ito isinasara.", "Broadcasting continues until you close this."),
                 fontSize = 13.sp,
                 color = SosColors.MutedText,
                 textAlign = TextAlign.Center,
@@ -124,7 +125,7 @@ fun SosStatusScreen(
             )
         } else {
             Text(
-                "Isinara mo ito. Hindi na ito ipinapadala.",
+                tr("Isinara mo ito. Hindi na ito ipinapadala.", "You closed this. It's no longer being sent."),
                 fontSize = 13.sp,
                 color = SosColors.MutedText,
                 textAlign = TextAlign.Center,
@@ -146,10 +147,7 @@ private fun HeadlineRow(state: SosState, broadcasting: Boolean) {
     ) {
         BroadcastGlyph(SosColors.Mesh, Modifier.size(30.dp))
         Spacer(Modifier.size(13.dp))
-        Column {
-            Text(fil, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SosColors.PrimaryText)
-            Text(en, fontSize = 14.sp, color = SosColors.SecondaryText, modifier = Modifier.padding(top = 5.dp))
-        }
+        Text(tr(fil, en), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = SosColors.PrimaryText)
     }
 }
 
@@ -219,7 +217,7 @@ private fun ChannelRow(row: SosChannelRow) {
         Spacer(Modifier.size(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                row.channel.fil,
+                row.channel.label(),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 // A channel with no code behind it is dimmed as well as labelled, so it
@@ -253,18 +251,18 @@ private fun PayloadPanel(snapshot: SosSnapshot, modifier: Modifier = Modifier) {
             .padding(horizontal = 15.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp),
     ) {
-        SectionLabel("IPINADALA")
+        SectionLabel(tr("IPINADALA", "SENT"))
         PayloadPair(
-            leftLabel = "Tao",
-            leftValue = peopleSummary(context) ?: "Hindi sinabi",
-            rightLabel = "Tubig",
-            rightValue = waterSummary(context) ?: "Hindi sinabi",
+            leftLabel = tr("Tao", "People"),
+            leftValue = peopleSummary(context) ?: tr("Hindi sinabi", "Not stated"),
+            rightLabel = tr("Tubig", "Water"),
+            rightValue = waterSummary(context) ?: tr("Hindi sinabi", "Not stated"),
         )
         PayloadPair(
-            leftLabel = "Medikal",
-            leftValue = context.medical.joinToString(" · ").ifEmpty { "Hindi sinabi" },
+            leftLabel = tr("Medikal", "Medical"),
+            leftValue = context.medical.joinToString(" · ").ifEmpty { tr("Hindi sinabi", "Not stated") },
             leftColor = if (context.hasMedicalNeed) SosColors.CriticalSoft else SosColors.PrimaryText,
-            rightLabel = "Lokasyon",
+            rightLabel = tr("Lokasyon", "Location"),
             rightValue = "%.4f\n%.4f".format(snapshot.lat, snapshot.lon),
             rightMono = true,
         )

@@ -1,6 +1,10 @@
 package com.macci.kaalerto.report
 
+import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,8 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.Canvas
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -37,6 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.data.severityTextFor
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.net.rememberIsOnline
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
@@ -56,8 +65,7 @@ fun ReportScreen(
     initialAccuracyMeters: Float?,
     onChangeLocation: () -> Unit,
     onBack: () -> Unit,
-    onSubmitted: () -> Unit,
-    onOpenMenu: () -> Unit,
+    onSubmitted: (featureRef: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -72,6 +80,25 @@ fun ReportScreen(
     var severityOverride by remember { mutableStateOf<String?>(null) }
     var showOverrideDialog by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
+    // The photo never leaves this device (report/ReportPhoto.kt) — only its hash rides
+    // with the event. photoHash is what's actually submitted; photoPreview is only for
+    // the thumbnail on this screen.
+    var photoHash by remember { mutableStateOf<String?>(null) }
+    var photoPreview by remember { mutableStateOf<Bitmap?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
+        if (bitmap != null) {
+            photoHash = PhotoStore.storeBitmap(context, bitmap)
+            photoPreview = bitmap
+        }
+    }
+    val galleryLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val hash = PhotoStore.storeUri(context, uri)
+            photoHash = hash
+            photoPreview = hash?.let { PhotoStore.loadThumbnail(context, it) }
+        }
+    }
 
     val levels = levelsFor(mode)
     val selected = levels[selectedIndex]
@@ -88,16 +115,9 @@ fun ReportScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Bumalik")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Bumalik", "Back"))
             }
-            com.macci.kaalerto.nav.HamburgerButton(
-                onClick = onOpenMenu,
-                modifier = Modifier.padding(end = 8.dp),
-            )
-            Column {
-                Text("Gaano kalalim?", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("How deep is the water?", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(tr("Gaano kalalim?", "How deep is the water?"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         }
 
         Spacer(Modifier.height(16.dp))
@@ -121,7 +141,7 @@ fun ReportScreen(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    val accuracyText = initialAccuracyMeters?.let { "GPS ±${it.toInt()} m" } ?: "Itinakda sa mapa"
+                    val accuracyText = initialAccuracyMeters?.let { "GPS ±${it.toInt()} m" } ?: tr("Itinakda sa mapa", "Set on the map")
                     Text(
                         accuracyText,
                         style = MaterialTheme.typography.bodySmall,
@@ -130,7 +150,7 @@ fun ReportScreen(
                     )
                 }
                 Text(
-                    "Baguhin",
+                    tr("Baguhin", "Change"),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     textDecoration = TextDecoration.Underline,
@@ -150,7 +170,7 @@ fun ReportScreen(
                 .border(BorderStroke(1.dp, MaterialTheme.colorScheme.onBackground)),
         ) {
             ModeTab(
-                label = "Katawan",
+                label = tr("Katawan", "Body"),
                 selected = mode == ReportMode.BODY,
                 modifier = Modifier.weight(1f),
                 icon = { tint -> PersonGlyph(tint = tint, modifier = Modifier.size(18.dp)) },
@@ -159,7 +179,7 @@ fun ReportScreen(
                 severityOverride = null
             }
             ModeTab(
-                label = "Sasakyan",
+                label = tr("Sasakyan", "Vehicle"),
                 selected = mode == ReportMode.VEHICLE,
                 modifier = Modifier.weight(1f),
                 icon = { tint -> VehicleGlyph(id = "car", tint = tint, modifier = Modifier.size(18.dp)) },
@@ -215,26 +235,39 @@ fun ReportScreen(
                 Spacer(Modifier.size(12.dp))
                 Column {
                     Text(
-                        if (severityOverride != null) "MANUAL NA SEVERITY" else "IRE-REPORT BILANG",
+                        if (severityOverride != null) tr("MANUAL NA SEVERITY", "MANUAL SEVERITY") else tr("IRE-REPORT BILANG", "WILL BE REPORTED AS"),
                         style = MaterialTheme.typography.labelSmall,
                         color = onSeverityColor.copy(alpha = 0.75f),
                     )
-                    Text(severityFil, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = onSeverityColor)
-                    Text(severityEn, style = MaterialTheme.typography.bodySmall, color = onSeverityColor.copy(alpha = 0.85f))
+                    Text(tr(severityFil, severityEn), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = onSeverityColor)
                 }
             }
         }
         Text(
-            if (severityOverride != null) "Manu-mano itong itinakda. Pindutin para baguhin." else "Awtomatiko itong nakuha sa lalim. Pindutin para baguhin.",
+            if (severityOverride != null) {
+                tr("Manu-mano itong itinakda. Pindutin para baguhin.", "This was set manually. Tap to change it.")
+            } else {
+                tr("Awtomatiko itong nakuha sa lalim. Pindutin para baguhin.", "This was worked out automatically from the depth. Tap to change it.")
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )
 
-        // Report-Normal.dc.html also has an optional-photo row here (FR-2.6). Left out
-        // deliberately: photo capture (camera intent, local storage, hash-only relay)
-        // isn't built by any day yet, and a tappable row that does nothing would
-        // misrepresent what the app can do.
+        // Report-Normal.dc.html's optional-photo row (FR-2.6). The photo itself never
+        // leaves this device — only its hash rides with the event (see ReportPhoto.kt) —
+        // so a peer that only receives the relayed event has proof a photo exists, not
+        // the photo. There is no server or mesh photo transport built, and this row
+        // doesn't claim there is.
+        PhotoRow(
+            preview = photoPreview,
+            onTakePhoto = { cameraLauncher.launch(null) },
+            onPickPhoto = { galleryLauncher.launch("image/*") },
+            onRemove = {
+                photoHash = null
+                photoPreview = null
+            },
+        )
 
         Spacer(Modifier.height(8.dp))
 
@@ -245,16 +278,16 @@ fun ReportScreen(
                 .clickable(enabled = !submitting) {
                     submitting = true
                     scope.launch {
-                        submitReport(context, selected, derivedSeverity, initialLat, initialLon)
+                        val featureRef = submitReport(context, selected, derivedSeverity, initialLat, initialLon, photoHash)
                         submitting = false
-                        onSubmitted()
+                        onSubmitted(featureRef)
                     }
                 },
             color = MaterialTheme.colorScheme.primary,
         ) {
             Box(modifier = Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    if (submitting) "Ipinapadala…" else "Ipadala ang ulat",
+                    if (submitting) tr("Ipinapadala…", "Sending…") else tr("Ipadala ang ulat", "Send the report"),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary,
@@ -273,7 +306,11 @@ fun ReportScreen(
             )
             Spacer(Modifier.size(7.dp))
             Text(
-                if (isOnline) "Ise-save sa phone mo kahit walang signal" else "Walang signal — ise-save muna sa phone",
+                if (isOnline) {
+                    tr("Ise-save sa phone mo kahit walang signal", "Saved on your phone even without signal")
+                } else {
+                    tr("Walang signal — ise-save muna sa phone", "No signal — saving to your phone first")
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -290,6 +327,149 @@ fun ReportScreen(
             },
             onDismiss = { showOverrideDialog = false },
         )
+    }
+}
+
+/**
+ * Camera intent + system gallery picker, not CameraX and not a permission-gated
+ * capture flow — both routes hand off to an app the device already trusts, so this
+ * app never needs the CAMERA runtime permission itself (matches lint.xml's rule that
+ * every `uses-feature` here stays optional, no new required capability).
+ */
+@Composable
+private fun PhotoRow(
+    preview: Bitmap?,
+    onTakePhoto: () -> Unit,
+    onPickPhoto: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val colors = LocalKaAlertoColors.current
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Text(
+            tr("Larawan (opsyonal)", "Photo (optional)"),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        if (preview != null) {
+            Box {
+                Image(
+                    bitmap = preview.asImageBitmap(),
+                    contentDescription = tr("Larawan ng ulat", "Report photo"),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .border(1.dp, colors.border),
+                )
+                Box(
+                    modifier = Modifier
+                        .padding(6.dp)
+                        .background(Color.Black.copy(alpha = 0.55f))
+                        .clickable(onClick = onRemove)
+                        .padding(6.dp),
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = tr("Alisin ang larawan", "Remove the photo"), tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PhotoActionButton(
+                    label = tr("Kumuha ng larawan", "Take a photo"),
+                    icon = { tint -> CameraGlyph(tint, Modifier.size(18.dp)) },
+                    onClick = onTakePhoto,
+                    modifier = Modifier.weight(1f),
+                )
+                PhotoActionButton(
+                    label = tr("Pumili mula sa gallery", "Pick from gallery"),
+                    icon = { tint -> GalleryGlyph(tint, Modifier.size(18.dp)) },
+                    onClick = onPickPhoto,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+        // Never a claim beyond what the app can back up — see the call site's comment.
+        Text(
+            tr(
+                "Nananatili sa phone mo ang larawan. Isang hash lang nito ang ipinapadala.",
+                "The photo stays on your phone. Only its hash is sent.",
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+private fun PhotoActionButton(
+    label: String,
+    icon: @Composable (tint: Color) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalKaAlertoColors.current
+    Row(
+        modifier = modifier
+            .border(1.dp, colors.borderEmphasis)
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        icon(MaterialTheme.colorScheme.onBackground)
+        Spacer(Modifier.size(8.dp))
+        Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground, textAlign = TextAlign.Center)
+    }
+}
+
+/** A camera body + shutter circle — drawn the way every other icon here is (NavDrawer.kt's HamburgerIcon rationale), not pulled from an extended icon pack this app doesn't otherwise depend on. */
+@Composable
+private fun CameraGlyph(tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = h * 0.09f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawRoundRect(
+            color = tint,
+            topLeft = androidx.compose.ui.geometry.Offset(0f, h * 0.22f),
+            size = androidx.compose.ui.geometry.Size(w, h * 0.7f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.08f),
+            style = stroke,
+        )
+        drawRect(
+            color = tint,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.32f, 0f),
+            size = androidx.compose.ui.geometry.Size(w * 0.36f, h * 0.24f),
+        )
+        drawCircle(color = tint, radius = w * 0.2f, center = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.58f), style = stroke)
+    }
+}
+
+/** A picture frame with a mountain fold — the standard gallery-picker shape. */
+@Composable
+private fun GalleryGlyph(tint: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = h * 0.09f, cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round)
+        drawRoundRect(
+            color = tint,
+            size = androidx.compose.ui.geometry.Size(w, h),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.1f),
+            style = stroke,
+        )
+        drawCircle(color = tint, radius = w * 0.08f, center = androidx.compose.ui.geometry.Offset(w * 0.28f, h * 0.32f))
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.12f, h * 0.82f)
+            lineTo(w * 0.4f, h * 0.5f)
+            lineTo(w * 0.6f, h * 0.68f)
+            lineTo(w * 0.78f, h * 0.46f)
+            lineTo(w * 0.9f, h * 0.82f)
+            close()
+        }
+        drawPath(path, color = tint, style = stroke)
     }
 }
 
@@ -349,17 +529,11 @@ private fun LevelChip(
                 Spacer(Modifier.height(6.dp))
             }
             Text(
-                option.fil,
+                tr(option.fil, option.en),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 color = if (selected) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                option.en,
-                style = MaterialTheme.typography.labelSmall,
-                textAlign = TextAlign.Center,
-                color = if (selected) MaterialTheme.colorScheme.surface.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -369,7 +543,7 @@ private fun LevelChip(
 private fun SeverityOverrideDialog(current: String, onSelect: (String) -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Palitan ang severity") },
+        title = { Text(tr("Palitan ang severity", "Change the severity")) },
         text = {
             Column {
                 listOf("S1", "S2", "S3").forEach { severity ->
@@ -384,16 +558,13 @@ private fun SeverityOverrideDialog(current: String, onSelect: (String) -> Unit, 
                     ) {
                         Box(modifier = Modifier.size(16.dp).background(color, RoundedCornerShape(4.dp)))
                         Spacer(Modifier.size(12.dp))
-                        Column {
-                            Text("$severity — $fil", fontWeight = if (severity == current) FontWeight.Bold else FontWeight.Normal)
-                            Text(en, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
+                        Text("$severity — ${tr(fil, en)}", fontWeight = if (severity == current) FontWeight.Bold else FontWeight.Normal)
                     }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("Kanselahin") }
+            TextButton(onClick = onDismiss) { Text(tr("Kanselahin", "Cancel")) }
         },
     )
 }

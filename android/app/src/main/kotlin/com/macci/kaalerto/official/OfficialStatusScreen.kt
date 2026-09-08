@@ -36,6 +36,7 @@ import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.detail.CheckIcon
 import com.macci.kaalerto.detail.MeshIcon
 import com.macci.kaalerto.detail.WarningTriangleIcon
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import java.text.SimpleDateFormat
@@ -99,7 +100,7 @@ fun OfficialStatusScreen(
             )
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Opisyal na status",
+                    tr("Opisyal na status", "Official status"),
                     fontSize = 21.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -116,7 +117,7 @@ fun OfficialStatusScreen(
                     .padding(horizontal = 9.dp, vertical = 5.dp),
             ) {
                 Text(
-                    "KAGAWAD",
+                    tr("KAGAWAD", "OFFICIAL"),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
@@ -142,20 +143,23 @@ fun OfficialStatusScreen(
             if (wouldBeGated) SecondOfficialGate()
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                SectionLabel("MANANATILI ANG ULAT NG RESIDENTE")
+                SectionLabel(tr("MANANATILI ANG ULAT NG RESIDENTE", "RESIDENT REPORTS STAY"))
                 summary.events
                     .filter { it.authorRole != "official" && it.severity != null }
                     .take(4)
                     .forEach { ResidentReportRow(it, timeFormat) }
                 Text(
-                    "Hindi binubura ng opisyal na status ang mga ito. Makikita pa rin ng residente ang lahat.",
+                    tr(
+                        "Hindi binubura ng opisyal na status ang mga ito. Makikita pa rin ng residente ang lahat.",
+                        "An official status does not erase these. Residents can still see all of them.",
+                    ),
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                SectionLabel("ANO ANG OPISYAL NA SASABIHIN MO?")
+                SectionLabel(tr("ANO ANG OPISYAL NA SASABIHIN MO?", "WHAT WILL THE OFFICIAL STATUS SAY?"))
                 OFFICIAL_OPTIONS.forEach { severity ->
                     val (fil, en) = severityTextFor(severity)
                     OptionRow(
@@ -179,13 +183,13 @@ fun OfficialStatusScreen(
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Ipo-post bilang $officialName",
+                    tr("Ipo-post bilang $officialName", "Will post as $officialName"),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.background,
                 )
                 Text(
-                    "${DemoArea.BARANGAY_NAME} · makikita ng lahat kung sino ang nag-post",
+                    "${DemoArea.BARANGAY_NAME} · " + tr("makikita ng lahat kung sino ang nag-post", "everyone can see who posted it"),
                     fontSize = 11.sp,
                     color = colors.borderEmphasis,
                 )
@@ -202,7 +206,7 @@ fun OfficialStatusScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                if (wouldBeGated) "I-post — maghihintay ng pangalawa" else "I-post ang opisyal na status",
+                if (wouldBeGated) tr("I-post — maghihintay ng pangalawa", "Post — will wait for a second") else tr("I-post ang opisyal na status", "Post the official status"),
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
@@ -219,7 +223,10 @@ fun OfficialStatusScreen(
             // The artboard says "nilalagdaan sa phone" — signed. Nothing is signed in
             // this build (ground rule 4), so this says only what is actually true.
             Text(
-                "Gumagana kahit walang signal — dala ang pangalan at puwesto mo, kumakalat sa mesh",
+                tr(
+                    "Gumagana kahit walang signal — dala ang pangalan at puwesto mo, kumakalat sa mesh",
+                    "Works even without signal — carries your name and seat, spreads over the mesh",
+                ),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -232,7 +239,7 @@ fun OfficialStatusScreen(
                 .clickable(onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
-            Text("Kanselahin", fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("Kanselahin", "Cancel"), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Spacer(Modifier.size(12.dp))
     }
@@ -258,16 +265,16 @@ private fun NowOnMap(summary: FeatureSummary) {
         Box(Modifier.size(width = 10.dp, height = 40.dp).background(severityComposeColor(summary.severity)))
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
-            SectionLabel("NGAYON SA MAPA")
-            val (fil, _) = severityTextFor(summary.severity)
+            SectionLabel(tr("NGAYON SA MAPA", "ON THE MAP NOW"))
+            val (fil, en) = severityTextFor(summary.severity)
             Text(
-                "${summary.severity} · $fil",
+                "${summary.severity} · ${tr(fil, en)}",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                "Galing sa residente · ${summary.confirmCount} nagkumpirma",
+                tr("Galing sa residente · ${summary.confirmCount} nagkumpirma", "From residents · ${summary.confirmCount} confirmed"),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -289,10 +296,14 @@ private fun ExistingOfficial(summary: FeatureSummary, timeFormat: SimpleDateForm
         Spacer(Modifier.size(11.dp))
         Column {
             SectionLabel(
-                if (summary.pendingSecondOfficial) "OPISYAL NA STATUS — NAKABINBIN" else "KASALUKUYANG OPISYAL NA STATUS",
+                if (summary.pendingSecondOfficial) {
+                    tr("OPISYAL NA STATUS — NAKABINBIN", "OFFICIAL STATUS — PENDING")
+                } else {
+                    tr("KASALUKUYANG OPISYAL NA STATUS", "CURRENT OFFICIAL STATUS")
+                },
             )
-            val (fil, _) = severityTextFor(summary.officialSeverity!!)
-            Text(fil, fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            val (fil, en) = severityTextFor(summary.officialSeverity!!)
+            Text(tr(fil, en), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Text(
                 "${summary.officialAuthorName.orEmpty()} · ${summary.officialAtMs?.let { timeFormat.format(Date(it)) }.orEmpty()}",
                 fontSize = 12.sp,
@@ -316,13 +327,16 @@ private fun ContradictionNote(summary: FeatureSummary) {
         Spacer(Modifier.size(11.dp))
         Column {
             Text(
-                "${summary.contradictingCount} residente ang salungat dito",
+                tr("${summary.contradictingCount} residente ang salungat dito", "${summary.contradictingCount} residents disagree with this"),
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.criticalFg,
             )
             Text(
-                "Mas malala pa rin daw ang lagay kaysa sa opisyal na status.",
+                tr(
+                    "Mas malala pa rin daw ang lagay kaysa sa opisyal na status.",
+                    "They say the situation is still worse than the official status.",
+                ),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -343,13 +357,16 @@ private fun SecondOfficialGate() {
     ) {
         Column {
             Text(
-                "Kailangan ng pangalawang opisyal",
+                tr("Kailangan ng pangalawang opisyal", "A second official is needed"),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = colors.warningFg,
             )
             Text(
-                "Magkasalungat ang lugar na ito, kaya hindi kayang ibaba ng iisang opisyal ang severity. Mananatili ang ulat ng residente hangga't walang pangalawang opisyal na sasang-ayon.",
+                tr(
+                    "Magkasalungat ang lugar na ito, kaya hindi kayang ibaba ng iisang opisyal ang severity. Mananatili ang ulat ng residente hangga't walang pangalawang opisyal na sasang-ayon.",
+                    "This spot is contested, so one official alone cannot lower the severity. The resident report stays in force until a second official agrees.",
+                ),
                 fontSize = 12.sp,
                 color = colors.warningFg,
             )
@@ -377,8 +394,9 @@ private fun ResidentReportRow(event: Event, timeFormat: SimpleDateFormat) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.size(10.dp))
+        val (rowFil, rowEn) = severityTextFor(event.severity ?: "S0")
         Text(
-            severityTextFor(event.severity ?: "S0").first,
+            tr(rowFil, rowEn),
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onBackground,
         )
@@ -408,15 +426,12 @@ private fun OptionRow(severity: String, fil: String, en: String, selected: Boole
             if (selected) CheckIcon(MaterialTheme.colorScheme.background, Modifier.size(13.dp))
         }
         Spacer(Modifier.size(11.dp))
-        Column {
-            Text(
-                fil,
-                fontSize = 15.sp,
-                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(en, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Text(
+            tr(fil, en),
+            fontSize = 15.sp,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
     }
 }
 

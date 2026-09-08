@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 
@@ -37,11 +38,18 @@ val IMPASSABLE_SEVERITIES = setOf("S2", "S3")
 enum class RecencyFilter(val label: String, val windowMillis: Long?) {
     // Label deliberately not "Lahat" — that pill already sits two spots to the left in
     // the same row, and identical labels next to each other read as a rendering bug.
+    // "1h"/"3h"/"24h" need no translation — units, not words.
     ALL("Kailanman", null),
     LAST_HOUR("1h", 60 * 60_000L),
     LAST_3H("3h", 3 * 60 * 60_000L),
     LAST_DAY("24h", 24 * 60 * 60_000L),
+    ;
+
+    val labelEn: String get() = if (this == ALL) "Anytime" else label
 }
+
+@Composable
+private fun RecencyFilter.displayLabel(): String = tr(label, labelEn)
 
 @Composable
 fun FilterBar(
@@ -62,13 +70,13 @@ fun FilterBar(
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
     ) {
         FilterPill(
-            label = "Lahat",
+            label = tr("Lahat", "All"),
             selected = showingAll,
             swatchColor = null,
             onClick = { if (!showingAll) ALL_SEVERITIES.forEach { if (it !in selectedSeverities) onToggleSeverity(it) } },
         )
         FilterPill(
-            label = "Impassable",
+            label = tr("Impassable", "Impassable"),
             selected = !showingAll && selectedSeverities == IMPASSABLE_SEVERITIES,
             swatchColor = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(SeverityColors.S3)),
             onClick = {
@@ -87,7 +95,7 @@ fun FilterBar(
                     .padding(horizontal = 12.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(recency.label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(recency.displayLabel(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.size(4.dp))
                 Icon(
                     Icons.Filled.KeyboardArrowDown,
@@ -99,7 +107,7 @@ fun FilterBar(
             DropdownMenu(expanded = recencyMenuOpen, onDismissRequest = { recencyMenuOpen = false }) {
                 RecencyFilter.entries.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option.label) },
+                        text = { Text(option.displayLabel()) },
                         onClick = {
                             onRecencyChange(option)
                             recencyMenuOpen = false

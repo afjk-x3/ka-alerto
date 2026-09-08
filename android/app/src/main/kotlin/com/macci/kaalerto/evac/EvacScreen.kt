@@ -31,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.detail.MeshIcon
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -68,6 +69,12 @@ fun EvacScreen(
     val colors = LocalKaAlertoColors.current
     var editing by remember { mutableStateOf<String?>(null) }
 
+    // A resident sees only what they could actually walk to right now — an official
+    // still sees every centre, open or not, because "not open" is exactly the state
+    // they're here to change (OfficialControls below). Filtering this for officials
+    // too would hide the one button that opens a closed centre.
+    val visibleStates = if (isOfficial) states else states.filter { it.status != EvacStatus.NOT_OPEN }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -85,13 +92,13 @@ fun EvacScreen(
             )
             Column {
                 Text(
-                    "Mga silungan",
+                    tr("Mga silungan", "Evacuation centres"),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "Pinakamalapit muna · nasa phone mo na ito",
+                    tr("Pinakamalapit muna · nasa phone mo na ito", "Nearest first · already on your phone"),
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -108,12 +115,31 @@ fun EvacScreen(
         ) {
             if (states.isEmpty()) {
                 Text(
-                    "Walang evacuation centre sa fixture.",
+                    tr("Walang evacuation centre sa fixture.", "No evacuation centres in the fixture."),
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            } else if (visibleStates.isEmpty()) {
+                // Not the same message as an empty fixture: centres exist, none are
+                // open yet. A blank screen here would read as "nothing to see" when
+                // it actually means "check back" — the failure the NOT_OPEN default
+                // exists to avoid in the first place (see EvacCentre.kt's EvacState doc).
+                Text(
+                    tr("Wala pang bukas na silungan ngayon.", "No shelters are open yet."),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    tr(
+                        "May ${states.size} silungan sa lugar mo, pero wala pang binuksan ang barangay. Susubaybayan ito at ipapakita agad kapag may nagbukas.",
+                        "There ${if (states.size == 1) "is" else "are"} ${states.size} shelter${if (states.size == 1) "" else "s"} in your area, but the barangay hasn't opened one yet. This is watched and will show up as soon as one opens.",
+                    ),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            states.forEach { state ->
+            visibleStates.forEach { state ->
                 CentreCard(
                     state = state,
                     isOfficial = isOfficial,
@@ -137,13 +163,16 @@ fun EvacScreen(
             MeshIcon(MaterialTheme.colorScheme.onSurfaceVariant, Modifier.size(17.dp))
             Spacer(Modifier.size(10.dp))
             Text(
-                "In-update ng barangay, kumakalat sa mesh. Tantiya lang ang kapasidad — hindi pa napapatunayan.",
+                tr(
+                    "In-update ng barangay, kumakalat sa mesh. Tantiya lang ang kapasidad — hindi pa napapatunayan.",
+                    "Updated by the barangay, spreads over the mesh. Capacity is only an estimate — not yet verified.",
+                ),
                 fontSize = 13.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
             Box(Modifier.clickable(onClick = onBack).padding(8.dp)) {
-                Text("Isara", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                Text(tr("Isara", "Close"), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
             }
         }
     }
@@ -180,7 +209,7 @@ private fun CentreCard(
                     color = if (open) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    state.distanceMeters?.let { formatDistance(it) } ?: "Hindi alam ang layo",
+                    state.distanceMeters?.let { formatDistance(it) } ?: tr("Hindi alam ang layo", "Distance unknown"),
                     fontSize = 14.sp,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -192,7 +221,7 @@ private fun CentreCard(
                     .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Text(
-                    state.status.fil,
+                    state.status.label(),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (state.status == EvacStatus.NOT_OPEN) MaterialTheme.colorScheme.onSurfaceVariant else accent,
@@ -233,7 +262,7 @@ private fun CentreCard(
         // here because it repeats on every card, with the full caveat once in the footer.
         state.centre.capacityEstimate?.let {
             Text(
-                "Kapasidad $it (tantiya)",
+                tr("Kapasidad $it (tantiya)", "Capacity $it (estimate)"),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),
@@ -242,7 +271,10 @@ private fun CentreCard(
 
         if (state.updatedAtMs != null) {
             Text(
-                "In-update ni ${state.updatedByName.orEmpty()} · ${timeFormat.format(Date(state.updatedAtMs))}",
+                tr(
+                    "In-update ni ${state.updatedByName.orEmpty()} · ${timeFormat.format(Date(state.updatedAtMs))}",
+                    "Updated by ${state.updatedByName.orEmpty()} · ${timeFormat.format(Date(state.updatedAtMs))}",
+                ),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
@@ -260,7 +292,7 @@ private fun CentreCard(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    if (editing) "Isara" else "I-update ang status",
+                    if (editing) tr("Isara", "Close") else tr("I-update ang status", "Update the status"),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -300,7 +332,7 @@ private fun OfficialControls(state: EvacState, onUpdate: (EvacStatus, Int?) -> U
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
-                Text("tao ngayon", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("tao ngayon", "people now"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Spacer(Modifier.size(10.dp))
             StepButton("+$step") { occupancy += step }
@@ -319,7 +351,7 @@ private fun OfficialControls(state: EvacState, onUpdate: (EvacStatus, Int?) -> U
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    status.fil,
+                    status.label(),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onBackground,
@@ -359,8 +391,9 @@ private fun statusChipBackground(status: EvacStatus, safeBg: Color, warningBg: C
  * "650 m" / "1.1 km", plus the artboard's walking estimate at a deliberately slow
  * 4 km/h — an evacuation walk is carrying children through water, not a stroll.
  */
+@Composable
 fun formatDistance(meters: Double): String {
     val distance = if (meters < 1_000) "${(meters / 10).roundToInt() * 10} m" else "%.1f km".format(meters / 1_000)
     val minutes = (meters / (4_000.0 / 60)).roundToInt()
-    return "$distance · $minutes min lakad"
+    return "$distance · " + tr("$minutes min lakad", "$minutes min walk")
 }

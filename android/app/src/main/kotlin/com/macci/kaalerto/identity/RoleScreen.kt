@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.detail.CheckIcon
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -81,15 +82,12 @@ fun RoleScreen(
                 onClick = onOpenMenu,
                 modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Column {
-                Text(
-                    "Papel mo sa barangay",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text("Your role", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(
+                tr("Papel mo sa barangay", "Your role in the barangay"),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
         }
 
         Column(
@@ -104,40 +102,55 @@ fun RoleScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
             ) {
                 Text(
-                    "Totoong umaandar ito — kumakalat sa mesh at pareho ang nakikita ng lahat ng phone. " +
-                        "Pero walang lagda: ang pag-angkin ng puwesto ay sinasabi lang, hindi napapatunayan.",
+                    tr(
+                        "Totoong umaandar ito — kumakalat sa mesh at pareho ang nakikita ng lahat ng phone. " +
+                            "Pero walang lagda: ang pag-angkin ng puwesto ay sinasabi lang, hindi napapatunayan.",
+                        "This genuinely works — it spreads over the mesh and every phone sees the same thing. " +
+                            "But there's no signature: claiming a seat is only stated, not proven.",
+                    ),
                     fontSize = 13.sp,
                     color = colors.warningFg,
                 )
             }
 
-            SectionLabel("ANG PAPEL MO NGAYON")
+            SectionLabel(tr("ANG PAPEL MO NGAYON", "YOUR ROLE RIGHT NOW"))
             CurrentRoleCard(myRole = myRole, seat = mySeat, grant = myGrant)
 
             // A resident's own path: apply, and then wait for a person to answer.
             if (!isOfficial && myGrant == null) {
-                SectionLabel("MAGING RESPONDER")
+                SectionLabel(tr("MAGING RESPONDER", "BECOME A RESPONDER"))
                 if (state.hasApplied(myAuthorId)) {
                     InfoCard(
-                        title = "Naipadala na ang hiling mo",
-                        detail = "Naghihintay ng opisyal ng barangay. Makikita nila ito kahit walang signal, " +
-                            "sa oras na magkalapit ang inyong phone.",
+                        title = tr("Naipadala na ang hiling mo", "Your request has been sent"),
+                        detail = tr(
+                            "Naghihintay ng opisyal ng barangay. Makikita nila ito kahit walang signal, " +
+                                "sa oras na magkalapit ang inyong phone.",
+                            "Waiting on a barangay official. They'll see it even without signal, " +
+                                "once your phones are near each other.",
+                        ),
                     )
                 } else {
                     ActionCard(
-                        title = "Humiling na maging responder",
-                        detail = "Ang barangay ang nag-a-aktibo — hindi mo ito mabubuksan sa sarili mo.",
+                        title = tr("Humiling na maging responder", "Ask to become a responder"),
+                        detail = tr(
+                            "Ang barangay ang nag-a-aktibo — hindi mo ito mabubuksan sa sarili mo.",
+                            "The barangay activates this — you can't turn it on yourself.",
+                        ),
                         onClick = onApply,
                     )
                 }
             }
 
             // The bootstrap. Authority enters the system here and nowhere else.
-            SectionLabel("MGA PUWESTO SA BARANGAY")
+            SectionLabel(tr("MGA PUWESTO SA BARANGAY", "BARANGAY SEATS"))
             if (mySeat == null && unclaimedSeats.isNotEmpty()) {
                 Text(
-                    "Kung ikaw ang may hawak ng puwesto, angkinin mo ito. Ang pangalan mo ang kasama " +
-                        "sa bawat ulat na ipo-post mo bilang opisyal.",
+                    tr(
+                        "Kung ikaw ang may hawak ng puwesto, angkinin mo ito. Ang pangalan mo ang kasama " +
+                            "sa bawat ulat na ipo-post mo bilang opisyal.",
+                        "If you hold this seat, claim it. Your name rides with every status " +
+                            "you post as an official.",
+                    ),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -152,7 +165,7 @@ fun RoleScreen(
                     unclaimedSeats.forEach { seat ->
                         ActionCard(
                             title = seat.title,
-                            detail = "Walang may hawak — angkinin",
+                            detail = tr("Walang may hawak — angkinin", "No one holds this — claim it"),
                             onClick = { onClaimSeat(seat) },
                         )
                     }
@@ -160,9 +173,9 @@ fun RoleScreen(
             }
 
             if (isOfficial) {
-                SectionLabel("MGA HILING NA NAGHIHINTAY (${state.pending.size})")
+                SectionLabel(tr("MGA HILING NA NAGHIHINTAY (${state.pending.size})", "PENDING REQUESTS (${state.pending.size})"))
                 if (state.pending.isEmpty()) {
-                    InfoCard(title = "Wala pang naghihintay", detail = null)
+                    InfoCard(title = tr("Wala pang naghihintay", "Nothing pending yet"), detail = null)
                 } else {
                     Column(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
@@ -171,7 +184,10 @@ fun RoleScreen(
                         state.pending.forEach { application ->
                             ActionCard(
                                 title = application.authorName,
-                                detail = "Humiling ${timeOf(application.atMs)} · i-aktibo bilang responder",
+                                detail = tr(
+                                    "Humiling ${timeOf(application.atMs)} · i-aktibo bilang responder",
+                                    "Requested ${timeOf(application.atMs)} · activate as a responder",
+                                ),
                                 onClick = { onGrant(application) },
                             )
                         }
@@ -179,7 +195,7 @@ fun RoleScreen(
                 }
 
                 if (state.grants.isNotEmpty()) {
-                    SectionLabel("MGA AKTIBONG RESPONDER (${state.grants.size})")
+                    SectionLabel(tr("MGA AKTIBONG RESPONDER (${state.grants.size})", "ACTIVE RESPONDERS (${state.grants.size})"))
                     Column(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -187,7 +203,10 @@ fun RoleScreen(
                         state.grants.forEach { grant ->
                             ActionCard(
                                 title = grant.subjectName,
-                                detail = "In-aktibo ni ${grant.byName} · ${timeOf(grant.atMs)} — pindutin para itigil",
+                                detail = tr(
+                                    "In-aktibo ni ${grant.byName} · ${timeOf(grant.atMs)} — pindutin para itigil",
+                                    "Activated by ${grant.byName} · ${timeOf(grant.atMs)} — tap to stand down",
+                                ),
                                 onClick = { onRevoke(grant) },
                             )
                         }
@@ -208,7 +227,7 @@ fun RoleScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "Bumalik sa mapa",
+                tr("Bumalik sa mapa", "Back to the map"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -227,9 +246,9 @@ private fun CurrentRoleCard(myRole: String, seat: SeatHolder?, grant: RoleGrantR
     val colors = LocalKaAlertoColors.current
     val (title, _) = roleLabel(myRole)
     val provenance = when {
-        seat != null -> "${seat.seatTitle} · inangkin ${timeOf(seat.sinceMs)}"
-        grant != null -> "In-aktibo ni ${grant.byName} · ${timeOf(grant.atMs)}"
-        else -> "Walang kailangang aktibasyon — ito ang simula ng lahat."
+        seat != null -> tr("${seat.seatTitle} · inangkin ${timeOf(seat.sinceMs)}", "${seat.seatTitle} · claimed ${timeOf(seat.sinceMs)}")
+        grant != null -> tr("In-aktibo ni ${grant.byName} · ${timeOf(grant.atMs)}", "Activated by ${grant.byName} · ${timeOf(grant.atMs)}")
+        else -> tr("Walang kailangang aktibasyon — ito ang simula ng lahat.", "No activation needed — this is where it all starts.")
     }
     Column(
         modifier = Modifier
@@ -265,8 +284,12 @@ private fun CurrentRoleCard(myRole: String, seat: SeatHolder?, grant: RoleGrantR
         if (seat?.contested == true) {
             Spacer(Modifier.size(6.dp))
             Text(
-                "May iba ring nag-angkin ng puwestong ito: ${seat.rivalNames.joinToString(", ")}. " +
-                    "Ang naunang pag-angkin ang nananatili.",
+                tr(
+                    "May iba ring nag-angkin ng puwestong ito: ${seat.rivalNames.joinToString(", ")}. " +
+                        "Ang naunang pag-angkin ang nananatili.",
+                    "Others have also claimed this seat: ${seat.rivalNames.joinToString(", ")}. " +
+                        "The earliest claim stands.",
+                ),
                 fontSize = 13.sp,
                 color = colors.criticalFg,
             )
@@ -294,7 +317,7 @@ private fun SeatHeldRow(held: SeatHolder, isMine: Boolean) {
             )
             Text(
                 if (held.contested) {
-                    "${held.authorName} · pinagtatalunan ng ${held.rivalNames.size} pa"
+                    tr("${held.authorName} · pinagtatalunan ng ${held.rivalNames.size} pa", "${held.authorName} · contested by ${held.rivalNames.size} more")
                 } else {
                     "${held.authorName} · ${timeOf(held.sinceMs)}"
                 },
@@ -379,17 +402,11 @@ private fun SectionLabel(text: String) {
 fun ManualRoleScreen(
     current: String,
     onSelect: (String) -> Unit,
-    onEditName: () -> Unit,
     onBack: () -> Unit,
     onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val registered = displayFormOf(
-        LocalIdentity.registeredFirstName(context),
-        LocalIdentity.registeredLastName(context),
-    )
 
     Column(
         modifier = modifier
@@ -407,15 +424,12 @@ fun ManualRoleScreen(
                 onClick = onOpenMenu,
                 modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Column {
-                Text(
-                    "Papel mo sa barangay",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text("Your role", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text(
+                tr("Papel mo sa barangay", "Your role in the barangay"),
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
         }
 
         Row(
@@ -425,9 +439,14 @@ fun ManualRoleScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Text(
-                "Pansamantalang mode para sa pagsubok. Sa totoong app, ang barangay ang " +
-                    "nag-a-aktibo ng responder, at ang opisyal ay galing sa hawak na puwesto sa " +
-                    "barangay — hindi ito pinipili ng user.",
+                tr(
+                    "Pansamantalang mode para sa pagsubok. Sa totoong app, ang barangay ang " +
+                        "nag-a-aktibo ng responder, at ang opisyal ay galing sa hawak na puwesto sa " +
+                        "barangay — hindi ito pinipili ng user.",
+                    "Temporary mode for testing. In the real app, the barangay activates a " +
+                        "responder, and an official comes from holding a barangay seat — the user " +
+                        "doesn't pick it.",
+                ),
                 fontSize = 13.sp,
                 color = colors.warningFg,
             )
@@ -444,56 +463,13 @@ fun ManualRoleScreen(
                     detail = detail,
                     badge = roleBadge(role),
                     selected = role == current,
-                    onClick = { onSelect(role) },
-                )
-            }
-        }
-
-        // PRD §9's name, and the one place to correct it. Editable on purpose: a typo
-        // caught an hour later would otherwise be permanent in front of the barangay.
-        // Events already relayed keep the name they were sent with — the log is
-        // append-only — and the onboarding screen says exactly that.
-        Column(
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                "PANGALAN MO",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.background)
-                    .border(1.dp, colors.border)
-                    .clickable(onClick = onEditName)
-                    .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        registered.ifBlank { "Wala pang pangalan" },
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        if (registered.isBlank()) {
-                            "Hinihingi kapag mag-uulat ka"
-                        } else {
-                            "Ito ang nakikita ng lahat sa mga ulat mo"
-                        },
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Text(
-                    "Baguhin",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
+                    // Selecting a role is the whole interaction on this bench screen — no
+                    // separate confirm step, so it returns to the map immediately rather
+                    // than leaving the user staring at a list that already did its job.
+                    onClick = {
+                        onSelect(role)
+                        onBack()
+                    },
                 )
             }
         }
@@ -510,7 +486,7 @@ fun ManualRoleScreen(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                "Bumalik sa mapa",
+                tr("Bumalik sa mapa", "Back to the map"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onBackground,

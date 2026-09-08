@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.detail.CheckIcon
 import com.macci.kaalerto.detail.MeshIcon
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import kotlin.math.roundToInt
 
@@ -67,11 +72,16 @@ fun SosQueueScreen(
             .fillMaxSize()
             .background(colors.canvas),
     ) {
+        // Only the title/count row is fixed chrome now. The mesh-delivery note and the
+        // medical-privacy note are both genuinely short, but pinning them permanently
+        // cost the same vertical space on a queue of 2 requests as a queue of 20 — they
+        // scroll with the list instead, and "Isara" moved up here so closing the queue
+        // doesn't require a fixed footer to hang it on.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(start = 16.dp, end = 16.dp, top = 38.dp, bottom = 10.dp),
+                .padding(start = 16.dp, end = 8.dp, top = 38.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             com.macci.kaalerto.nav.HamburgerButton(
@@ -80,13 +90,13 @@ fun SosQueueScreen(
             )
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Humihingi ng tulong",
+                    tr("Humihingi ng tulong", "Requesting help"),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "${if (isOfficial) "Kagawad" else "Responder"} · ${com.macci.kaalerto.demo.DemoArea.BARANGAY_NAME}",
+                    "${tr(if (isOfficial) "Kagawad" else "Responder", if (isOfficial) "Official" else "Responder")} · ${com.macci.kaalerto.demo.DemoArea.BARANGAY_NAME}",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -102,34 +112,23 @@ fun SosQueueScreen(
                     color = SosColors.CardBackground,
                 )
             }
-        }
-
-        val viaMesh = open.count { it.arrivedByMesh }
-        if (viaMesh > 0) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(colors.recessedSurface)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                MeshIcon(SosColors.Mesh, Modifier.size(17.dp))
-                Spacer(Modifier.size(9.dp))
-                Text(
-                    "$viaMesh sa mga ito ay dumating via mesh — walang internet sa pinanggalingan",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"))
             }
         }
 
+        val viaMesh = open.count { it.arrivedByMesh }
+
         if (open.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    "Walang humihingi ng tulong ngayon.",
-                    fontSize = 15.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Column(Modifier.weight(1f).fillMaxWidth()) {
+                Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text(
+                        tr("Walang humihingi ng tulong ngayon.", "No one is requesting help right now."),
+                        fontSize = 15.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                MedicalPrivacyNote()
             }
         } else {
             Column(
@@ -139,6 +138,26 @@ fun SosQueueScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                if (viaMesh > 0) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(colors.recessedSurface)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        MeshIcon(SosColors.Mesh, Modifier.size(17.dp))
+                        Spacer(Modifier.size(9.dp))
+                        Text(
+                            tr(
+                                "$viaMesh sa mga ito ay dumating via mesh — walang internet sa pinanggalingan",
+                                "$viaMesh of these arrived via mesh — no internet where they came from",
+                            ),
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
                 incidents.forEach { incident ->
                     val request = incident.primary
                     RequestCard(
@@ -157,28 +176,30 @@ fun SosQueueScreen(
                     )
                 }
                 Spacer(Modifier.size(8.dp))
+                MedicalPrivacyNote()
             }
         }
+    }
+}
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SafeShieldGlyph(MaterialTheme.colorScheme.onSurfaceVariant, Modifier.size(18.dp))
-            Spacer(Modifier.size(10.dp))
-            Text(
+@Composable
+private fun MedicalPrivacyNote() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SafeShieldGlyph(MaterialTheme.colorScheme.onSurfaceVariant, Modifier.size(18.dp))
+        Spacer(Modifier.size(10.dp))
+        Text(
+            tr(
                 "Lokasyon at bilang ng tao. Hindi ipinapasa sa mesh ang detalyeng medikal.",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            Box(Modifier.clickable(onClick = onBack).padding(8.dp)) {
-                Text("Isara", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-            }
-        }
+                "Location and headcount. Medical detail is not passed over the mesh.",
+            ),
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -227,7 +248,7 @@ private fun RequestCard(
                     }
                     if (!claimed) {
                         Box(Modifier.background(SosColors.Critical).padding(horizontal = 9.dp, vertical = 5.dp)) {
-                            Text("BAGO", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SosColors.CardBackground)
+                            Text(tr("BAGO", "NEW"), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = SosColors.CardBackground)
                         }
                     }
                 }
@@ -241,10 +262,10 @@ private fun RequestCard(
                     // count and the companions in one string for the status screen,
                     // whose column is already labelled "Tao". Reusing it here produced
                     // "5-8 - Bata - Matanda tao", with the unit stranded at the end.
-                    request.context.people?.let { Chip("${SosContext.peopleLabel(it)} tao") }
+                    request.context.people?.let { Chip("${SosContext.peopleLabel(it)} " + tr("tao", "people")) }
                     request.context.companions.takeIf { it.isNotEmpty() }?.let { Chip(it.joinToString(" · ")) }
                     waterSummary(request.context)?.let { Chip(it) }
-                    if (request.context.isEmpty) Chip("Walang dagdag na detalye")
+                    if (request.context.isEmpty) Chip(tr("Walang dagdag na detalye", "No further detail"))
                 }
 
                 if (incident.size > 1) NearbyReportsNote(incident)
@@ -272,15 +293,15 @@ private fun RequestCard(
                     // "papunta na", and a request that is seen but unattended is
                     // docs/03-architecture.md §6.5's worst failure mode.
                     if (request.state.rank < SosState.EN_ROUTE.rank) {
-                        AckButton("Papunta na ako", filled = false, onClick = onEnRoute)
+                        AckButton(tr("Papunta na ako", "I'm on my way"), filled = false, onClick = onEnRoute)
                     }
                 } else {
                     Column(
                         modifier = Modifier.padding(start = 13.dp, end = 13.dp, top = 11.dp, bottom = 13.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        AckButton("Nakita ko — papunta na", filled = true, onClick = onEnRoute)
-                        AckButton("Nakita ko", filled = false, onClick = onAcknowledge)
+                        AckButton(tr("Nakita ko — papunta na", "I've seen it — on my way"), filled = true, onClick = onEnRoute)
+                        AckButton(tr("Nakita ko", "I've seen it"), filled = false, onClick = onAcknowledge)
                     }
                 }
 
@@ -290,7 +311,7 @@ private fun RequestCard(
                     Column(
                         modifier = Modifier.padding(start = 13.dp, end = 13.dp, bottom = 13.dp),
                     ) {
-                        AckButton("Markahan: walang emergency", filled = false, onClick = onMarkFalseAlarm)
+                        AckButton(tr("Markahan: walang emergency", "Mark: not an emergency"), filled = false, onClick = onMarkFalseAlarm)
                     }
                 }
             }
@@ -319,14 +340,20 @@ private fun NearbyReportsNote(incident: SosIncident) {
             .padding(11.dp),
     ) {
         Text(
-            "${incident.size} ulat sa loob ng ${SAME_INCIDENT_RADIUS_M.toInt()} m — maaaring iisang insidente",
+            tr(
+                "${incident.size} ulat sa loob ng ${SAME_INCIDENT_RADIUS_M.toInt()} m — maaaring iisang insidente",
+                "${incident.size} reports within ${SAME_INCIDENT_RADIUS_M.toInt()} m — could be one incident",
+            ),
             fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onBackground,
         )
         incident.worstAccuracyM?.let {
             Text(
-                "Hanggang ±${it.roundToInt()} m ang tiyak ng lokasyon — maaari itong magkahiwalay na bahay.",
+                tr(
+                    "Hanggang ±${it.roundToInt()} m ang tiyak ng lokasyon — maaari itong magkahiwalay na bahay.",
+                    "Location accuracy up to ±${it.roundToInt()} m — these could be separate houses.",
+                ),
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -334,7 +361,7 @@ private fun NearbyReportsNote(incident: SosIncident) {
         Spacer(Modifier.size(6.dp))
         incident.all.forEach { request ->
             Text(
-                "· ${"%.4f, %.4f".format(request.lat, request.lon)} · ${request.context.people?.let(SosContext::peopleLabel) ?: "?"} tao",
+                "· ${"%.4f, %.4f".format(request.lat, request.lon)} · ${request.context.people?.let(SosContext::peopleLabel) ?: "?"} " + tr("tao", "people"),
                 fontSize = 12.sp,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -360,20 +387,24 @@ private fun FalseAlarmBanner(
             .padding(11.dp),
     ) {
         Text(
-            "Minarkahan: walang emergency",
+            tr("Minarkahan: walang emergency", "Marked: not an emergency"),
             fontSize = 13.sp,
             fontWeight = FontWeight.Bold,
             color = colors.warningFg,
         )
         Text(
-            "${mark.byName} · ${timeFormat.format(java.util.Date(mark.atMs))}. " +
-                "Nasa ibaba ito ng listahan — hindi tinanggal.",
+            tr(
+                "${mark.byName} · ${timeFormat.format(java.util.Date(mark.atMs))}. " +
+                    "Nasa ibaba ito ng listahan — hindi tinanggal.",
+                "${mark.byName} · ${timeFormat.format(java.util.Date(mark.atMs))}. " +
+                    "This sits lower in the list — it hasn't been removed.",
+            ),
             fontSize = 12.sp,
             color = colors.warningFg,
         )
         if (isOfficial && onUndo != null) {
             Spacer(Modifier.size(8.dp))
-            AckButton("Bawiin ang marka", filled = false, onClick = onUndo)
+            AckButton(tr("Bawiin ang marka", "Undo the mark"), filled = false, onClick = onUndo)
         }
     }
 }
@@ -387,8 +418,12 @@ private fun FalseAlarmBanner(
 @Composable
 private fun PriorMarksNote(priorFalseAlarms: Int) {
     Text(
-        "$priorFalseAlarms naunang maling alarma mula sa device na ito. Nasa ibaba ito ng " +
-            "listahan — pero hindi pa nasusuri ang request na ito.",
+        tr(
+            "$priorFalseAlarms naunang maling alarma mula sa device na ito. Nasa ibaba ito ng " +
+                "listahan — pero hindi pa nasusuri ang request na ito.",
+            "$priorFalseAlarms prior false alarm(s) from this device. This sits lower in the " +
+                "list — but this request itself hasn't been reviewed yet.",
+        ),
         fontSize = 12.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 13.dp, end = 13.dp, top = 10.dp),
@@ -442,7 +477,12 @@ private fun metaLine(request: SosSnapshot, distanceMeters: Double?): String = bu
     if (request.hopCount > 0) add("${request.hopCount} hops")
 }.joinToString(" · ")
 
-private fun claimedLabel(request: SosSnapshot): String = when {
-    request.state.rank >= SosState.EN_ROUTE.rank -> "Papunta na si ${request.claimedByName ?: "isang responder"}"
-    else -> "Nakita ni ${request.claimedByName ?: "isang responder"}"
+@Composable
+private fun claimedLabel(request: SosSnapshot): String {
+    val name = request.claimedByName ?: tr("isang responder", "a responder")
+    return if (request.state.rank >= SosState.EN_ROUTE.rank) {
+        tr("Papunta na si $name", "$name is on the way")
+    } else {
+        tr("Nakita ni $name", "Seen by $name")
+    }
 }

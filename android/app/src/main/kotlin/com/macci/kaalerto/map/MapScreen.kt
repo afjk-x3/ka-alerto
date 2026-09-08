@@ -53,6 +53,7 @@ import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.location.fetchCurrentLocation
 import com.macci.kaalerto.mesh.MeshPermissions
 import com.macci.kaalerto.mesh.MeshService
@@ -146,13 +147,30 @@ fun MapScreen(
     val packState by pack.state.collectAsStateWithLifecycle()
     val featureSummaries by viewModel.featureSummaries.collectAsStateWithLifecycle()
     var locatingReport by remember { mutableStateOf(false) }
+    // Pick-mode's draft pin: a tap moves this, nothing is committed to onLocationPicked
+    // until the confirm bar's "I-save" is tapped. See PickLocationBanner below.
+    var pickedLatLng by remember { mutableStateOf<LatLng?>(null) }
+    var locatingPick by remember { mutableStateOf(false) }
     // The SOS button had no pending state at all: it awaited a fix and, if none came,
     // simply never navigated. Observed on device as the red button doing nothing.
     var locatingSos by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
+    // Whether featureSummaries has ever actually contained selectedFeatureRef. Guards
+    // the "vanished feature" auto-clear below: a freshly-picked selectedFeatureRef (the
+    // registration-gate resume, or a just-submitted report's own featureRef) can easily
+    // lose the race against the reducer's own Flow — the event is committed to Room, but
+    // observeAll()'s re-emission and MapViewModel's derived featureSummaries haven't
+    // caught up by the very next composition. Without this flag, that one-frame gap
+    // looked identical to "the feature really is gone" and cleared the selection before
+    // the summary ever had a chance to arrive — observed on device as a submitted
+    // report's own detail sheet silently never opening.
+    var everHadSelectedSummary by remember { mutableStateOf(false) }
     // Reopens the sheet somebody was in when the registration gate interrupted them.
     LaunchedEffect(focusFeatureRef) {
-        if (focusFeatureRef != null) selectedFeatureRef = focusFeatureRef
+        if (focusFeatureRef != null) {
+            selectedFeatureRef = focusFeatureRef
+            everHadSelectedSummary = false
+        }
     }
     var homeDraft by remember { mutableStateOf<HomeDraft?>(null) }
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
@@ -281,7 +299,12 @@ fun MapScreen(
                 showLocation = hasLocation,
                 featureSummaries = visibleSummaries,
                 pickMode = pickMode,
-                onLocationPicked = onLocationPicked,
+                // A tap only moves the draft pin now — it no longer commits and
+                // navigates away on its own. The confirm bar below calls the real
+                // onLocationPicked (the caller's commit callback) when "I-save" is
+                // tapped. See PickLocationBanner's onSave.
+                onLocationPicked = { latLng -> pickedLatLng = latLng },
+                pickedLocation = pickedLatLng,
                 onFeatureTapped = { featureRef -> selectedFeatureRef = featureRef },
                 onLongPress = if (!pickMode) {
                     { latLng -> homeDraft = HomeDraft(latLng.latitude, latLng.longitude, homeDraft?.radiusMeters ?: HomeLocationStore.DEFAULT_RADIUS_METERS.toFloat()) }
@@ -324,7 +347,7 @@ fun MapScreen(
                     ShelterIcon(MaterialTheme.colorScheme.onBackground, Modifier.size(22.dp))
                     Spacer(Modifier.size(8.dp))
                     Text(
-                        "Silungan",
+                        tr("Silungan", "Shelters"),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -341,6 +364,20 @@ fun MapScreen(
             pickMode -> PickLocationBanner(
                 onCancel = { onCancelPick?.invoke() },
                 forHome = pickingHome,
+                pickedLatLng = pickedLatLng,
+                locatingCurrent = locatingPick,
+                onUseCurrentLocation = {
+                    if (locatingPick) return@PickLocationBanner
+                    locatingPick = true
+                    scope.launch {
+                        val location = fetchCurrentLocation(context)
+                        locatingPick = false
+                        if (location != null) {
+                            pickedLatLng = LatLng(location.latitude, location.longitude)
+                        }
+                    }
+                },
+                onSave = { pickedLatLng?.let { onLocationPicked?.invoke(it) } },
                 modifier = Modifier.fillMaxWidth(),
             )
             homeDraft != null -> HomeRadiusOverlay(
@@ -356,7 +393,7 @@ fun MapScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             onStartReport != null -> MapActionBar(
-                label = if (locatingReport) "Kinukuha ang lokasyon…" else "Mag-ulat",
+                label = if (locatingReport) tr("Kinukuha ang lokasyon…", "Getting location…") else tr("Mag-ulat", "Report"),
                 sosActive = sosActive,
                 locatingSos = locatingSos,
                 onSos = onStartSos?.let { start ->
@@ -397,6 +434,7 @@ fun MapScreen(
     }
 
     val selectedSummary = featureSummaries.firstOrNull { it.featureRef == selectedFeatureRef }
+    if (selectedSummary != null) everHadSelectedSummary = true
     if (selectedSummary != null && homeDraft == null) {
         DetailSheet(
             summary = selectedSummary,
@@ -420,51 +458,112 @@ fun MapScreen(
                 null
             },
         )
-    } else if (selectedFeatureRef != null && selectedSummary == null) {
+    } else if (selectedFeatureRef != null && selectedSummary == null && everHadSelectedSummary) {
         // The feature vanished from under the sheet (e.g. events reloaded) — don't
-        // leave a sheet open with nothing to show.
+        // leave a sheet open with nothing to show. Gated on everHadSelectedSummary so
+        // this only fires for a summary that genuinely disappeared after being shown,
+        // not for one that simply hasn't arrived yet — see that flag's own comment.
         selectedFeatureRef = null
     }
 }
 
-/** Shown only while [MapScreen]'s pickMode is active — GPS's fallback path (BUILD_TASKS.md day 3). */
+/**
+ * Shown only while [MapScreen]'s pickMode is active — GPS's fallback path (BUILD_TASKS.md
+ * day 3). Pick-mode serves two callers now — day 3's report location and registration's
+ * home pin — so it must not say "report" in both. Telling somebody setting their house
+ * that they are placing a flood report is the kind of small wrongness that makes a
+ * person distrust the next screen too.
+ *
+ * A tap only moves the draft pin (see [MapScreen]'s `pickedLatLng`) — it used to commit
+ * and navigate away on the very first tap, which meant a mis-tap could only be corrected
+ * by cancelling and starting over, and there was no way to review where you'd actually
+ * placed the point before it was saved. Nothing is committed until "I-save ang lokasyon"
+ * is tapped here.
+ */
 @Composable
-// Pick-mode serves two callers now — day 3's report location and registration's home
-// pin — so it must not say "report" in both. Telling somebody setting their house
-// that they are placing a flood report is the kind of small wrongness that makes a
-// person distrust the next screen too.
 private fun PickLocationBanner(
     onCancel: () -> Unit,
     forHome: Boolean,
+    pickedLatLng: LatLng?,
+    locatingCurrent: Boolean,
+    onUseCurrentLocation: () -> Unit,
+    onSave: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.background(MaterialTheme.colorScheme.inverseSurface).padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        modifier = modifier.background(MaterialTheme.colorScheme.inverseSurface),
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                if (forHome) {
-                    "Tapikin ang mapa para ituro ang bahay mo"
-                } else {
-                    "Tapikin ang mapa para itakda ang lokasyon"
-                },
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
-            )
-            Text(
-                if (forHome) {
-                    "Tap the map to set your home"
-                } else {
-                    "Tap the map to set the report location"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.inverseOnSurface,
-            )
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    when {
+                        pickedLatLng == null && forHome -> tr("Tapikin ang mapa para ituro ang bahay mo", "Tap the map to point to your home")
+                        pickedLatLng == null -> tr("Tapikin ang mapa para itakda ang lokasyon", "Tap the map to set the location")
+                        else -> "%.5f, %.5f".format(pickedLatLng.latitude, pickedLatLng.longitude)
+                    },
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+                Text(
+                    when {
+                        pickedLatLng == null && forHome -> tr("Ituturo ang bahay mo", "This points to your home")
+                        pickedLatLng == null -> tr("Ituturo ang lokasyon ng ulat", "This sets the report location")
+                        else -> tr("Tapikin muli para ilipat ang pin", "Tap again to move the pin")
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+            }
+            IconButton(onClick = onCancel) {
+                Icon(Icons.Filled.Close, contentDescription = tr("Kanselahin", "Cancel"), tint = MaterialTheme.colorScheme.inverseOnSurface)
+            }
         }
-        IconButton(onClick = onCancel) {
-            Icon(Icons.Filled.Close, contentDescription = "Kanselahin", tint = MaterialTheme.colorScheme.inverseOnSurface)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(1.dp, MaterialTheme.colorScheme.inverseOnSurface)
+                    .clickable(enabled = !locatingCurrent, onClick = onUseCurrentLocation)
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.LocationOn,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.inverseOnSurface,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(
+                    if (locatingCurrent) tr("Kinukuha…", "Getting…") else tr("Kasalukuyang lokasyon", "Current location"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+            }
+            Spacer(Modifier.size(10.dp))
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(if (pickedLatLng != null) MaterialTheme.colorScheme.inverseOnSurface else MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.35f))
+                    .then(if (pickedLatLng != null) Modifier.clickable(onClick = onSave) else Modifier)
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    tr("I-save ang lokasyon", "Save the location"),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.inverseSurface,
+                )
+            }
         }
     }
 }
@@ -532,9 +631,9 @@ private fun MapActionBar(
                 )
                 Text(
                     when {
-                        locatingSos -> "sandali…"
-                        sosActive -> "aktibo"
-                        else -> "pindutin"
+                        locatingSos -> tr("sandali…", "wait…")
+                        sosActive -> tr("aktibo", "active")
+                        else -> tr("pindutin", "press")
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = SosColors.CriticalText,
@@ -561,19 +660,26 @@ private fun MapActionBar(
 private fun PackStatusBanner(state: PackState, isOnline: Boolean, modifier: Modifier = Modifier) {
     val stalled = !isOnline && state is PackState.Downloading && state.completedTiles == 0L
     val (headline: String, detail: String?) = when {
-        stalled -> "Naghihintay ng koneksyon" to
-            "Hindi pa na-download ang mapa. Gumagana pa rin ang pag-uulat at ang SOS."
-        state is PackState.Unknown -> "Tinitingnan ang offline na mapa…" to null
-        state is PackState.Absent -> "Wala pang offline na mapa" to
-            (if (isOnline) "Sinisimulan ang download." else "Kailangan ng koneksyon nang isang beses.")
+        stalled -> tr("Naghihintay ng koneksyon", "Waiting for a connection") to
+            tr(
+                "Hindi pa na-download ang mapa. Gumagana pa rin ang pag-uulat at ang SOS.",
+                "The map hasn't downloaded yet. Reporting and SOS still work.",
+            )
+        state is PackState.Unknown -> tr("Tinitingnan ang offline na mapa…", "Checking the offline map…") to null
+        state is PackState.Absent -> tr("Wala pang offline na mapa", "No offline map yet") to
+            (if (isOnline) tr("Sinisimulan ang download.", "Starting the download.") else tr("Kailangan ng koneksyon nang isang beses.", "Needs a connection once."))
         state is PackState.Downloading -> {
             val pct = state.fraction?.let { " · ${(it * 100).toInt()}%" }.orEmpty()
-            "Dina-download ang mapa$pct" to
-                "${state.completedTiles} tile${if (!state.isPrecise) " (tinatantiya ang kabuuan)" else ""}"
+            tr("Dina-download ang mapa$pct", "Downloading the map$pct") to
+                "${state.completedTiles} " + tr(
+                    "tile${if (!state.isPrecise) " (tinatantiya ang kabuuan)" else ""}",
+                    "tile${if (state.completedTiles == 1L) "" else "s"}${if (!state.isPrecise) " (estimating the total)" else ""}",
+                )
         }
         state is PackState.Ready ->
-            "Handa na ang offline na mapa" to "${state.tileCount} tile · gumagana kahit walang signal"
-        state is PackState.Failed -> "Hindi na-download ang mapa" to (state as PackState.Failed).reason
+            tr("Handa na ang offline na mapa", "The offline map is ready") to
+                tr("${state.tileCount} tile · gumagana kahit walang signal", "${state.tileCount} tiles · works even without signal")
+        state is PackState.Failed -> tr("Hindi na-download ang mapa", "The map didn't download") to (state as PackState.Failed).reason
         else -> "" to null
     }
 
@@ -627,6 +733,8 @@ private fun MapLibreMapView(
     featureSummaries: List<FeatureSummary>,
     pickMode: Boolean,
     onLocationPicked: ((LatLng) -> Unit)?,
+    /** The draft pin to render while [pickMode] is active; null clears it. */
+    pickedLocation: LatLng? = null,
     onFeatureTapped: (String) -> Unit,
     onLongPress: ((LatLng) -> Unit)?,
     geofenceCenter: Pair<Double, Double>?,
@@ -707,6 +815,11 @@ private fun MapLibreMapView(
     LaunchedEffect(maplibreMap, styleEpoch, geofenceCenter, geofenceRadius) {
         if (styleEpoch == 0) return@LaunchedEffect
         maplibreMap?.style?.let { updateGeofenceCircle(it, geofenceCenter, geofenceRadius) }
+    }
+
+    LaunchedEffect(maplibreMap, styleEpoch, pickedLocation) {
+        if (styleEpoch == 0) return@LaunchedEffect
+        maplibreMap?.style?.let { updatePickedLocationMarker(it, pickedLocation) }
     }
 
     // Pick-mode (setting a report location) and marker selection are mutually

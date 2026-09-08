@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.i18n.tr
 
 /** BUILD_TASKS.md day 5: "Home location long-press with radius slider (drawn circle on map)" — the circle itself is map/GeofenceCircle.kt, driven by the same radius value shown here. */
 @Composable
@@ -28,9 +29,9 @@ fun HomeRadiusOverlay(
 ) {
     Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Itakda ang tahanan", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text(tr("Itakda ang tahanan", "Set your home"), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Text(
-                "Home location · ${radiusMeters.toInt()} m radius",
+                tr("Lokasyon ng bahay · ${radiusMeters.toInt()} m radius", "Home location · ${radiusMeters.toInt()} m radius"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -40,8 +41,8 @@ fun HomeRadiusOverlay(
                 valueRange = HomeLocationStore.MIN_RADIUS_METERS.toFloat()..HomeLocationStore.MAX_RADIUS_METERS.toFloat(),
             )
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text("Kanselahin") }
-                Button(onClick = onSave, modifier = Modifier.weight(1f)) { Text("Itakda") }
+                OutlinedButton(onClick = onCancel, modifier = Modifier.weight(1f)) { Text(tr("Kanselahin", "Cancel")) }
+                Button(onClick = onSave, modifier = Modifier.weight(1f)) { Text(tr("Itakda", "Set")) }
             }
         }
     }

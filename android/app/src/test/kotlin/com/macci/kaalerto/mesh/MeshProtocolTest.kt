@@ -146,15 +146,16 @@ class MeshProtocolTest {
 
     @Test
     fun `a radio that is off names itself rather than reporting a working mesh`() {
-        assertEquals(null, MeshRadios.Readiness(bluetoothOn = true, locationOn = true).message)
-        assertTrue(MeshRadios.Readiness(bluetoothOn = false, locationOn = true).message!!.contains("Bluetooth"))
-        assertTrue(MeshRadios.Readiness(bluetoothOn = true, locationOn = false).message!!.contains("Location"))
+        val language = com.macci.kaalerto.i18n.AppLanguage.FIL
+        assertEquals(null, MeshRadios.Readiness(bluetoothOn = true, locationOn = true).message(language))
+        assertTrue(MeshRadios.Readiness(bluetoothOn = false, locationOn = true).message(language)!!.contains("Bluetooth"))
+        assertTrue(MeshRadios.Readiness(bluetoothOn = true, locationOn = false).message(language)!!.contains("Location"))
 
         // The airplane-mode case BUILD_TASKS.md days 6-7 says to verify on day 6: both
         // are off at once, and naming only one of them sends the resident back twice.
         val both = MeshRadios.Readiness(bluetoothOn = false, locationOn = false)
-        assertTrue(both.message!!.contains("Bluetooth"))
-        assertTrue(both.message!!.contains("Location"))
+        assertTrue(both.message(language)!!.contains("Bluetooth"))
+        assertTrue(both.message(language)!!.contains("Location"))
         assertTrue(listOf(both).none { it.ready })
     }
 

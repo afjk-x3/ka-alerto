@@ -1,6 +1,7 @@
 package com.macci.kaalerto.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -20,6 +21,9 @@ import com.macci.kaalerto.location.describePlace
 import com.macci.kaalerto.location.fetchAccurateLocation
 import com.macci.kaalerto.location.fetchCurrentLocation
 import org.maplibre.android.geometry.LatLng
+import com.macci.kaalerto.i18n.AppLanguage
+import com.macci.kaalerto.i18n.LanguagePrefs
+import com.macci.kaalerto.i18n.LocalAppLanguage
 import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.identity.displayFormOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -96,6 +100,10 @@ fun KaAlertoApp(
     // The hamburger drawer, shared by every screen that shows one — see NavDrawer.kt
     // for why this lives here rather than being duplicated per screen.
     var drawerOpen by remember { mutableStateOf(false) }
+    // Persisted (i18n/Strings.kt) so picking English survives a cold restart — nobody
+    // wants to re-toggle it every launch. Filipino is the base language everywhere else
+    // in this file and every screen; this is the one place that can override it.
+    var language by remember { mutableStateOf(LanguagePrefs.get(appContext)) }
     // PickHome is a standalone top-level screen with no resume field of its own. It is
     // reachable from both Onboarding (a first run) and Profile (an edit), so this holds
     // whichever of those two screen instances is currently open, captured on entry to
@@ -197,6 +205,7 @@ fun KaAlertoApp(
     fun gated(destination: Screen): Screen =
         if (LocalIdentity.isRegistered(context)) destination else Screen.Onboarding(destination)
 
+    CompositionLocalProvider(LocalAppLanguage provides language) {
     Box(modifier = Modifier.fillMaxSize()) {
     when (val current = screen) {
         Screen.Map -> MapScreen(
@@ -259,8 +268,15 @@ fun KaAlertoApp(
                 initialAccuracyMeters = current.accuracyMeters,
                 onChangeLocation = { screen = Screen.PickLocation },
                 onBack = { screen = Screen.Map },
-                onSubmitted = { screen = Screen.Map },
-                onOpenMenu = { drawerOpen = true },
+                // Reuses the same "reopen where you left off" state as the
+                // registration-gate resume above — landing on the map with the
+                // just-filed report's sheet already open is the status indicator: its
+                // confidence bucket and delivery card (detail/DetailSheet.kt) are real,
+                // existing UI, not a new fabricated "submitted!" toast.
+                onSubmitted = { featureRef ->
+                    reopenFeatureRef = featureRef
+                    screen = Screen.Map
+                },
             )
         }
 
@@ -517,7 +533,6 @@ fun KaAlertoApp(
                 modifier = modifier,
                 current = role,
                 onSelect = { roleViewModel.setRoleForTesting(it) },
-                onEditName = { screen = Screen.Profile(Screen.Roles) },
                 onBack = { screen = Screen.Map },
                 onOpenMenu = { drawerOpen = true },
             )
@@ -623,6 +638,12 @@ fun KaAlertoApp(
             screen = if (target is Screen.Profile) target else Screen.Profile(target)
         },
         onOpenEvac = { screen = Screen.EvacCentres },
+        currentLanguage = language,
+        onSetLanguage = { lang ->
+            language = lang
+            LanguagePrefs.set(appContext, lang)
+        },
     )
+    }
     }
 }

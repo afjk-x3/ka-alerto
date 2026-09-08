@@ -3,6 +3,8 @@ package com.macci.kaalerto.notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.macci.kaalerto.i18n.LanguagePrefs
+import com.macci.kaalerto.i18n.tr
 
 /**
  * Two channels: everything is minSdk 26 (Android 8+), so channels always apply — no
@@ -33,22 +35,23 @@ object NotificationChannels {
 
     fun ensureCreated(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        val language = LanguagePrefs.get(context)
 
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_NORMAL, "Mga ulat ng baha", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Flood reports (S0-S2) inside your home radius"
+            NotificationChannel(CHANNEL_NORMAL, tr(language, "Mga ulat ng baha", "Flood reports"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = tr(language, "Mga ulat ng baha (S0-S2) sa loob ng home radius mo", "Flood reports (S0-S2) inside your home radius")
             },
         )
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_CRITICAL, "Kritikal na babala", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "S3 flood reports inside your home radius"
+            NotificationChannel(CHANNEL_CRITICAL, tr(language, "Kritikal na babala", "Critical warning"), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = tr(language, "Mga S3 na ulat ng baha sa loob ng home radius mo", "S3 flood reports inside your home radius")
                 setBypassDnd(true)
                 enableVibration(true)
             },
         )
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_SOS, "Humihingi ng tulong sa malapit", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Someone nearby has requested rescue"
+            NotificationChannel(CHANNEL_SOS, tr(language, "Humihingi ng tulong sa malapit", "Nearby rescue request"), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = tr(language, "May humihingi ng tulong na malapit sa iyo", "Someone nearby has requested rescue")
                 setBypassDnd(true)
                 enableVibration(true)
                 // A long, irregular pattern — it has to be distinguishable from a flood
@@ -64,8 +67,8 @@ object NotificationChannels {
             },
         )
         manager.createNotificationChannel(
-            NotificationChannel(CHANNEL_MESH, "Mesh sa mga kalapit na phone", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Status of the background relay to nearby phones"
+            NotificationChannel(CHANNEL_MESH, tr(language, "Mesh sa mga kalapit na phone", "Mesh to nearby phones"), NotificationManager.IMPORTANCE_LOW).apply {
+                description = tr(language, "Status ng background relay sa mga kalapit na phone", "Status of the background relay to nearby phones")
                 setShowBadge(false)
             },
         )
