@@ -108,7 +108,6 @@ fun MapScreen(
     onStartSos: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
     sosActive: Boolean = false,
     role: String = com.macci.kaalerto.identity.LocalIdentity.ROLE_RESIDENT,
-    onOpenRoles: (() -> Unit)? = null,
     onOpenEvac: (() -> Unit)? = null,
     onOpenOfficialStatus: ((featureRef: String) -> Unit)? = null,
     /**
@@ -254,8 +253,6 @@ fun MapScreen(
                 isOnline = isOnline,
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
                 meshStatus = meshStatus,
-                role = role,
-                onRoleClick = onOpenRoles,
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
                 onOpenMenu = onOpenMenu ?: {},
@@ -814,7 +811,10 @@ private fun MapLibreMapView(
 
     LaunchedEffect(maplibreMap, styleEpoch, geofenceCenter, geofenceRadius) {
         if (styleEpoch == 0) return@LaunchedEffect
-        maplibreMap?.style?.let { updateGeofenceCircle(it, geofenceCenter, geofenceRadius) }
+        maplibreMap?.style?.let {
+            updateGeofenceCircle(it, geofenceCenter, geofenceRadius)
+            updateHomeMarker(it, geofenceCenter)
+        }
     }
 
     LaunchedEffect(maplibreMap, styleEpoch, pickedLocation) {

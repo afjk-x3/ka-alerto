@@ -225,7 +225,6 @@ fun KaAlertoApp(
             },
             sosActive = activeSos != null,
             role = role,
-            onOpenRoles = { screen = Screen.Roles },
             onOpenEvac = { screen = Screen.EvacCentres },
             onOpenOfficialStatus = { featureRef -> screen = Screen.OfficialStatus(featureRef) },
             // The rescue queue's only other way in is an incoming SOS alert, so without

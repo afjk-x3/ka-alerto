@@ -19,8 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.height
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -28,7 +26,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.Canvas
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.tr
-import com.macci.kaalerto.identity.roleBadge
 import com.macci.kaalerto.detail.MeshIcon
 import com.macci.kaalerto.mesh.MeshStatus
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
@@ -44,8 +41,6 @@ fun MapHeader(
     isOnline: Boolean,
     reportsToday: Int,
     meshStatus: MeshStatus,
-    role: String,
-    onRoleClick: (() -> Unit)?,
     stormMode: Boolean,
     onModeIconClick: () -> Unit,
     onOpenMenu: () -> Unit,
@@ -94,27 +89,11 @@ fun MapHeader(
             }
             MeshStatusLine(meshStatus)
         }
-        // Day 10's role switch. A badge rather than a gear: the artboards put the role
-        // on screen as a KAGAWAD chip, and what role you are acting as changes what
-        // your events mean to everyone else — it should never be buried in a menu.
-        if (onRoleClick != null) {
-            Box(
-                modifier = Modifier
-                    .height(48.dp)
-                    .border(BorderStroke(1.dp, colors.border))
-                    .clickable(onClick = onRoleClick)
-                    .padding(horizontal = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    roleBadge(role),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
-            Spacer(Modifier.size(8.dp))
-        }
+        // Day 10 put the acting role here as a badge; moved to the hamburger drawer
+        // (nav/NavDrawer.kt already shows it and already routes to the same role
+        // screen) after a real-device test found the header too crowded. The drawer is
+        // reached via the same hamburger button already in this row, so nothing here
+        // lost reachability — it just stopped being duplicated in two places.
         Box(
             modifier = Modifier
                 .size(48.dp)
