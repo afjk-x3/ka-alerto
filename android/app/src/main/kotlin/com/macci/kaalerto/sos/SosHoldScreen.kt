@@ -41,7 +41,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.tr
+import com.macci.kaalerto.location.Place
+import com.macci.kaalerto.location.describePlace
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import java.text.SimpleDateFormat
@@ -242,7 +245,17 @@ private fun HoldRing(progress: Float, holding: Boolean, modifier: Modifier = Mod
 /** SOSHold.dc.html's "Ipapadala agad" panel — what leaves the phone the instant the hold lands. */
 @Composable
 private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
     val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
+    // Best-effort, same as the registration home row (location/PlaceName.kt): a name is
+    // a courtesy label over the coordinate, never a replacement for it, so the raw fix
+    // stays visible underneath whether or not this resolves. The barangay itself never
+    // waits on it — the app is frozen to one demo barangay, so that much is already
+    // known the instant the hold screen opens.
+    var place by remember(lat, lon) { mutableStateOf<Place?>(null) }
+    LaunchedEffect(lat, lon) { place = describePlace(context, lat, lon) }
+    val barangay = place?.barangay?.takeIf { it.isNotBlank() } ?: DemoArea.BARANGAY_NAME
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -260,15 +273,26 @@ private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modi
         Row(verticalAlignment = Alignment.CenterVertically) {
             PinGlyph(SosColors.Mesh, Modifier.size(18.dp))
             Spacer(Modifier.size(10.dp))
-            Text(
-                "%.4f, %.4f".format(lat, lon),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 15.sp,
-                color = SosColors.PrimaryText,
-            )
-            if (accuracyMeters != null) {
-                Spacer(Modifier.size(8.dp))
-                Text("±${accuracyMeters.toInt()} m", fontSize = 13.sp, color = SosColors.MutedText)
+            Column {
+                val placeLabel = place?.label
+                Text(
+                    if (placeLabel != null) "$placeLabel · $barangay" else barangay,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = SosColors.PrimaryText,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                    Text(
+                        "%.4f, %.4f".format(lat, lon),
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 12.sp,
+                        color = SosColors.MutedText,
+                    )
+                    if (accuracyMeters != null) {
+                        Spacer(Modifier.size(8.dp))
+                        Text("±${accuracyMeters.toInt()} m", fontSize = 12.sp, color = SosColors.MutedText)
+                    }
+                }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {

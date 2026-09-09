@@ -1,5 +1,7 @@
 package com.macci.kaalerto.sos
 
+import android.bluetooth.BluetoothAdapter
+import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,12 +22,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.i18n.tr
+import com.macci.kaalerto.mesh.MeshRadios
 import com.macci.kaalerto.mesh.MeshStatus
 
 /**
@@ -201,6 +205,13 @@ private fun ChannelRow(row: SosChannelRow) {
         is ChannelStatus.Unavailable -> SosColors.Warning
         is ChannelStatus.NotBuilt -> SosColors.MutedText
     }
+    val context = LocalContext.current
+    // Only the mesh row, and only when Bluetooth specifically is the reason it's
+    // unavailable — a location-off or mesh-service-error reason has no system prompt
+    // that would fix it, so the label stays plain text in those cases.
+    val promptBluetooth = row.channel == SosChannel.MESH &&
+        status is ChannelStatus.Unavailable &&
+        !MeshRadios.check(context).bluetoothOn
 
     Row(
         modifier = Modifier
@@ -233,6 +244,22 @@ private fun ChannelRow(row: SosChannelRow) {
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = SosColors.Mesh,
+            )
+        } else if (promptBluetooth) {
+            Text(
+                status.shortLabel(),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = accent,
+                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline,
+                modifier = Modifier.clickable {
+                    runCatching {
+                        context.startActivity(
+                            Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
+                },
             )
         } else {
             Text(status.shortLabel(), fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = accent)

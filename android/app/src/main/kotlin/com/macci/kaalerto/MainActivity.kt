@@ -13,8 +13,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.macci.kaalerto.sos.EXTRA_SOS_ID
 import com.macci.kaalerto.ui.KaAlertoApp
 import com.macci.kaalerto.ui.theme.KaAlertoTheme
@@ -37,7 +35,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         openSosId = intent?.getStringExtra(EXTRA_SOS_ID)
-        hideSystemBars()
+        // Edge-to-edge (status/nav bars stay visible, drawn translucent over the app) is
+        // enforced by the platform on API 35+ regardless of this call — targetSdk here is
+        // 37. Content itself must not sit under the bars, though: that's handled once, at
+        // the root of the Compose tree (KaAlertoApp.kt's outer Box), not per screen.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             // Manual toggle, not isSystemInDarkTheme() — Storm mode is a condition
             // (night, rain, glare) the user or barangay declares, not a phone setting
@@ -60,19 +62,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    // Permission dialogs, the keyboard, and app-switching all bring the system bars back;
-    // re-hiding on every focus regain is the standard way to keep them gone rather than
-    // only on cold start.
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemBars()
-    }
-
-    private fun hideSystemBars() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.hide(WindowInsetsCompat.Type.systemBars())
-        controller.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    }
 }

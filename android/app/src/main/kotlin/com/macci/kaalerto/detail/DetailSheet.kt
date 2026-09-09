@@ -19,6 +19,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -39,6 +44,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.data.severityTextFor
@@ -387,16 +394,23 @@ private fun ReadingCard(waterLevelId: String, severity: String) {
 private fun PhotoStatusCard(photoHash: String) {
     val context = LocalContext.current
     val thumbnail = remember(photoHash) { PhotoStore.loadThumbnail(context, photoHash) }
+    var showFullImage by remember { mutableStateOf(false) }
     InfoCard {
         Text(tr("LARAWAN", "PHOTO"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
         if (thumbnail != null) {
             Image(
                 bitmap = thumbnail.asImageBitmap(),
-                contentDescription = tr("Larawan ng ulat", "Report photo"),
+                contentDescription = tr("Larawan ng ulat — i-tap para palakihin", "Report photo — tap to enlarge"),
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxWidth().height(160.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clickable { showFullImage = true },
             )
+            if (showFullImage) {
+                FullscreenPhotoViewer(photoHash = photoHash, onDismiss = { showFullImage = false })
+            }
         } else {
             Text(
                 tr(
@@ -406,6 +420,38 @@ private fun PhotoStatusCard(photoHash: String) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/**
+ * Full-screen photo view, reached by tapping the thumbnail. Loads a larger decode of
+ * the same file ([PhotoStore.loadThumbnail]'s downsampling still applies — a report
+ * photo never needs its raw capture resolution on screen, even enlarged) rather than
+ * adding a second storage path.
+ */
+@Composable
+private fun FullscreenPhotoViewer(photoHash: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val large = remember(photoHash) { PhotoStore.loadThumbnail(context, photoHash, maxDimension = 1600) }
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable(onClick = onDismiss),
+        ) {
+            if (large != null) {
+                Image(
+                    bitmap = large.asImageBitmap(),
+                    contentDescription = tr("Larawan ng ulat", "Report photo"),
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopEnd).padding(12.dp)) {
+                Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"), tint = Color.White)
+            }
         }
     }
 }

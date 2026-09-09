@@ -64,6 +64,13 @@ fun EvacScreen(
     onUpdate: (centreId: String, status: EvacStatus, occupancy: Int?) -> Unit,
     onBack: () -> Unit,
     onOpenMenu: () -> Unit,
+    /**
+     * A card tap. Real turn-by-turn routing is day 11 and not built (see the class doc
+     * above); this is the buildable slice — jump to the map with the camera centered on
+     * that centre's pin, same one-shot mechanism `Screen.PickHome` already uses for its
+     * own starting camera position.
+     */
+    onCentreClick: (EvacCentre) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
@@ -149,6 +156,7 @@ fun EvacScreen(
                         onUpdate(state.centre.id, status, occupancy)
                         editing = null
                     },
+                    onClick = { onCentreClick(state.centre) },
                 )
             }
         }
@@ -185,6 +193,7 @@ private fun CentreCard(
     editing: Boolean,
     onToggleEdit: () -> Unit,
     onUpdate: (EvacStatus, Int?) -> Unit,
+    onClick: () -> Unit,
 ) {
     val colors = LocalKaAlertoColors.current
     val open = state.status != EvacStatus.NOT_OPEN
@@ -196,6 +205,7 @@ private fun CentreCard(
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .border(1.dp, colors.border)
+            .clickable(onClick = onClick)
             .padding(15.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {

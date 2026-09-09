@@ -10,7 +10,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -110,6 +113,10 @@ fun KaAlertoApp(
     // either branch below — without it, picking a location would drop the real origin
     // and land back on the map instead of the screen "Ituro sa mapa" was opened from.
     var pickHomeReturn by remember { mutableStateOf<Screen>(Screen.Onboarding(Screen.Map)) }
+    // Set by an evac-centre card tap, consumed once by the very next Screen.Map mount —
+    // see the LaunchedEffect(Unit) at that branch. A tap should move the camera exactly
+    // once, not pin every later visit to the map on a shelter the user tapped an hour ago.
+    var evacFocusCamera by remember { mutableStateOf<LatLng?>(null) }
     var draftPlaceName by remember { mutableStateOf<String?>(null) }
     var locatingHome by remember { mutableStateOf(false) }
     val sosViewModel: SosViewModel = viewModel()
@@ -135,6 +142,22 @@ fun KaAlertoApp(
     LaunchedEffect(openSosId) {
         val id = openSosId ?: return@LaunchedEffect
         screen = if (LocalIdentity.isResponder(context)) Screen.SosQueue else Screen.SosNearby(id)
+    }
+
+    // A device with its own SOS still open must not reopen on a map that shows no sign
+    // of it — the rescue card only auto-raises past the 30s UNREACHABLE threshold
+    // (below), so a phone closed and reopened before that would otherwise land
+    // somewhere that looks like nothing is happening. Checked once: `activeSos` starts
+    // null until the very first fold of the event log resolves, so this fires again as
+    // that real value arrives, but never redirects a second time — a *new* SOS started
+    // later in the same session must not yank the user away from wherever they are.
+    var initialSosRedirectDone by remember { mutableStateOf(false) }
+    LaunchedEffect(activeSos) {
+        val sos = activeSos
+        if (!initialSosRedirectDone && sos != null && screen == Screen.Map) {
+            initialSosRedirectDone = true
+            screen = Screen.SosStatus(sos.sosId)
+        }
     }
 
     // Which request has already had its rescue card raised for it. The card opens
@@ -206,10 +229,19 @@ fun KaAlertoApp(
         if (LocalIdentity.isRegistered(context)) destination else Screen.Onboarding(destination)
 
     CompositionLocalProvider(LocalAppLanguage provides language) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    // Edge-to-edge is on (MainActivity.kt) so the OS draws status/nav bars translucent
+    // over the window instead of reserving space for them — done once here, at the root
+    // of every screen, rather than per screen, so nothing new can reintroduce the
+    // overlap. RescueCardScreen's full-black background still paints edge to edge behind
+    // the (now inset) content; only the content itself moves, not the color.
+    Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
     when (val current = screen) {
-        Screen.Map -> MapScreen(
+        Screen.Map -> {
+        val focusCamera = evacFocusCamera
+        LaunchedEffect(Unit) { if (focusCamera != null) evacFocusCamera = null }
+        MapScreen(
             modifier = modifier,
+            initialCamera = focusCamera,
             onStartReport = { lat, lon, accuracy -> screen = gated(Screen.Report(lat, lon, accuracy)) },
             onEnterPickLocation = { screen = gated(Screen.PickLocation) },
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
@@ -245,6 +277,7 @@ fun KaAlertoApp(
             onToggleStormMode = onToggleStormMode,
             onOpenMenu = { drawerOpen = true },
         )
+        }
 
         Screen.PickLocation -> MapScreen(
             modifier = modifier,
@@ -560,6 +593,10 @@ fun KaAlertoApp(
                 },
                 onBack = { screen = Screen.Map },
                 onOpenMenu = { drawerOpen = true },
+                onCentreClick = { centre ->
+                    evacFocusCamera = LatLng(centre.lat, centre.lon)
+                    screen = Screen.Map
+                },
             )
         }
 

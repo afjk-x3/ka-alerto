@@ -56,7 +56,7 @@ fun MapHeader(
     ) {
         com.macci.kaalerto.nav.HamburgerButton(
             onClick = onOpenMenu,
-            modifier = Modifier.padding(end = 6.dp),
+            modifier = Modifier.padding(end = 10.dp),
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -96,6 +96,7 @@ fun MapHeader(
         // lost reachability — it just stopped being duplicated in two places.
         Box(
             modifier = Modifier
+                .padding(start = 12.dp)
                 .size(48.dp)
                 .border(BorderStroke(1.dp, colors.border)),
             contentAlignment = Alignment.Center,
