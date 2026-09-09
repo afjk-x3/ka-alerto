@@ -62,6 +62,15 @@ import com.macci.kaalerto.identity.RoleViewModel
 import com.macci.kaalerto.nav.NavDrawer
 import com.macci.kaalerto.sos.SosViewModel
 import com.macci.kaalerto.sos.elapsedLabel
+import com.macci.kaalerto.family.CircleCard
+import com.macci.kaalerto.family.CircleMember
+import com.macci.kaalerto.family.CircleStore
+import com.macci.kaalerto.family.FamilyCircleScreen
+import com.macci.kaalerto.family.circleStatuses
+import com.macci.kaalerto.family.effectiveCircle
+import com.macci.kaalerto.family.encode
+import com.macci.kaalerto.family.submitCheckIn
+import com.macci.kaalerto.family.submitCircleInvite
 import kotlinx.coroutines.delay
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
@@ -600,6 +609,31 @@ fun KaAlertoApp(
             )
         }
 
+        Screen.FamilyCircle -> {
+            val events by mapEvents.collectAsStateWithLifecycle()
+            val familyIdentity = LocalIdentity.getOrCreate(context)
+            var locallyAdded by remember { mutableStateOf(CircleStore.get(context)) }
+            val effective = remember(locallyAdded, events, familyIdentity.authorId) {
+                effectiveCircle(locallyAdded, events, familyIdentity.authorId)
+            }
+            val statuses = remember(effective, events) { circleStatuses(events, effective) }
+            FamilyCircleScreen(
+                modifier = modifier,
+                myQrContent = remember(familyIdentity.authorId, familyIdentity.authorName) {
+                    CircleCard(familyIdentity.authorId, familyIdentity.authorName).encode()
+                },
+                statuses = statuses,
+                onCheckIn = { scope.launch { submitCheckIn(context, lat = null, lon = null) } },
+                onMemberScanned = { authorId, authorName ->
+                    CircleStore.add(context, CircleMember(authorId, authorName, System.currentTimeMillis()))
+                    locallyAdded = CircleStore.get(context)
+                    scope.launch { submitCircleInvite(context, authorId) }
+                },
+                onBack = { screen = Screen.Map },
+                onOpenMenu = { drawerOpen = true },
+            )
+        }
+
         is Screen.OfficialStatus -> {
             val summaries by mapViewModel.featureSummaries.collectAsStateWithLifecycle()
             val summary = summaries.firstOrNull { it.featureRef == current.featureRef }
@@ -673,6 +707,7 @@ fun KaAlertoApp(
             val target = screen
             screen = if (target is Screen.Profile) target else Screen.Profile(target)
         },
+        onOpenFamily = { screen = Screen.FamilyCircle },
         onOpenEvac = { screen = Screen.EvacCentres },
         currentLanguage = language,
         onSetLanguage = { lang ->

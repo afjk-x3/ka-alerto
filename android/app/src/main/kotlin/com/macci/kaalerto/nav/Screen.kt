@@ -55,4 +55,7 @@ sealed interface Screen {
     data object Roles : Screen
     data class OfficialStatus(val featureRef: String) : Screen
     data object EvacCentres : Screen
+
+    /** Build day 11a — a household circle joined by QR, plus the one-tap "Ligtas ako". */
+    data object FamilyCircle : Screen
 }
