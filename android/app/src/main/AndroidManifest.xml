@@ -54,6 +54,9 @@
     <!-- Vibration -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Family-circle QR pairing only (build day 11a) — the app's first camera use. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:name=".KaAlertoApplication"
         android:allowBackup="true"
