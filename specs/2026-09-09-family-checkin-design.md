@@ -39,10 +39,13 @@ value-ordered cut ladder, which would have put SMS first).
   full escalation chain). Check-in is a presence ping, not a second SOS
   path. The circle list can only ever show "safe, N ago" or "no check-in
   yet" — never a bad-news state.
-- **No mutual-consent handshake protocol, no revocation/removal UI.**
-  Pairing is unilateral per scan (see below); removing a circle member is
-  a local delete with no confirmation dialog, same weight as any other
-  local-only preference edit.
+- **No negotiated accept/reject handshake, no revocation/removal UI.**
+  One scan makes pairing mutual (see below) via fire-and-forget
+  auto-accept — never a pending-request state the other person approves
+  or declines. Removing a circle member is a local delete with no
+  confirmation dialog, same weight as any other local-only preference
+  edit — **but see the caveat under Architecture**: because pairing is
+  now driven by a replayable event, removal isn't fully durable yet.
 - **No server-side circle sync.** Circle membership is a local address
   book only (see Architecture). It never leaves the device except
   implicitly, in the sense that check-in *events* ride the mesh — the
@@ -53,21 +56,85 @@ value-ordered cut ladder, which would have put SMS first).
 
 ## Architecture
 
-**Circle membership is a local address book, not a replicated event-log
-concept.** Each device stores its own list of paired members —
+**Circle membership is stored locally on each device** —
 `(authorId, displayName, pairedAtMs)` — the same way `HomeLocationStore`
 and `LocalIdentity` persist small local state: SharedPreferences, one key,
-JSON-encoded list. No new Room table. This deliberately differs from the
-`role_*`/`sos_*` event families: there is no need for two devices to agree
-on who is in a circle (NFR-4 doesn't apply here — a circle is a personal
-watch-list, not a shared fact about the world), and inventing a
-replicated membership protocol (invite/accept/revoke events, conflict
-resolution) would be pure over-engineering against a feature whose own
-spec says "cut me first" three times over in the planning docs.
+JSON-encoded list. No new Room table, and **no ongoing sync of the list
+itself** — once a member is in, staying in doesn't depend on anything
+replicating further. This still deliberately differs from the
+`role_*`/`sos_*` event families in one respect: there is no need for two
+devices to ever *disagree* about who is in a circle and reconcile it
+(NFR-4 doesn't apply here the way it does to roles — a circle is a
+personal watch-list, not a shared fact the whole barangay must agree on).
+What changed from the original draft (per review) is *how a member gets
+added*: not purely a local write anymore, but seeded by a small
+replicated event so pairing is mutual from one scan instead of two. See
+below.
 
-**The check-in itself is a plain, ordinary `Event`** — this is the part
-that *does* replicate, because "is my circle member safe" must reach a
-phone that has no idea a pairing even happened locally elsewhere:
+**A scan produces two things: an immediate local write, and a replicated
+`circle_invite` event** — this is the mechanism that makes pairing
+mutual:
+
+- `type = "circle_invite"`, a new top-level `const val`.
+- **Payload**: `CircleInvitePayload(targetAuthorId: String)` — the only
+  field needed, since the event's own `authorId`/`authorName` columns
+  already identify the *inviter* (standard rule, same as every other
+  event type); the payload just says who the invite is *for*.
+- `featureRef = null`, same reasoning as the check-in event below.
+- Written by the **scanning** device, immediately after it decodes the
+  other party's QR — e.g. User-1 scans User-2's QR: User-1's device (a)
+  adds User-2 to User-1's own local circle right away (no need to wait
+  for anything — User-1 has direct proof, they just photographed the
+  code), and (b) posts a `circle_invite` event authored by User-1,
+  targeting User-2's `authorId`.
+- **"Who's in my circle" is a pure derived view, not something written on
+  receipt.** No background watcher, no write-on-arrival, no idempotency
+  bookkeeping needed — this reuses the exact reducer pattern the rest of
+  the app already relies on instead of inventing a new stateful one:
+
+  ```
+  fun effectiveCircle(
+      locallyAdded: List<CircleMember>,   // from CircleStore — people I scanned
+      allEvents: List<Event>,             // the shared log
+      myAuthorId: String,
+  ): List<CircleMember> =
+      locallyAdded + allEvents
+          .filter { it.type == TYPE_CIRCLE_INVITE }
+          .mapNotNull { decodeCircleInvitePayload(it.payload) }
+          .filter { it.targetAuthorId == myAuthorId }
+          .map { /* CircleMember from the inviting event's authorId/authorName */ }
+          .distinctBy { it.authorId }
+  ```
+
+  `CircleStore` only ever holds people *I* explicitly scanned (the
+  inviter side, written immediately at scan time — see step 3 below);
+  people who scanned *me* show up purely through this fold over
+  `circle_invite` events, recomputed the same way on every read, same as
+  `CircleReducer`/`SosReducer`/`RoleReducer` recompute their own state
+  from the log rather than caching it. `CircleReducer.circleStatuses`
+  (below) takes `effectiveCircle(...)`'s output, not `CircleStore`
+  directly.
+- This reaches User-2 the normal way: instantly if the two phones are
+  already exchanging over the mesh (the common case — they're standing
+  next to each other), or later, automatically on the next fold, if
+  User-2 was briefly out of range at the exact moment of scanning. No new
+  transport, no live handshake connection specific to pairing.
+- **Known caveat, acceptable for this pass**: because `effectiveCircle`
+  folds *every* `circle_invite` event targeting me on every read (it has
+  to — an event arriving after a cold start must still count, and there's
+  no "skip historical events" shortcut here the way the check-in
+  notification watcher gets to take), a member removed locally in some
+  future release would immediately reappear, since the original invite
+  event never leaves the log. Not a problem today because there's no
+  removal UI yet (see Non-goals) — but whoever builds removal later needs
+  a local tombstone (a "don't fold this authorId back in" set) that
+  `effectiveCircle` also filters against, not just a `CircleStore`
+  delete.
+
+**The check-in itself is a separate, plain, ordinary `Event`** — this is
+the part that carries ongoing status, because "is my circle member safe"
+must reach a phone that has no idea a pairing even happened locally
+elsewhere:
 
 - `type = "family_checkin"`, a new top-level `const val` alongside the
   existing `TYPE_SOS`/`"flood_report"`/etc. string constants.
@@ -95,17 +162,17 @@ independently of the flood reducer, the same shape as `SosReducer.kt`/
 ```
 fun circleStatuses(
     allEvents: List<Event>,
-    circle: List<CircleMember>,
+    circle: List<CircleMember>,   // effectiveCircle(...)'s output, not raw CircleStore
 ): List<CircleMemberStatus>
 ```
 
 Filters `allEvents` to `type == TYPE_CHECKIN && authorId in circle.ids`,
 groups by `authorId`, keeps the latest by `createdAtMs` per member, and
-joins against the local `circle` list for display name (falling back to
-whatever name rode on the event itself if the locally-stored name is
+joins against the `circle` list for display name (falling back to
+whatever name rode on the event itself if the locally-known name is
 stale — the event's `authorName` is the ground truth for what to *show*,
-same rule as everywhere else in the app; the local address book is only
-used to know *which* authorIds to filter for). A member with zero
+same rule as everywhere else in the app; the circle list is only used to
+know *which* authorIds to filter for). A member with zero
 matching events renders as "no check-in yet," not absent from the list —
 the list is keyed off the local circle membership, always showing every
 paired member regardless of whether any check-in has arrived, same
@@ -114,9 +181,12 @@ already established for the empty rescue queue.
 
 ## Pairing flow (QR)
 
-Two people pair by each scanning the other's on-screen QR once — no
-phone-swapping, no multi-step "invite pending" state. Each scan is a
-unilateral local write:
+**One scan is enough to make pairing mutual.** Only one person needs to
+scan the other's code — the `circle_invite` event (above) closes the loop
+automatically. In practice, both people will often scan each other anyway
+(it's the natural gesture, and neither knows the other already has), but
+that's redundant, not required — the second scan is just a no-op re-add
+on both sides, not a new pairing.
 
 1. Screen shows **your own QR**: encodes `authorId` + `authorName`,
    drawn the same way as the rescue card — pure-ZXing `Encoder.encode`
@@ -136,10 +206,15 @@ unilateral local write:
    code is launching it (`registerForActivityResult(ScanContract())`) and
    handling the result string.
 3. On a successful scan whose content starts with `KAALERTO/CIRCLE/1:`,
-   parse out the other device's `authorId`/`authorName`, append to the
-   local circle list (dedup on `authorId` — re-scanning an existing
-   member is a no-op, not a duplicate entry), persist, show a brief
-   confirmation, return to the circle screen.
+   parse out the other device's `authorId`/`authorName`, then: (a)
+   add them to the local circle list immediately (dedup on `authorId` —
+   re-scanning an existing member is a no-op, not a duplicate entry), and
+   (b) write a `circle_invite` event targeting that `authorId`, so their
+   device adds this one back automatically once the event reaches them.
+   Persist, show a brief confirmation, return to the circle screen — the
+   confirmation is local ("Naidagdag si Maria") and doesn't wait for or
+   depend on the invite event actually reaching the other phone, since
+   that may not happen instantly.
 4. A scan that doesn't match the prefix (wrong QR entirely) shows an
    error, no crash, no silent failure — mirrors `decodeSosCard`'s
    `runCatching { }.getOrNull()` pattern.
@@ -178,10 +253,17 @@ resident who mutes flood chatter must not thereby mute "your sister
 checked in," same reasoning as why SOS already has its own channel.
 Firing side: a new watcher (`family/CircleCheckInNotifier.kt` or similar)
 mirroring `GeofenceNotifier`'s shape — diffs `EventRepository.observeAll()`
-for new `family_checkin` events whose `authorId` is in the local circle,
+for new `family_checkin` events whose `authorId` is in `effectiveCircle`,
 skips the historical backlog on first launch/cold-start the same way
 `GeofenceNotifier` does (don't fire on events that already existed before
 this watcher started observing).
+
+**Pairing itself is silent — no notification when a `circle_invite`
+adds someone to your circle.** Unlike a check-in, there's no urgency, and
+notifying on it would need the same historical-backlog problem the
+check-in watcher already has to solve, for a much lower-value alert (the
+UI already shows the new member next time the Family screen is opened,
+which is enough).
 
 ## Testing
 
@@ -190,6 +272,12 @@ this watcher started observing).
   author is ignored, a member with no events still appears as "no
   check-in yet," a rotation of the input event list folds identically
   (same style as the day-4 reducer's own ordering-independence test).
+- **`effectiveCircle`**: a `circle_invite` targeting me contributes the
+  inviter to the result; one targeting someone else is dropped; two
+  `circle_invite` events from the same inviter (mesh re-delivery, or
+  scanning me twice) still produce exactly one entry (`distinctBy`); an
+  invite I authored myself (I'm the one who scanned, `targetAuthorId` is
+  the *other* person) never contributes an entry back to my own list.
 - QR encode/decode round-trip for the new `KAALERTO/CIRCLE/1:` payload,
   mirroring `SosQrTest`.
 - Circle-store persistence (add, dedup-on-rescan, list survives a
@@ -199,23 +287,33 @@ this watcher started observing).
 
 **Manual device verification** (airplane mode, per this repo's standing
 rule that nothing counts as built until proven offline):
-1. Pair two phones by QR (each scans the other).
-2. Airplane mode on both.
-3. Check in ("Ligtas ako") on phone A.
-4. Confirm the check-in appears on phone B's circle list via mesh, with
-   correct age label, within the mesh's normal exchange latency.
-5. Confirm a notification fires on B.
-6. Cold-relaunch both, confirm circle membership and last-known status
-   both survive (membership from SharedPreferences, status from the
-   Room-backed event log via the reducer — two different persistence
-   paths, both need checking independently).
+1. **Airplane mode on both phones first**, then pair by QR — **only
+   phone A scans phone B** (deliberately not both, to prove the mutual
+   path actually works and isn't silently relying on both people always
+   scanning).
+2. Confirm phone A's circle list shows B immediately (local write).
+3. Confirm phone B's circle list shows A too, within the mesh's normal
+   exchange latency — this is the behavior this revision exists to prove.
+4. Check in ("Ligtas ako") on phone A.
+5. Confirm the check-in appears on phone B's circle list, with correct
+   age label.
+6. Confirm a notification fires on B for the check-in (not for the
+   invite/pairing itself — pairing is silent, see UI notes).
+7. Cold-relaunch both, confirm circle membership and last-known status
+   both survive (membership from SharedPreferences plus replayed invite
+   events, status from the Room-backed event log via the reducer — three
+   different persistence/replay paths now, each needs checking
+   independently).
 
 ## Files touched (new)
 
-- `family/CircleStore.kt` — local address book (SharedPreferences JSON).
-- `family/CircleEvents.kt` — `TYPE_CHECKIN` constant, `newCheckInEvent(...)`
-  factory.
-- `family/CircleReducer.kt` — event-stream fold, as above.
+- `family/CircleStore.kt` — local list of scanned members
+  (SharedPreferences JSON) + `effectiveCircle(...)`.
+- `family/CircleEvents.kt` — `TYPE_CHECKIN`/`TYPE_CIRCLE_INVITE`
+  constants, `CircleInvitePayload`, `newCheckInEvent(...)` and
+  `newCircleInviteEvent(...)` factories.
+- `family/CircleReducer.kt` — `circleStatuses(...)` event-stream fold, as
+  above (consumes `effectiveCircle`'s output).
 - `family/CircleQr.kt` — encode/decode for `KAALERTO/CIRCLE/1:` payloads
   (mirrors `sos/SosQr.kt`).
 - `family/FamilyCircleScreen.kt` — the screen itself.
