@@ -47,9 +47,16 @@ value-ordered cut ladder, which would have put SMS first).
   edit — **but see the caveat under Architecture**: because pairing is
   now driven by a replayable event, removal isn't fully durable yet.
 - **No server-side circle sync.** Circle membership is a local address
-  book only (see Architecture). It never leaves the device except
-  implicitly, in the sense that check-in *events* ride the mesh — the
-  membership list itself is never transmitted.
+  book only (see Architecture) — the membership list itself, as stored by
+  `CircleStore`, is never transmitted or synced to a server. That said,
+  membership is not fully device-local in practice: both check-in events
+  and the `circle_invite` pairing event ride the mesh in the clear (no
+  crypto, per ground rule 4), and `circle_invite` itself carries who
+  invited whom (`authorId`/`authorName` plus the target `authorId`) — so
+  any relaying phone in the barangay, not just the two people pairing,
+  can read the pairing graph and check-in status straight out of its own
+  local database. This is a disclosed residual, not a bug — see
+  `family/CircleEvents.kt`'s file-level note.
 - **No group size enforcement in code.** "Small group" is a UX/product
   expectation (the pairing flow is one-at-a-time, so nobody is going to
   pair 50 people by hand), not a hard cap. No max-size check needed.

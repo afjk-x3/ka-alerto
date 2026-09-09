@@ -7,15 +7,38 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
+/*
+ * Mesh residual, disclosed rather than fixed — no crypto in this build (ground rule 4),
+ * so there is nothing to encrypt it under, same trade-off `sos/SosMeshPolicy.kt` makes
+ * for SOS.
+ *
+ * Both TYPE_CIRCLE_INVITE and TYPE_CHECKIN ride `mesh/MeshService.kt`'s relay in the
+ * clear, type-agnostically — unlike the `sos*` family, nothing here strips or redacts
+ * anything on the way out. Circle membership (`effectiveCircle`) and `circleStatuses`
+ * filter *for display* on the receiving device; they decide what a phone chooses to
+ * *show*, not what it stores or what crossed the air. Any phone in the barangay that
+ * relays these events stores them in its own local database and can read straight out of
+ * it: who invited whom (a `circle_invite` names both the inviter, in the event's own
+ * `authorId`/`authorName`, and the target, in `CircleInvitePayload.targetAuthorId`), and
+ * who checked in safe and when (a `family_checkin`'s own `authorId`/`authorName`/
+ * `timestampMs`). None of that is limited to the two people actually in the circle.
+ *
+ * **The residual, stated plainly:** a pairing graph and a household's safety status are
+ * both readable off any relaying device's local storage, not just the two circle
+ * members' own phones. Nothing in this feature hides that from a peer who chooses to
+ * look — only who a circle's members *choose to display it to* on their own screens is
+ * controlled here.
+ */
+
 /** A "Ligtas ako" (I'm safe) presence ping. Carries no payload — the event's own
- * flat columns are enough (see [newCheckInEvent]). */
+ * flat columns are enough (see [newCheckInEvent]). Rides the mesh in the clear — see the
+ * file-level residual note above. */
 const val TYPE_CHECKIN = "family_checkin"
 
 /** A device that scanned another's QR posting "add this authorId back to your circle
- * too" — the mechanism that makes pairing mutual from one scan. See [newCircleInviteEvent]. */
+ * too" — the mechanism that makes pairing mutual from one scan. See [newCircleInviteEvent].
+ * Rides the mesh in the clear — see the file-level residual note above. */
 const val TYPE_CIRCLE_INVITE = "circle_invite"
-
-val FAMILY_TYPES = setOf(TYPE_CHECKIN, TYPE_CIRCLE_INVITE)
 
 /**
  * A check-in is an observation that ages, the same way a flood report is — "last known

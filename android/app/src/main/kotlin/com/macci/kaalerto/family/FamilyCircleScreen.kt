@@ -1,7 +1,6 @@
 package com.macci.kaalerto.family
 
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,19 +15,32 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.border
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.nav.HamburgerButton
 import com.macci.kaalerto.sos.QrCode
+import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
+import kotlinx.coroutines.delay
+
+/** Rapid-repeat-tap guard for "Ligtas ako" — long enough to absorb an anxious double/
+ * triple tap, short enough that a genuine second check-in a minute later is never
+ * blocked. */
+private const val CHECKIN_TAP_COOLDOWN_MS = 3_000L
 
 /**
  * "Aking Pamilya" — a household circle joined by QR, plus a one-tap "Ligtas ako".
@@ -46,13 +58,32 @@ fun FamilyCircleScreen(
     onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Non-null after a scan that completed but didn't produce a usable pairing —
+    // rendered inline near the scan button so a wrong QR (or a decode failure) is
+    // never a silent no-op on a screen whose only purpose is pairing. A plain cancel
+    // (`result.contents == null` — back button, or a permission denial the scanner
+    // library doesn't expose separately) stays silent, same as cancelling any other
+    // system picker.
+    var scanError by remember { mutableStateOf<String?>(null) }
+    val notKaAlertoQrError = tr("Hindi ito KaAlerto QR", "Not a KaAlerto QR")
+
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         val scanned = result.contents ?: return@rememberLauncherForActivityResult
-        val card = decodeCircleCard(scanned) ?: return@rememberLauncherForActivityResult
+        val card = decodeCircleCard(scanned)
+        if (card == null) {
+            scanError = notKaAlertoQrError
+            return@rememberLauncherForActivityResult
+        }
+        scanError = null
         onMemberScanned(card.authorId, card.authorName)
     }
 
-    Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 HamburgerButton(onClick = onOpenMenu)
@@ -68,11 +99,30 @@ fun FamilyCircleScreen(
 
         Spacer(Modifier.height(16.dp))
 
+        // Local-only, best-effort. The circle member list never contains this device's
+        // own authorId — nothing on screen would otherwise change on a successful tap —
+        // so this is the only feedback the tapping user gets. `checkInEnabled` also
+        // debounces rapid repeat taps: without it each tap mints and relays a distinct
+        // event to the whole mesh, firing a notification on every circle member's phone
+        // per tap.
+        var lastCheckInAtMs by remember { mutableStateOf<Long?>(null) }
+        var checkInEnabled by remember { mutableStateOf(true) }
+        LaunchedEffect(lastCheckInAtMs) {
+            if (lastCheckInAtMs != null) {
+                checkInEnabled = false
+                delay(CHECKIN_TAP_COOLDOWN_MS)
+                checkInEnabled = true
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primary)
-                .clickable(onClick = onCheckIn)
+                .clickable(enabled = checkInEnabled) {
+                    onCheckIn()
+                    lastCheckInAtMs = System.currentTimeMillis()
+                }
                 .padding(vertical = 20.dp),
         ) {
             Text(
@@ -81,6 +131,16 @@ fun FamilyCircleScreen(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        lastCheckInAtMs?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                checkInAgeLabel(it),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
             )
         }
 
@@ -104,8 +164,10 @@ fun FamilyCircleScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.background)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, MaterialTheme.colorScheme.outline)
                 .clickable {
+                    scanError = null
                     scanLauncher.launch(
                         ScanOptions().setPrompt(scanPrompt).setBeepEnabled(false),
                     )
@@ -116,6 +178,17 @@ fun FamilyCircleScreen(
                 tr("Mag-scan ng QR", "Scan a QR"),
                 modifier = Modifier.align(Alignment.Center),
                 fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        scanError?.let { error ->
+            Spacer(Modifier.height(6.dp))
+            Text(
+                error,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = LocalKaAlertoColors.current.criticalFg,
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }

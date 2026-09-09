@@ -59,6 +59,20 @@ class CircleEventsTest {
     }
 
     @Test
+    fun `a check-in and a circle invite never become a map marker`() {
+        val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = 18.0, lon = 120.0, nowMs = now)
+        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", nowMs = now)
+
+        // featureRef == null is what would let the events past the reducer's own
+        // grouping by construction — this asserts the reducer actually treats them as
+        // invisible, not just that the factory happens to set the right column, mirroring
+        // `sos/SosStateTest.kt`'s `an SOS never becomes a map marker`.
+        assertTrue(
+            com.macci.kaalerto.data.Reducer.summarizeAll(listOf(checkIn, invite), now).isEmpty(),
+        )
+    }
+
+    @Test
     fun `an invite outlives a check-in, matching how a role outlives an observation`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = null, lon = null, nowMs = now)
         val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", nowMs = now)
