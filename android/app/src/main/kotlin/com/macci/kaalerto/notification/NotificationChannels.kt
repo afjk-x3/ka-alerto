@@ -33,6 +33,11 @@ object NotificationChannels {
      */
     const val CHANNEL_SOS = "sos_nearby"
 
+    /** A circle member checked in. Its own channel for the same reason CHANNEL_SOS is
+     * its own: a resident who mutes flood chatter must not thereby mute "your sister
+     * checked in". */
+    const val CHANNEL_FAMILY_CHECKIN = "family_checkin"
+
     fun ensureCreated(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val language = LanguagePrefs.get(context)
@@ -70,6 +75,11 @@ object NotificationChannels {
             NotificationChannel(CHANNEL_MESH, tr(language, "Mesh sa mga kalapit na phone", "Mesh to nearby phones"), NotificationManager.IMPORTANCE_LOW).apply {
                 description = tr(language, "Status ng background relay sa mga kalapit na phone", "Status of the background relay to nearby phones")
                 setShowBadge(false)
+            },
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_FAMILY_CHECKIN, tr(language, "Pamilya — check-in", "Family check-in"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = tr(language, "May kasapi ng iyong circle na nag-check in", "A member of your circle checked in")
             },
         )
     }

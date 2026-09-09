@@ -3,6 +3,7 @@ package com.macci.kaalerto
 import android.app.Application
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
+import com.macci.kaalerto.family.CircleCheckInNotifier
 import com.macci.kaalerto.geofence.GeofenceNotifier
 import com.macci.kaalerto.notification.NotificationChannels
 import com.macci.kaalerto.sos.SosAlertWatcher
@@ -44,6 +45,9 @@ class KaAlertoApplication : Application() {
                 .deleteExpired()
         }
         GeofenceNotifier(this).start(applicationScope)
+        // Build day 11a. Fires when a household-circle member checks in — see
+        // family/CircleCheckInNotifier.kt.
+        CircleCheckInNotifier(this).start(applicationScope)
         // Day 8. Advances an active SOS's state machine from what is actually
         // observable — see SosTransmitter. It lives here rather than in a screen
         // because a request has to keep escalating while the phone is in a pocket.
