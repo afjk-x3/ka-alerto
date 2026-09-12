@@ -13,9 +13,12 @@ suspend fun submitCheckIn(context: Context, lat: Double?, lon: Double?) {
     EventRepository(KaAlertoDatabase.getInstance(context).eventDao()).insert(event)
 }
 
-/** Posts the mutual-pairing invite after this device scans [targetAuthorId]'s QR. */
-suspend fun submitCircleInvite(context: Context, targetAuthorId: String) {
+/** Posts the mutual-pairing invite after this device scans [targetAuthorId]'s QR.
+ * [targetAuthorName] is the scanned card's own name — the only place it's guaranteed to
+ * be captured for a member reachable only transitively later. See
+ * `CircleInvitePayload`'s doc comment. */
+suspend fun submitCircleInvite(context: Context, targetAuthorId: String, targetAuthorName: String) {
     val identity = LocalIdentity.getOrCreate(context)
-    val event = newCircleInviteEvent(identity, targetAuthorId, System.currentTimeMillis())
+    val event = newCircleInviteEvent(identity, targetAuthorId, targetAuthorName, System.currentTimeMillis())
     EventRepository(KaAlertoDatabase.getInstance(context).eventDao()).insert(event)
 }

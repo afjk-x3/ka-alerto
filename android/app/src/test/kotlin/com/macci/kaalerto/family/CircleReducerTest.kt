@@ -36,6 +36,7 @@ class CircleReducerTest {
 
         assertEquals(1, result.size)
         assertNull(result.single().lastCheckInMs)
+        assertEquals(DeliveryMethod.UNKNOWN, result.single().deliveryMethod)
     }
 
     @Test

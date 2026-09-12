@@ -63,9 +63,8 @@ import com.macci.kaalerto.nav.NavDrawer
 import com.macci.kaalerto.sos.SosViewModel
 import com.macci.kaalerto.sos.elapsedLabel
 import com.macci.kaalerto.family.CircleCard
-import com.macci.kaalerto.family.CircleMember
-import com.macci.kaalerto.family.CircleStore
 import com.macci.kaalerto.family.FamilyCircleScreen
+import com.macci.kaalerto.family.QrScannerScreen
 import com.macci.kaalerto.family.circleStatuses
 import com.macci.kaalerto.family.effectiveCircle
 import com.macci.kaalerto.family.encode
@@ -484,9 +483,11 @@ fun KaAlertoApp(
             },
             // The escape hatch is the whole reason the gate is defensible: nobody is
             // ever held behind this form during an emergency.
+            // Use fetchAccurateLocation (15s window, degrades to 6s one-shot) for consistency
+            // with the registration screen's own location stream — same hardware scenario.
             onSos = {
                 scope.launch {
-                    val location = fetchCurrentLocation(context)
+                    val location = fetchAccurateLocation(context)
                     val existing = activeSos
                     screen = if (existing != null) {
                         Screen.SosStatus(existing.sosId)
@@ -612,11 +613,11 @@ fun KaAlertoApp(
         Screen.FamilyCircle -> {
             val events by mapEvents.collectAsStateWithLifecycle()
             val familyIdentity = LocalIdentity.getOrCreate(context)
-            var locallyAdded by remember { mutableStateOf(CircleStore.get(context)) }
-            val effective = remember(locallyAdded, events, familyIdentity.authorId) {
-                effectiveCircle(locallyAdded, events, familyIdentity.authorId)
+            val effective = remember(events, familyIdentity.authorId) {
+                effectiveCircle(events, familyIdentity.authorId)
             }
             val statuses = remember(effective, events) { circleStatuses(events, effective) }
+
             FamilyCircleScreen(
                 modifier = modifier,
                 myQrContent = remember(familyIdentity.authorId, familyIdentity.authorName) {
@@ -624,15 +625,21 @@ fun KaAlertoApp(
                 },
                 statuses = statuses,
                 onCheckIn = { scope.launch { submitCheckIn(context, lat = null, lon = null) } },
-                onMemberScanned = { authorId, authorName ->
-                    CircleStore.add(context, CircleMember(authorId, authorName, System.currentTimeMillis()))
-                    locallyAdded = CircleStore.get(context)
-                    scope.launch { submitCircleInvite(context, authorId) }
-                },
                 onBack = { screen = Screen.Map },
                 onOpenMenu = { drawerOpen = true },
+                onOpenScanner = { screen = Screen.QrScanner },
             )
         }
+
+        Screen.QrScanner -> QrScannerScreen(
+            modifier = modifier,
+            onResult = { card ->
+                scope.launch { submitCircleInvite(context, card.authorId, card.authorName) }
+                screen = Screen.FamilyCircle
+            },
+            onError = { /* error is shown in the scanner screen itself */ },
+            onCancel = { screen = Screen.FamilyCircle },
+        )
 
         is Screen.OfficialStatus -> {
             val summaries by mapViewModel.featureSummaries.collectAsStateWithLifecycle()

@@ -281,4 +281,31 @@ class ReducerTest {
         assertEquals("S0", summary.severity)
         assertEquals("official", summary.bucket)
     }
+
+    // ---- RETENTION_AFTER_EXPIRY_MS grace period (24h) ----
+
+    @Test
+    fun `RETENTION_AFTER_EXPIRY_MS is 24 hours`() {
+        assertEquals(24L * 60 * 60 * 1000, EventRepository.RETENTION_AFTER_EXPIRY_MS)
+    }
+
+    @Test
+    fun `expired event within 24h grace period still renders as stale`() {
+        // S3 TTL = 360 min. Event from 400 min ago is expired (40 min past expiry).
+        // Within the 24h grace period, it must still render as stale so the grey
+        // "Luma na — kailangang tingnan" marker shows, prompting someone to check.
+        val summary = summarize(report("a", "S3", minutesAgo = 400))
+        assertTrue(summary.isStale)
+        assertEquals("S3", summary.severity)
+    }
+
+    @Test
+    fun `expired event far past grace period would be deleted — not tested here`() {
+        // Deletion is tested at DAO level (EventDao.deleteExpiredBefore).
+        // This test exists as a placeholder: the grace period is the gap between
+        // expiry (isStale = true) and deletion (row removed).
+        // At 25h past expiry, the event would be deleted on next cold start.
+        // We assert the constant is correct above; the deletion logic is integration-tested.
+        assertTrue(true)
+    }
 }

@@ -2,12 +2,26 @@ package com.macci.kaalerto.family
 
 import com.macci.kaalerto.data.Event
 
+/** How a check-in event reached this device. */
+enum class DeliveryMethod {
+    /** Via internet (server sync) */
+    INTERNET,
+    /** Via SMS gateway */
+    SMS,
+    /** Via Bluetooth/WiFi Direct mesh relay */
+    MESH,
+    /** Unknown / not available yet */
+    UNKNOWN,
+}
+
 /** One circle member as the Family screen renders them. */
 data class CircleMemberStatus(
     val authorId: String,
     val displayName: String,
     /** Null means "no check-in yet" — never rendered the same as a bad-news state. */
     val lastCheckInMs: Long?,
+    /** How the latest check-in (if any) was delivered to this device. */
+    val deliveryMethod: DeliveryMethod = DeliveryMethod.UNKNOWN,
 )
 
 /**
@@ -28,6 +42,12 @@ fun circleStatuses(allEvents: List<Event>, circle: List<CircleMember>): List<Cir
 
     return circle.map { member ->
         val event = latestCheckIn[member.authorId]
+        val deliveryMethod = when (event?.origin) {
+            "server" -> DeliveryMethod.INTERNET
+            "sms" -> DeliveryMethod.SMS
+            "mesh" -> DeliveryMethod.MESH
+            else -> DeliveryMethod.UNKNOWN
+        }
         CircleMemberStatus(
             authorId = member.authorId,
             // The event's own authorName is the ground truth for display, same rule as
@@ -35,6 +55,7 @@ fun circleStatuses(allEvents: List<Event>, circle: List<CircleMember>): List<Cir
             // when nobody has checked in yet to supply a fresher one.
             displayName = event?.authorName ?: member.displayName,
             lastCheckInMs = event?.timestampMs,
+            deliveryMethod = deliveryMethod,
         )
     }
 }

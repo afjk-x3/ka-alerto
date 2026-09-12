@@ -27,7 +27,13 @@ import java.util.UUID
  * both readable off any relaying device's local storage, not just the two circle
  * members' own phones. Nothing in this feature hides that from a peer who chooses to
  * look — only who a circle's members *choose to display it to* on their own screens is
- * controlled here.
+ * controlled here. Circle membership is the transitive closure of every `circle_invite`
+ * edge a device has seen (`family/CircleStore.kt`'s `effectiveCircle`), so a device
+ * holding enough edges can reconstruct an entire household's membership as a set, not
+ * just the isolated pairs a one-hop design would have exposed. There is no protocol
+ * change that avoids this without a central authority or crypto, both out of scope
+ * (ground rule 4) — it is a consequence of solving "unified circle" this way, not a new
+ * bug introduced by it.
  */
 
 /** A "Ligtas ako" (I'm safe) presence ping. Carries no payload — the event's own
@@ -54,10 +60,17 @@ private val circleJson = Json { ignoreUnknownKeys = true; encodeDefaults = true 
 /**
  * What rides in [Event.payload] for [TYPE_CIRCLE_INVITE]. The event's own `authorId`/
  * `authorName` already identify the inviter (standard rule, same as every other event
- * type) — this payload only needs to say who the invite is *for*.
+ * type) — this payload says who the invite is *for*, plus their own display name.
+ * `targetAuthorName` exists for the transitive case: a member reachable only through
+ * someone else's edge has no event of their own to supply a name from, so whichever
+ * device scans them writes it here, from the QR it just decoded — see
+ * `family/CircleStore.kt`'s `effectiveCircle`.
  */
 @Serializable
-data class CircleInvitePayload(val targetAuthorId: String)
+data class CircleInvitePayload(
+    val targetAuthorId: String,
+    val targetAuthorName: String,
+)
 
 fun CircleInvitePayload.encode(): String = circleJson.encodeToString(CircleInvitePayload.serializer(), this)
 
@@ -101,15 +114,17 @@ fun newCheckInEvent(
  * either phone was standing, same reasoning as `identity/RoleEvents.kt`'s role events.
  *
  * The TTL is [ROLE_TTL_MS] (a year), not [CHECKIN_TTL_MS], and that difference is
- * load-bearing: `family/CircleStore.kt`'s `effectiveCircle` folds *every* invite event
- * targeting a device on every read, forever — if this event purged on the same short
- * clock as a check-in, a pairing would silently come undone once the invite aged out of
- * local storage, with no record anywhere of why. Membership is not an observation that
- * goes stale, exactly the same call `identity/RoleEvents.kt` already made for roles.
+ * load-bearing: `family/CircleStore.kt`'s `effectiveCircle` walks the full graph of every
+ * invite event still in the log on every read, forever — if this event purged on the
+ * same short clock as a check-in, a pairing would silently come undone (and, worse,
+ * could sever a *third* member's only path back to the rest of the circle) once the
+ * invite aged out. Membership is not an observation that goes stale, exactly the same
+ * call `identity/RoleEvents.kt` already made for roles.
  */
 fun newCircleInviteEvent(
     identity: LocalIdentity.Identity,
     targetAuthorId: String,
+    targetAuthorName: String,
     nowMs: Long,
 ): Event = Event(
     id = "circle-invite-${UUID.randomUUID()}",
@@ -127,5 +142,5 @@ fun newCircleInviteEvent(
     origin = "local",
     hopCount = 0,
     note = null,
-    payload = CircleInvitePayload(targetAuthorId = targetAuthorId).encode(),
+    payload = CircleInvitePayload(targetAuthorId = targetAuthorId, targetAuthorName = targetAuthorName).encode(),
 )

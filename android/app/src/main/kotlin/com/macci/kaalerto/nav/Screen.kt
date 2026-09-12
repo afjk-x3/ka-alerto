@@ -58,4 +58,7 @@ sealed interface Screen {
 
     /** Build day 11a — a household circle joined by QR, plus the one-tap "Ligtas ako". */
     data object FamilyCircle : Screen
+
+    /** QR scanner for family circle pairing. */
+    data object QrScanner : Screen
 }

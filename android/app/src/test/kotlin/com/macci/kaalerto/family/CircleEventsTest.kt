@@ -40,19 +40,20 @@ class CircleEventsTest {
     }
 
     @Test
-    fun `a circle invite carries the target authorId in its payload, not a flat column`() {
-        val event = newCircleInviteEvent(identity("local-a1", "Residente A1B2"), targetAuthorId = "local-b2", nowMs = now)
+    fun `a circle invite carries the target authorId and name in its payload, not a flat column`() {
+        val event = newCircleInviteEvent(identity("local-a1", "Residente A1B2"), targetAuthorId = "local-b2", targetAuthorName = "Residente B2C3", nowMs = now)
 
         assertEquals(TYPE_CIRCLE_INVITE, event.type)
         assertEquals("local-a1", event.authorId) // the inviter
         val payload = decodeCircleInvitePayload(event.payload)
         assertEquals("local-b2", payload?.targetAuthorId) // who it's for
+        assertEquals("Residente B2C3", payload?.targetAuthorName)
     }
 
     @Test
     fun `circle events never carry a featureRef or severity, so the flood reducer never sees them`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = 18.0, lon = 120.0, nowMs = now)
-        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", nowMs = now)
+        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", targetAuthorName = "B", nowMs = now)
 
         assertTrue(checkIn.featureRef == null && checkIn.severity == null)
         assertTrue(invite.featureRef == null && invite.severity == null)
@@ -61,7 +62,7 @@ class CircleEventsTest {
     @Test
     fun `a check-in and a circle invite never become a map marker`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = 18.0, lon = 120.0, nowMs = now)
-        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", nowMs = now)
+        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", targetAuthorName = "B", nowMs = now)
 
         // featureRef == null is what would let the events past the reducer's own
         // grouping by construction — this asserts the reducer actually treats them as
@@ -75,7 +76,7 @@ class CircleEventsTest {
     @Test
     fun `an invite outlives a check-in, matching how a role outlives an observation`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = null, lon = null, nowMs = now)
-        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", nowMs = now)
+        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", targetAuthorName = "B", nowMs = now)
 
         assertTrue("invite must outlive check-in", invite.expiresAt - now > checkIn.expiresAt - now)
     }

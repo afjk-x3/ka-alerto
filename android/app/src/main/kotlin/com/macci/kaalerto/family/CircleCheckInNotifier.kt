@@ -26,7 +26,7 @@ class CircleCheckInNotifier(private val context: Context) {
                 val previous = knownIds
                 if (previous != null) {
                     val myAuthorId = LocalIdentity.getOrCreate(context).authorId
-                    val circleIds = effectiveCircle(CircleStore.get(context), events, myAuthorId)
+                    val circleIds = effectiveCircle(events, myAuthorId)
                         .map { it.authorId }
                         .toSet()
                     events
