@@ -1,6 +1,7 @@
 {
   "_meta": {
     "demo": true,
+    "fixtureNoteConvention": "`note` is the resident's own words and IS rendered in the detail sheet. Commentary about why a fixture exists goes in `fixtureNote`, which the loader ignores (SeedLoader uses ignoreUnknownKeys). Do not merge the two back together — on 6 Sep 2026 two reports carried \"CONFLICT PAIR (b): … This pair must render as SX\" straight into the UI, on the exact marker the SX demo opens.",
     "fictional": true,
     "area": "Barangay San Juan Bautista, San Nicolas, Ilocos Norte",
     "warning": "All report content (severity, notes, author names) is FICTIONAL, generated for hackathon demo purposes. It is not a claim about real flood conditions or real people in this barangay. Coordinates follow real streets (OSM-sourced); the flood events themselves did not happen.",
@@ -95,7 +96,8 @@
       "ttlMinutes": 60,
       "origin": "seed",
       "hopCount": 0,
-      "note": "Cleared report — should read as stale/decayed by the time this loads if TTL logic runs."
+      "note": "Wala nang tubig dito, humupa na.",
+      "fixtureNote": "Cleared report, deliberately older than its TTL — should read as stale/decayed by the time this loads if TTL logic runs. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-006",
@@ -163,7 +165,8 @@
       "ttlMinutes": 360,
       "origin": "seed",
       "hopCount": 0,
-      "note": "Official report, near San Nicolas National High School."
+      "note": "Hanggang dibdib malapit sa San Nicolas National High School. Huwag dumaan.",
+      "fixtureNote": "Official-role report near San Nicolas National High School, for the official-weight path in the reducer. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-010",
@@ -306,7 +309,7 @@
       "type": "flood_report",
       "lat": 18.1734291,
       "lon": 120.6075608,
-      "featureRef": "sotto-street-conflict",
+      "featureRef": "sotto-street-9",
       "severity": "S3",
       "waterLevel": "dibdib",
       "authorId": "seed-author-2",
@@ -316,14 +319,15 @@
       "ttlMinutes": 360,
       "origin": "seed",
       "hopCount": 0,
-      "note": "CONFLICT PAIR (a): Baha hanggang dibdib, hindi madaanan."
+      "note": "Baha hanggang dibdib, hindi madaanan.",
+      "fixtureNote": "CONFLICT PAIR (a). Half of the deliberate Rule C / SX pair; seed-report-019 contradicts it two minutes later at the same featureRef. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-019",
       "type": "flood_report",
       "lat": 18.1734291,
       "lon": 120.6075608,
-      "featureRef": "sotto-street-conflict",
+      "featureRef": "sotto-street-9",
       "severity": "S0",
       "waterLevel": null,
       "authorId": "seed-author-3",
@@ -333,7 +337,8 @@
       "ttlMinutes": 60,
       "origin": "seed",
       "hopCount": 0,
-      "note": "CONFLICT PAIR (b): Deliberately contradicts the report above — \"safe now\" at the same spot, 2 minutes later. This pair must render as SX."
+      "note": "Humupa na, nadaanan ko kanina lang.",
+      "fixtureNote": "CONFLICT PAIR (b). Deliberately contradicts seed-report-018 — cleared at the same spot two minutes later, so the pair must render as SX. Not user-facing — the loader ignores this key."
     }
   ]
 }
