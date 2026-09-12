@@ -2,11 +2,23 @@
 <!--
  Overrides zxing-android-embedded's own bundled layout of the same name (an app module's
  resources take priority over a library AAR's for an identical resource name — no code
- change needed for CaptureActivity to pick this up). The only change from the library's
- default is app:zxing_framing_rect_width == app:zxing_framing_rect_height: equal, so the
- scan frame is a square regardless of the device's screen aspect, matching every other
- QR-square scanner UI. See AndroidManifest.xml's override of this same activity's
- android:screenOrientation for the portrait half of this change.
+ change needed for CaptureActivity to pick this up). Two changes from the library's
+ default:
+
+ 1. app:zxing_framing_rect_width == app:zxing_framing_rect_height: equal, so the scan
+    frame is a square regardless of the device's screen aspect, matching every other
+    QR-square scanner UI. See AndroidManifest.xml's activity entry for the portrait half
+    of this change.
+ 2. A visible back button (@+id/kaalerto_scanner_back_button — our own id, not the
+    library's: this module builds with android.nonTransitiveRClass=true, so a library's
+    own reserved-but-unplaced ids are not visible from this app's generated R class
+    anyway). The stock CaptureActivity has no way to exit other than the system back
+    gesture; family/KaAlertoCaptureActivity.kt wires this view's click to finish(), which
+    QrScannerScreen.kt's ScanContract caller reads as a cancel exactly like the system
+    back press already does. The English contentDescription here is a static fallback for
+    lint's ContentDescription check — KaAlertoCaptureActivity.onCreate overwrites it with
+    the language-aware value (this app's i18n has no plain XML string-resource mechanism,
+    only the runtime tr() helper) before the view is ever shown.
 -->
 <merge xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
@@ -19,5 +31,18 @@
         app:zxing_framing_rect_height="280dp"
         app:zxing_preview_scaling_strategy="centerCrop"
         app:zxing_use_texture_view="false"/>
+
+    <ImageButton
+        android:id="@+id/kaalerto_scanner_back_button"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="32dp"
+        android:background="@drawable/scanner_back_button_bg"
+        android:src="@drawable/ic_scanner_back"
+        android:scaleType="centerInside"
+        android:padding="10dp"
+        android:contentDescription="Back"
+        style="?android:attr/borderlessButtonStyle" />
 
 </merge>

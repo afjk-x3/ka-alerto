@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -98,21 +97,24 @@
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
 
-        <!-- zxing-android-embedded's own bundled manifest declares this same activity as
-             android:screenOrientation="sensorLandscape" (see zxing-android-embedded-4.3.0.aar).
-             Redeclaring it here with the same name overrides that one attribute — the app
-             manifest wins during merge — without needing a custom CaptureActivity subclass.
-             Portrait matches how every other screen in this app is held; the square
-             viewfinder itself is a layout-resource override, not a manifest one — see
-             res/layout/zxing_capture.xml. -->
+        <!-- family.KaAlertoCaptureActivity subclasses zxing-android-embedded's own
+             CaptureActivity only to wire a click listener onto the visible back button
+             (res/layout/zxing_capture.xml) — the stock activity has no such control, only
+             the system back gesture exits it. Registering our own subclass under our own
+             name needs no tools:replace, unlike overriding the library's own activity
+             entry directly: there is nothing to conflict with. android:screenOrientation
+             is portrait, matching how every other screen in this app is held; the
+             library's own bundled manifest entry for the stock CaptureActivity
+             (sensorLandscape) is still present and simply unused, since
+             family/QrScannerScreen.kt launches this class instead via
+             ScanOptions.setCaptureActivity. -->
         <activity
-            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:name=".family.KaAlertoCaptureActivity"
             android:clearTaskOnLaunch="true"
             android:screenOrientation="portrait"
             android:stateNotNeeded="true"
             android:theme="@style/zxing_CaptureTheme"
-            android:windowSoftInputMode="stateAlwaysHidden"
-            tools:replace="android:screenOrientation" />
+            android:windowSoftInputMode="stateAlwaysHidden" />
 
         <!-- SMS Receiver -->
         <receiver

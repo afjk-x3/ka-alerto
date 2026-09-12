@@ -59,3 +59,18 @@ fun circleStatuses(allEvents: List<Event>, circle: List<CircleMember>): List<Cir
         )
     }
 }
+
+/**
+ * This device's own most recent "Ligtas ako" — deliberately separate from
+ * [circleStatuses], which only ever covers [CircleMember]s from [effectiveCircle], and
+ * [effectiveCircle] explicitly excludes `myAuthorId` from its own result (see that
+ * function's own filter). `family/FamilyCircleScreen.kt` used to derive "my" status by
+ * picking `statuses.firstOrNull { it.lastCheckInMs != null }` — the first *other* member
+ * who happened to have checked in, silently mislabelled as the viewer's own status the
+ * moment any circle member had a more recent check-in than the viewer did. This reads
+ * this device's own [TYPE_CHECKIN] events directly instead, so there is nothing to
+ * confuse it with.
+ */
+fun myLastCheckInMs(allEvents: List<Event>, myAuthorId: String): Long? =
+    allEvents.filter { it.type == TYPE_CHECKIN && it.authorId == myAuthorId }
+        .maxOfOrNull { it.timestampMs }

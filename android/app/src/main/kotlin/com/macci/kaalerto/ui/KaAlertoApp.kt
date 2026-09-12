@@ -64,9 +64,11 @@ import com.macci.kaalerto.sos.SosViewModel
 import com.macci.kaalerto.sos.elapsedLabel
 import com.macci.kaalerto.family.CircleCard
 import com.macci.kaalerto.family.FamilyCircleScreen
+import com.macci.kaalerto.family.MyCircleQrScreen
 import com.macci.kaalerto.family.QrScannerScreen
 import com.macci.kaalerto.family.circleStatuses
 import com.macci.kaalerto.family.effectiveCircle
+import com.macci.kaalerto.family.myLastCheckInMs
 import com.macci.kaalerto.family.encode
 import com.macci.kaalerto.family.submitCheckIn
 import com.macci.kaalerto.family.submitCircleInvite
@@ -669,11 +671,15 @@ fun KaAlertoApp(
                 myQrContent = remember(familyIdentity.authorId, familyIdentity.authorName) {
                     CircleCard(familyIdentity.authorId, familyIdentity.authorName).encode()
                 },
+                myLastCheckInMs = remember(events, familyIdentity.authorId) {
+                    myLastCheckInMs(events, familyIdentity.authorId)
+                },
                 statuses = statuses,
                 onCheckIn = { scope.launch { submitCheckIn(context, lat = null, lon = null) } },
                 onBack = { screen = Screen.Map },
                 onOpenMenu = { drawerOpen = true },
                 onOpenScanner = { screen = Screen.QrScanner },
+                onShowMyQr = { screen = Screen.MyCircleQr },
             )
         }
 
@@ -686,6 +692,19 @@ fun KaAlertoApp(
             onError = { /* error is shown in the scanner screen itself */ },
             onCancel = { screen = Screen.FamilyCircle },
         )
+
+        Screen.MyCircleQr -> {
+            val myIdentity = LocalIdentity.getOrCreate(context)
+            MyCircleQrScreen(
+                modifier = modifier,
+                qrContent = remember(myIdentity.authorId, myIdentity.authorName) {
+                    CircleCard(myIdentity.authorId, myIdentity.authorName).encode()
+                },
+                displayName = myIdentity.authorName,
+                onBack = { screen = Screen.FamilyCircle },
+                onSwitchToScan = { screen = Screen.QrScanner },
+            )
+        }
 
         is Screen.OfficialStatus -> {
             val summaries by mapViewModel.featureSummaries.collectAsStateWithLifecycle()

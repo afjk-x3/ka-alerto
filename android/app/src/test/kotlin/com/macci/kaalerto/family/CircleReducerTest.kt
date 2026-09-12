@@ -68,6 +68,33 @@ class CircleReducerTest {
     }
 
     @Test
+    fun `myLastCheckInMs reads only this device's own check-ins, never a circle member's`() {
+        val events = listOf(
+            checkIn("c1", "local-maria", "Maria", minutesAgo = 1),
+            checkIn("c2", "local-boy", "Boy", minutesAgo = 30),
+        )
+
+        assertEquals(now - 30 * 60_000, myLastCheckInMs(events, "local-boy"))
+    }
+
+    @Test
+    fun `myLastCheckInMs is null when this device has never checked in, even if others have`() {
+        val events = listOf(checkIn("c1", "local-maria", "Maria", minutesAgo = 1))
+
+        assertNull(myLastCheckInMs(events, "local-boy"))
+    }
+
+    @Test
+    fun `myLastCheckInMs takes the latest of this device's own repeated check-ins`() {
+        val events = listOf(
+            checkIn("c1", "local-boy", "Boy", minutesAgo = 30),
+            checkIn("c2", "local-boy", "Boy", minutesAgo = 5),
+        )
+
+        assertEquals(now - 5 * 60_000, myLastCheckInMs(events, "local-boy"))
+    }
+
+    @Test
     fun `the fold is independent of delivery order`() {
         val events = listOf(
             checkIn("c1", "local-boy", "Boy", minutesAgo = 40),

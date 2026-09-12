@@ -47,7 +47,13 @@ fun QrScannerScreen(
     val notKaAlertoQrError = tr("Hindi ito KaAlerto QR", "Not a KaAlerto QR")
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
-        val scanned = result.contents ?: return@rememberLauncherForActivityResult
+        // A null result means the camera activity finished with nothing scanned — the
+        // system back gesture and the in-camera back button (KaAlertoCaptureActivity)
+        // both exit this way. Previously this fell through to nothing, leaving the
+        // Compose fallback below ("Starting scanner...") visible and requiring its own
+        // separate Cancel tap — an extra step nobody asked for. Reads as a cancel
+        // immediately instead, so backing out of the camera lands straight on Family.
+        val scanned = result.contents ?: run { onCancel(); return@rememberLauncherForActivityResult }
         val card = decodeCircleCard(scanned)
         if (card == null) {
             scanError = notKaAlertoQrError
@@ -60,7 +66,10 @@ fun QrScannerScreen(
     // Auto-launch scanner on first composition
     LaunchedEffect(Unit) {
         scanLauncher.launch(
-            ScanOptions().setPrompt("Itapat sa QR").setBeepEnabled(false)
+            ScanOptions()
+                .setPrompt("Itapat sa QR")
+                .setBeepEnabled(false)
+                .setCaptureActivity(KaAlertoCaptureActivity::class.java)
         )
     }
 

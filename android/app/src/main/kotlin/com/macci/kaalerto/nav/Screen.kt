@@ -61,4 +61,9 @@ sealed interface Screen {
 
     /** QR scanner for family circle pairing. */
     data object QrScanner : Screen
+
+    /** The other half of pairing — this device's own QR, so a second phone can scan it
+     * instead of the other way around. `myQrContent` was already computed for
+     * [FamilyCircle] and unused until this screen existed to show it. */
+    data object MyCircleQr : Screen
 }

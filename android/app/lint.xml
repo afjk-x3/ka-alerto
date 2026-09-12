@@ -11,4 +11,31 @@
          to use it instead of android.util.Log. We do not depend on Timber directly and
          are not adding a logging library to satisfy a check from one we never chose. -->
     <issue id="LogNotTimber" severity="ignore" />
+
+    <!-- family/KaAlertoCaptureActivity.kt (the QR scanner) is deliberately locked to
+         portrait, at the user's explicit request, matching how every other screen in
+         this app is held. This check's real concern is Chrome OS/large-screen support —
+         irrelevant to a sideloaded phone app for barangay residents (minSdk 26, no tablet
+         or Chrome OS target anywhere in the PRD). -->
+    <issue id="LockedOrientationActivity">
+        <ignore path="src/main/AndroidManifest.xml" />
+    </issue>
+
+    <!-- Same finding, different check id: Android 16 ignores a fixed screenOrientation on
+         large/adaptive screens. Worth knowing (a future Android 16 tablet would get the
+         library's own default orientation instead of this app's portrait lock) but not a
+         reason to change anything on a phone-only hackathon build with no tablet target. -->
+    <issue id="DiscouragedApi">
+        <ignore path="src/main/AndroidManifest.xml" />
+    </issue>
+
+    <!-- res/layout/zxing_capture.xml's contentDescription="Back" is a static fallback,
+         immediately overwritten at runtime by KaAlertoCaptureActivity.onCreate's
+         language-aware value. This app's i18n is the runtime tr() helper, not string
+         resources (see CLAUDE.md's i18n section: the handful of non-Compose call sites
+         that need a literal, like NotificationChannels, already hardcode one rather than
+         add a resource entry that would only ever hold the unused English default). -->
+    <issue id="HardcodedText">
+        <ignore path="src/main/res/layout/zxing_capture.xml" />
+    </issue>
 </lint>
