@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Overrides zxing-android-embedded's own bundled layout of the same name (an app module's
+ resources take priority over a library AAR's for an identical resource name — no code
+ change needed for CaptureActivity to pick this up). The only change from the library's
+ default is app:zxing_framing_rect_width == app:zxing_framing_rect_height: equal, so the
+ scan frame is a square regardless of the device's screen aspect, matching every other
+ QR-square scanner UI. See AndroidManifest.xml's override of this same activity's
+ android:screenOrientation for the portrait half of this change.
+-->
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.journeyapps.barcodescanner.DecoratedBarcodeView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/zxing_barcode_scanner"
+        app:zxing_framing_rect_width="280dp"
+        app:zxing_framing_rect_height="280dp"
+        app:zxing_preview_scaling_strategy="centerCrop"
+        app:zxing_use_texture_view="false"/>
+
+</merge>

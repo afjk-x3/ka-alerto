@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -96,6 +97,22 @@
             android:name=".mesh.MeshService"
             android:exported="false"
             android:foregroundServiceType="connectedDevice" />
+
+        <!-- zxing-android-embedded's own bundled manifest declares this same activity as
+             android:screenOrientation="sensorLandscape" (see zxing-android-embedded-4.3.0.aar).
+             Redeclaring it here with the same name overrides that one attribute — the app
+             manifest wins during merge — without needing a custom CaptureActivity subclass.
+             Portrait matches how every other screen in this app is held; the square
+             viewfinder itself is a layout-resource override, not a manifest one — see
+             res/layout/zxing_capture.xml. -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:clearTaskOnLaunch="true"
+            android:screenOrientation="portrait"
+            android:stateNotNeeded="true"
+            android:theme="@style/zxing_CaptureTheme"
+            android:windowSoftInputMode="stateAlwaysHidden"
+            tools:replace="android:screenOrientation" />
 
         <!-- SMS Receiver -->
         <receiver
