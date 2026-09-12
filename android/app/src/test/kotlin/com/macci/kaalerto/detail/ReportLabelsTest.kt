@@ -79,4 +79,45 @@ class ReportLabelsTest {
     fun `an unrecognised origin is not passed off as this phone`() {
         assertEquals(OriginText("Hindi alam kung saan galing", null), originText("carrier-pigeon", hopCount = 0))
     }
+
+    @Test
+    fun `age reads in whole Filipino words, not "min ago"`() {
+        assertEquals("Ngayon lang", ageLabel(30_000))
+        assertEquals("1 minuto na ang nakalipas", ageLabel(60_000))
+        assertEquals("7 minuto na ang nakalipas", ageLabel(7 * 60_000L))
+        assertEquals("1 oras na ang nakalipas", ageLabel(60 * 60_000L))
+        assertEquals("2 oras at 5 minuto na ang nakalipas", ageLabel(125 * 60_000L))
+        assertEquals("3 araw na ang nakalipas", ageLabel((3 * 24 * 60 + 5) * 60_000L))
+    }
+
+    @Test
+    fun `confidence buckets are in Filipino`() {
+        assertEquals("Hindi pa kumpirmado", bucketLabel("unverified"))
+        assertEquals("Malamang totoo", bucketLabel("likely"))
+        assertEquals("Kumpirmado", bucketLabel("confirmed"))
+        assertEquals("Opisyal na ulat", bucketLabel("official"))
+    }
+
+    @Test
+    fun `roles are in Filipino, and an unknown role reads as a resident`() {
+        assertEquals("Opisyal ng barangay", roleLabel("official"))
+        assertEquals("Tagasagip", roleLabel("responder"))
+        assertEquals("Residente", roleLabel("resident"))
+        assertEquals("Residente", roleLabel("something-new"))
+    }
+
+    /** Same words as the two buttons a resident just saw, so the count explains itself. */
+    @Test
+    fun `the agreement count uses the button words`() {
+        assertEquals("1 nagsabing tama · 0 nagsabing iba na", agreementLabel(confirms = 1, disputes = 0))
+    }
+
+    @Test
+    fun `a dispute reason reads as the option the resident tapped`() {
+        assertEquals("Humupa na", disputeReasonLabel("cleared_now"))
+        assertEquals("Lumala", disputeReasonLabel("worse"))
+        assertEquals("Bumaba", disputeReasonLabel("shallower"))
+        assertEquals("Maling lokasyon", disputeReasonLabel("wrong_location"))
+        assertEquals("Iba na", disputeReasonLabel(null))
+    }
 }

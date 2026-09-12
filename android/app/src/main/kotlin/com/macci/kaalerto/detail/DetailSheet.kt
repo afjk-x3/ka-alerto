@@ -54,28 +54,6 @@ private fun colorFor(severity: String): Color =
 /** Every report gives its author name and role, per the architecture guardrail that the name rides in the event, never a lookup. */
 private fun sourceLabel(event: Event): String = "${event.authorName} · ${roleLabel(event.authorRole)}"
 
-private fun roleLabel(role: String): String = when (role) {
-    "official" -> "Barangay official"
-    "responder" -> "Responder"
-    else -> "Resident"
-}
-
-private fun ageLabel(ms: Long): String {
-    val minutes = ms / 60_000
-    return when {
-        minutes < 1 -> "Ngayon lang"
-        minutes < 60 -> "$minutes min ago"
-        else -> "${minutes / 60}h ${minutes % 60}m ago"
-    }
-}
-
-private fun bucketLabel(bucket: String): String = when (bucket) {
-    "official" -> "Official"
-    "confirmed" -> "Confirmed"
-    "likely" -> "Likely"
-    else -> "Unverified"
-}
-
 /** Slug featureRefs (geohash cells) get a generic label; seed data's named-street slugs get prettified. */
 private fun featureDisplayName(featureRef: String): String =
     if (featureRef.contains('-')) {
@@ -114,7 +92,7 @@ fun DetailSheet(
                 Column {
                     Text(featureDisplayName(summary.featureRef), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     if (summary.isStale) {
-                        Text("Naka-decay · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Luma na · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 SeverityBadge(summary.severity)
@@ -290,11 +268,15 @@ private fun ReadingCard(waterLevelId: String, severity: String) {
                 )
             }
             Spacer(Modifier.size(16.dp))
-            val (fil, en) = severityTextFor(severity)
+            val fil = severityTextFor(severity).first
             val label = bodyOption?.let { "Hanggang ${it.fil.lowercase()}" } ?: vehicleOption?.fil ?: fil
             Column {
                 Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                Text(en, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // Filipino severity under the depth ("Hanggang dibdib" / "Hindi madaanan"),
+                // not the English gloss; skipped when the depth line already says it.
+                if (label != fil) {
+                    Text(fil, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }
@@ -349,7 +331,7 @@ private fun ConfidenceSection(summary: FeatureSummary) {
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "${summary.confirmCount} nag-confirm · ${summary.disputeCount} nag-dispute",
+                    agreementLabel(summary.confirmCount, summary.disputeCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -375,11 +357,6 @@ private fun ConflictSection(summary: FeatureSummary) {
                 Text(
                     "Ituring na hindi madaanan hangga't walang nakakumpirma.",
                     style = MaterialTheme.typography.bodyMedium,
-                )
-                Text(
-                    "Conflicting reports — treat as impassable.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -408,7 +385,7 @@ private fun ConflictSection(summary: FeatureSummary) {
 private fun ConflictReportRow(event: Event) {
     val color = event.severity?.let { colorFor(it) } ?: Color.Gray
     // Callers only ever pass events already filtered to severity != null.
-    val (fil, en) = severityTextFor(event.severity ?: "S0")
+    val fil = severityTextFor(event.severity ?: "S0").first
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(modifier = Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             // Day above time: the two sides of a conflict can be hours or days apart.
@@ -429,7 +406,11 @@ private fun ConflictReportRow(event: Event) {
             Column(modifier = Modifier.weight(1f)) {
                 val levelLabel = event.waterLevel?.let { resolveLevelOption(it)?.fil ?: it }
                 Text(levelLabel?.let { "Hanggang $it" } ?: fil, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-                Text("$en · nasa lugar", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    if (levelLabel != null) "$fil · nasa lugar" else "nasa lugar",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
             Box(modifier = Modifier.size(width = 10.dp, height = 34.dp).background(color))
         }
@@ -450,8 +431,8 @@ private fun EventHistoryRow(event: Event) {
         Spacer(Modifier.size(10.dp))
         Column(modifier = Modifier.weight(1f)) {
             val label = when (event.type) {
-                "confirm" -> "Kumpirmasyon · ${sourceLabel(event)}"
-                "dispute" -> "Dispute (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
+                "confirm" -> "Nagsabing tama · ${sourceLabel(event)}"
+                "dispute" -> "Nagsabing iba na: ${disputeReasonLabel(event.disputeReason)} · ${sourceLabel(event)}"
                 else -> sourceLabel(event)
             }
             Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
@@ -459,35 +440,33 @@ private fun EventHistoryRow(event: Event) {
             if (detail.isNotBlank()) {
                 Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            Text(reportedAtLabel(event.timestampMs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            // Age sits on the date line rather than in a right-hand column: in words it is
+            // too long for one, and it would squeeze the name and note beside it.
+            Text(
+                "${reportedAtLabel(event.timestampMs)} · ${ageLabel(System.currentTimeMillis() - event.timestampMs)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
-        Text(ageLabel(System.currentTimeMillis() - event.timestampMs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
 @Composable
 private fun DisputeReasonDialog(onSelect: (DisputeReason) -> Unit, onDismiss: () -> Unit) {
-    val reasons = listOf(
-        DisputeReason.CLEARED_NOW to ("Humupa na" to "Cleared now"),
-        DisputeReason.WORSE to ("Lumala" to "Worse now"),
-        DisputeReason.SHALLOWER to ("Bumaba" to "Shallower now"),
-        DisputeReason.WRONG_LOCATION to ("Maling lokasyon" to "Wrong location"),
-    )
+    val reasons = listOf(DisputeReason.CLEARED_NOW, DisputeReason.WORSE, DisputeReason.SHALLOWER, DisputeReason.WRONG_LOCATION)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Ano ang nangyari?") },
         text = {
             Column {
-                reasons.forEach { (reason, copy) ->
-                    val (fil, en) = copy
+                reasons.forEach { reason ->
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onSelect(reason) }
                             .padding(vertical = 10.dp),
                     ) {
-                        Text(fil, fontWeight = FontWeight.SemiBold)
-                        Text(en, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(disputeReasonLabel(reason.name.lowercase()), fontWeight = FontWeight.SemiBold)
                     }
                 }
             }

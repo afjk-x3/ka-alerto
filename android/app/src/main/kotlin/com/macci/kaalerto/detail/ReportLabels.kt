@@ -67,3 +67,42 @@ fun reportedAtLabel(
 ): String = "${reportedDayLabel(timestampMs, nowMs, zone)}, ${reportedTimeLabel(timestampMs, zone)}"
 
 private fun localDate(epochMs: Long, zone: ZoneId): LocalDate = Instant.ofEpochMilli(epochMs).atZone(zone).toLocalDate()
+
+/** "7 minuto na ang nakalipas" — whole words rather than "7 min ago". */
+fun ageLabel(ms: Long): String {
+    val minutes = ms / 60_000
+    val hours = minutes / 60
+    return when {
+        minutes < 1 -> "Ngayon lang"
+        minutes < 60 -> "$minutes minuto na ang nakalipas"
+        hours < 24 && minutes % 60 == 0L -> "$hours oras na ang nakalipas"
+        hours < 24 -> "$hours oras at ${minutes % 60} minuto na ang nakalipas"
+        else -> "${hours / 24} araw na ang nakalipas"
+    }
+}
+
+fun bucketLabel(bucket: String): String = when (bucket) {
+    "official" -> "Opisyal na ulat"
+    "confirmed" -> "Kumpirmado"
+    "likely" -> "Malamang totoo"
+    else -> "Hindi pa kumpirmado"
+}
+
+fun roleLabel(role: String): String = when (role) {
+    "official" -> "Opisyal ng barangay"
+    "responder" -> "Tagasagip"
+    else -> "Residente"
+}
+
+/** Uses the words on the two buttons ("Tama" / "Iba na") so the count explains itself. */
+fun agreementLabel(confirms: Int, disputes: Int): String =
+    "$confirms nagsabing tama · $disputes nagsabing iba na"
+
+/** A stored dispute reason ("cleared_now") as the option the resident actually tapped. */
+fun disputeReasonLabel(reason: String?): String = when (reason) {
+    "cleared_now" -> "Humupa na"
+    "worse" -> "Lumala"
+    "shallower" -> "Bumaba"
+    "wrong_location" -> "Maling lokasyon"
+    else -> "Iba na"
+}
