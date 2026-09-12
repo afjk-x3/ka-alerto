@@ -77,6 +77,9 @@ dependencies {
     implementation(libs.play.services.location)
     implementation(libs.play.services.nearby)
 
+    // Rescue card QR — ZXing's encoder only (sos/SosQr.kt)
+    implementation(libs.zxing.core)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

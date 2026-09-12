@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -37,23 +39,23 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.macci.kaalerto.sos.SosColors
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /**
  * PRD §9's registration, from `design/artboards/Onboarding.dc.html`: a given name, an
  * optional surname, and a home barangay, once, at first run. No password, no email.
  *
- * Trimmed from feat/event-sourced-roles for this build, and one deliberate departure from
- * the artboard and from that branch:
+ * Trimmed from feat/event-sourced-roles for this build.
  *
- * **"Tingnan muna ang mapa" replaces the SOS escape hatch.** The decision table makes
- * registration required at first run *because* SOS stays reachable from this screen, so
- * someone installing mid-flood is never held behind a form. This build has no SOS. A hard
- * gate with no way past it would lock a resident out of the flood map itself — the one
- * thing they may need most — for want of a name the map never uses. So viewing is never
- * gated; *authoring* is. Every path that writes an event (Mag-ulat, Tama, Iba na,
- * I-check ko ngayon) routes back here until a name is given, which keeps the invariant
- * that matters: nothing is authored anonymously.
+ * **Required at first run, with SOS as the only way past** — CLAUDE.md's decision table.
+ * There is no skip: a name is what gives a report its social cost. What makes a hard gate
+ * defensible rather than hostile is the red SOS strip at the top, so someone installing
+ * mid-flood is never held behind a form. On this build that SOS is the local-only rescue
+ * screen (sos/SosScreen.kt) — it sends nothing, and it needs no name.
+ *
+ * The same form in [IdentityFormMode.EDIT] is the profile screen: no SOS strip, a
+ * Kanselahin, and a note that only reports filed from now on carry the change.
  *
  * Also not here, on purpose: the permission primers (the map already asks for location
  * and notifications on first launch), the SMS row (no SMS on this build), and the home
@@ -70,8 +72,12 @@ fun OnboardingScreen(
     barangay: String,
     onBarangayChange: (String) -> Unit,
     onDone: () -> Unit,
-    onViewMapFirst: () -> Unit,
     modifier: Modifier = Modifier,
+    mode: IdentityFormMode = IdentityFormMode.FIRST_RUN,
+    /** First run only: the escape hatch, never behind the form. */
+    onSos: (() -> Unit)? = null,
+    /** Edit only. */
+    onCancel: (() -> Unit)? = null,
 ) {
     var showError by remember { mutableStateOf(false) }
     val usable = isUsableName(firstName) && isUsableBarangay(barangay)
@@ -91,18 +97,26 @@ fun OnboardingScreen(
         ) {
             Column {
                 Text(
-                    "I-set up ang KaAlerto",
+                    if (mode == IdentityFormMode.EDIT) "Ang profile ko" else "I-set up ang KaAlerto",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "Pangalan at barangay lang. Walang password, walang email.",
+                    if (mode == IdentityFormMode.EDIT) {
+                        // The log is append-only: reports already filed keep the name
+                        // they were filed with, and the screen says so rather than imply
+                        // an edit reaches back.
+                        "Para lang ito sa mga susunod mong ulat. Hindi na mababago ang mga naipadala na."
+                    } else {
+                        "Pangalan at barangay lang. Walang password, walang email."
+                    },
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp),
                 )
             }
+            if (mode == IdentityFormMode.FIRST_RUN && onSos != null) SosEscapeHatch(onSos)
             NameFields(
                 firstName = firstName,
                 onFirstNameChange = {
@@ -133,19 +147,27 @@ fun OnboardingScreen(
                     .clickable { if (!usable) showError = true else onDone() },
                 contentAlignment = Alignment.Center,
             ) {
-                Text("Magsimula", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                Text(
+                    if (mode == IdentityFormMode.EDIT) "I-save" else "Magsimula",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
             }
-            Text(
-                "Tingnan muna ang mapa",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onViewMapFirst)
-                    .padding(vertical = 14.dp),
-            )
+            // No skip on a first run — the only way past is forward, or SOS above.
+            if (onCancel != null) {
+                Text(
+                    "Kanselahin",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onCancel)
+                        .padding(vertical = 14.dp),
+                )
+            }
         }
     }
 }
@@ -291,5 +313,37 @@ private fun NameVisibilityDisclosure() {
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+enum class IdentityFormMode { FIRST_RUN, EDIT }
+
+/** Onboarding.dc.html's red strip: somebody installing mid-flood must never be held behind a form. */
+@Composable
+private fun SosEscapeHatch(onSos: () -> Unit) {
+    val colors = LocalKaAlertoColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.criticalBg)
+            .border(1.5.dp, colors.criticalFg)
+            .padding(horizontal = 10.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            "May emergency ka na ngayon? Huwag mo nang tapusin ito.",
+            fontSize = 12.sp,
+            color = colors.criticalFg,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.size(9.dp))
+        Box(
+            modifier = Modifier
+                .background(SosColors.Critical)
+                .clickable(onClick = onSos)
+                .padding(horizontal = 13.dp, vertical = 8.dp),
+        ) {
+            Text("SOS", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SosColors.CardBackground)
+        }
     }
 }

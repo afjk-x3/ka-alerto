@@ -29,6 +29,7 @@ playServicesLocation = "21.4.0"
 playServicesNearby = "19.5.0"
 room = "2.8.4"
 serialization = "1.11.0"
+zxing = "3.5.3"
 
 # Test
 junit = "4.13.2"
@@ -60,6 +61,11 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+
+# QR encoding for the rescue card (sos/SosQr.kt). "core" is the pure-Java half of ZXing,
+# with no Android bitmap and no camera: the card draws the module grid itself on a
+# Compose Canvas. Same version feat/event-sourced-roles uses.
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 
 # The default "android-sdk" artifact is Vulkan-ONLY (confirmed via a runtime

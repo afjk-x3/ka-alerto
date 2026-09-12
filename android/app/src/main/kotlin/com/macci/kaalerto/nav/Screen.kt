@@ -16,4 +16,13 @@ sealed interface Screen {
      * what they were doing.
      */
     data class Onboarding(val resume: Screen?) : Screen
+
+    /** Editing an already-registered name or barangay — the map header's person icon. */
+    data object Profile : Screen
+
+    /**
+     * The local-only emergency screen. [returnTo] is where Back goes — the map, or the
+     * registration screen when SOS was reached from its escape hatch.
+     */
+    data class Sos(val returnTo: Screen) : Screen
 }

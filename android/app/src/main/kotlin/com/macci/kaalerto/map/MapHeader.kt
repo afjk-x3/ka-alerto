@@ -11,6 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,6 +38,11 @@ fun MapHeader(
     stormMode: Boolean,
     onModeIconClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Opens the profile (name + barangay). An icon beside the Storm toggle rather than a
+     * hamburger: on this build it is the only destination such a menu would hold.
+     */
+    onProfileClick: (() -> Unit)? = null,
 ) {
     val colors = LocalKaAlertoColors.current
     Row(
@@ -69,6 +77,24 @@ fun MapHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        if (onProfileClick != null) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .border(BorderStroke(1.dp, colors.border)),
+                contentAlignment = Alignment.Center,
+            ) {
+                IconButton(onClick = onProfileClick, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        Icons.Filled.Person,
+                        contentDescription = "Ang profile ko",
+                        tint = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.size(8.dp))
         }
         Box(
             modifier = Modifier

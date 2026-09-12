@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -51,6 +53,7 @@ import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.location.fetchCurrentLocation
 import com.macci.kaalerto.net.rememberIsOnline
+import com.macci.kaalerto.sos.SosColors
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -95,6 +98,10 @@ fun MapScreen(
     onToggleStormMode: (() -> Unit)? = null,
     /** Non-null while unregistered — Tama / Iba na go through PRD §9's registration first. */
     onNeedsRegistration: (() -> Unit)? = null,
+    /** The red SOS button beside Mag-ulat — opens the local-only rescue screen. */
+    onSos: (() -> Unit)? = null,
+    /** The header's person icon — editing the registered name and barangay. */
+    onProfileClick: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -163,6 +170,7 @@ fun MapScreen(
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
                 stormMode = stormMode,
                 onModeIconClick = onToggleStormMode,
+                onProfileClick = onProfileClick,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -244,6 +252,7 @@ fun MapScreen(
                         }
                     }
                 },
+                onSos = onSos,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -300,16 +309,17 @@ private fun PickLocationBanner(onCancel: () -> Unit, modifier: Modifier = Modifi
 
 /**
  * Map-Normal.dc.html's "Mag-ulat" bar — a full-width bar docked at the bottom of the
- * screen, not a floating rounded FAB. The artboard pairs it with an SOS button, which
- * this deliberately omits: SOS isn't built yet, and a button that does nothing would
- * misrepresent what the app can do.
+ * screen, not a floating rounded FAB — with the artboard's red SOS button beside it. On
+ * this build SOS opens the local-only rescue screen (sos/SosScreen.kt), which says on its
+ * face that it sends nothing; the button promises no more than that screen delivers.
  */
 @Composable
-private fun MapActionBar(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun MapActionBar(label: String, onClick: () -> Unit, onSos: (() -> Unit)?, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .height(androidx.compose.foundation.layout.IntrinsicSize.Min),
     ) {
         Row(
             modifier = Modifier
@@ -328,6 +338,22 @@ private fun MapActionBar(label: String, onClick: () -> Unit, modifier: Modifier 
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimary,
             )
+        }
+        if (onSos != null) {
+            Spacer(Modifier.size(10.dp))
+            // Always SOS red, in Storm as in Normal — SOS chrome is exempt from mode theming.
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .background(SosColors.Critical)
+                    .clickable(onClick = onSos)
+                    .padding(horizontal = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+            ) {
+                Text("SOS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = SosColors.CardBackground)
+                Text("pindutin", style = MaterialTheme.typography.bodySmall, color = SosColors.CriticalText)
+            }
         }
     }
 }
