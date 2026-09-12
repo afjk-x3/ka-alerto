@@ -14,5 +14,5 @@ class EventRepository(private val eventDao: EventDao) {
 
     suspend fun insert(event: Event) = eventDao.insert(event)
 
-    suspend fun isEmpty(): Boolean = eventDao.count() == 0
+    suspend fun replaceSeeds(seeds: List<Event>) = eventDao.replaceSeeds(seeds)
 }
