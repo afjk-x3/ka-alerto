@@ -70,6 +70,7 @@ import com.macci.kaalerto.family.effectiveCircle
 import com.macci.kaalerto.family.encode
 import com.macci.kaalerto.family.submitCheckIn
 import com.macci.kaalerto.family.submitCircleInvite
+import com.macci.kaalerto.sync.SyncPrefs
 import kotlinx.coroutines.delay
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
@@ -108,6 +109,7 @@ fun KaAlertoApp(
     }
     var draftAccuracy by remember { mutableStateOf<Float?>(null) }
     var draftPhone by remember { mutableStateOf(LocalIdentity.registeredPhone(appContext)) }
+    var draftServerUrl by remember { mutableStateOf(SyncPrefs.getServerUrl(appContext) ?: "") }
     // The hamburger drawer, shared by every screen that shows one — see NavDrawer.kt
     // for why this lives here rather than being duplicated per screen.
     var drawerOpen by remember { mutableStateOf(false) }
@@ -515,6 +517,9 @@ fun KaAlertoApp(
                 onLastNameChange = { draftLastName = it },
                 phone = draftPhone,
                 onPhoneChange = { draftPhone = it },
+                serverUrl = draftServerUrl,
+                onServerUrlChange = { draftServerUrl = it },
+                lastSyncedAtMs = SyncPrefs.getLastSyncedAtMs(context),
                 barangay = draftBarangay,
                 onBarangayChange = {
                     draftBarangay = it
@@ -540,6 +545,7 @@ fun KaAlertoApp(
                 onPickOnMap = { screen = Screen.PickHome },
                 onSave = {
                     LocalIdentity.register(context, draftFirstName, draftLastName, draftPhone, draftBarangay)
+                    SyncPrefs.setServerUrl(context, draftServerUrl)
                     draftHome?.let { (lat, lon) ->
                         HomeLocationStore.set(context, lat, lon, HomeLocationStore.DEFAULT_RADIUS_METERS)
                         if (!DemoArea.bounds.contains(LatLng(lat, lon))) {

@@ -231,6 +231,81 @@ internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
 }
 
 /**
+ * Build day 13 — the server-sync address (`sync/ServerSyncLoop.kt` reads it fresh every
+ * cycle, no caching, so a changed address takes effect on the very next tick with no
+ * restart). Optional and unvalidated, same posture as [PhoneField]: empty means sync is
+ * simply off, not an error state.
+ */
+@Composable
+internal fun ServerUrlField(serverUrl: String, onServerUrlChange: (String) -> Unit, lastSyncedAtMs: Long?) {
+    val colors = LocalKaAlertoColors.current
+    val serverUrlDescription = tr("Address ng server", "Server address")
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        FieldLabel(tr("ADDRESS NG SERVER (OPSYONAL)", "SERVER ADDRESS (OPTIONAL)"))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(1.5.dp, colors.border)
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+        ) {
+            BasicTextField(
+                value = serverUrl,
+                onValueChange = onServerUrlChange,
+                singleLine = true,
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = 17.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Uri,
+                    capitalization = KeyboardCapitalization.None,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = serverUrlDescription },
+            )
+            if (serverUrl.isEmpty()) {
+                Text(
+                    "192.168.1.42:3000",
+                    fontSize = 17.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.border,
+                )
+            }
+        }
+        Text(
+            serverSyncStatusLabel(lastSyncedAtMs),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * "Huling nag-sync: 18 min ago", or "no sync yet" — never a bad-news state, matching this
+ * app's general rule for anything that only ever reports presence or absence, not
+ * failure. Deliberately duplicated age-formatting rather than shared with
+ * `family/FamilyCircleScreen.kt`'s `checkInAgeLabel` — that function's own doc comment
+ * already accepts this same small duplication against `sos/SosShared.kt`'s
+ * `elapsedLabel`, which uses an incompatible mm:ss format.
+ */
+@Composable
+private fun serverSyncStatusLabel(lastSyncedAtMs: Long?): String {
+    if (lastSyncedAtMs == null) return tr("Wala pang sync", "No sync yet")
+    val minutes = (System.currentTimeMillis() - lastSyncedAtMs) / 60_000
+    val age = when {
+        minutes < 1 -> tr("ngayon lang", "just now")
+        minutes < 60 -> tr("$minutes min ang nakalipas", "$minutes min ago")
+        else -> tr("${minutes / 60}h ${minutes % 60}m ang nakalipas", "${minutes / 60}h ${minutes % 60}m ago")
+    }
+    return tr("Huling nag-sync: $age", "Last synced: $age")
+}
+
+/**
  * The artboard's "Nakuha sa GPS mo" honoured as a *pin*, not a place name. Turning a fix
  * into "Brgy. San Juan Bautista" needs reverse geocoding and therefore a network, on a
  * screen that must work with neither — but a coordinate needs neither, and a coordinate

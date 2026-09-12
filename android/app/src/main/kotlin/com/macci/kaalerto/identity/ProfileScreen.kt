@@ -53,6 +53,9 @@ fun ProfileScreen(
     /** Optional, unvalidated — see LocalIdentity.KEY_PHONE for why. */
     phone: String,
     onPhoneChange: (String) -> Unit,
+    serverUrl: String,
+    onServerUrlChange: (String) -> Unit,
+    lastSyncedAtMs: Long?,
     barangay: String,
     onBarangayChange: (String) -> Unit,
     barangayFromLocation: Boolean,
@@ -115,6 +118,7 @@ fun ProfileScreen(
                     onTypedFirstName = { showError = false },
                 )
                 PhoneField(phone = phone, onPhoneChange = onPhoneChange)
+                ServerUrlField(serverUrl = serverUrl, onServerUrlChange = onServerUrlChange, lastSyncedAtMs = lastSyncedAtMs)
                 HomeSection(
                     home = home,
                     accuracyMeters = accuracyMeters,
