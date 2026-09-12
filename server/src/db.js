@@ -88,7 +88,7 @@ function openDatabase(path) {
         author_name: event.authorName ?? null,
         author_role: event.authorRole ?? null,
         timestamp_ms: event.timestampMs ?? null,
-        expires_at_ms: event.expiresAtMs ?? null,
+        expires_at_ms: event.expiresAt ?? null,
         origin: event.origin ?? null,
         hop_count: event.hopCount ?? 0,
         payload: JSON.stringify(event),
