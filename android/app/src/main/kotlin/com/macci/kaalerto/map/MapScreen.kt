@@ -151,11 +151,10 @@ fun MapScreen(
     BackHandler(enabled = homeDraft != null) { homeDraft = null }
 
     Column(modifier = modifier.fillMaxSize()) {
-        // Map-Normal.dc.html's header ("Brgy. ... · synced/report status") is only
-        // honest to show once the offline pack is actually ready — see PackStatusBanner.
-        if (packState !is PackState.Ready) {
-            PackStatusBanner(state = packState, modifier = Modifier.fillMaxWidth())
-        } else if (onToggleStormMode != null) {
+        // The pack banner used to *replace* this header, taking the barangay name, the
+        // connectivity line, the report count and the Storm toggle with it — all of which
+        // are true whether or not tiles have downloaded. Header first, banner beneath it.
+        if (onToggleStormMode != null) {
             MapHeader(
                 isOnline = isOnline,
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
@@ -163,6 +162,9 @@ fun MapScreen(
                 onModeIconClick = onToggleStormMode,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+        if (packState !is PackState.Ready) {
+            PackStatusBanner(state = packState, isOnline = isOnline, modifier = Modifier.fillMaxWidth())
         }
 
         if (showChrome) {
@@ -320,25 +322,10 @@ private fun MapActionBar(label: String, onClick: () -> Unit, modifier: Modifier 
     }
 }
 
-/**
- * Honest status, per the project's rule against implying a capability the app does not
- * have. A half-downloaded pack must not look like a working offline map — that is the
- * one claim that cannot break on stage.
- */
+/** Wording lives in [packBannerCopy]; this only lays it out. */
 @Composable
-private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
-    val (headline: String, detail: String?) = when (state) {
-        PackState.Unknown -> "Checking offline map…" to null
-        PackState.Absent -> "No offline map yet" to "Starting download. This needs a connection once."
-        is PackState.Downloading -> {
-            val pct = state.fraction?.let { " · ${(it * 100).toInt()}%" }.orEmpty()
-            "Downloading offline map$pct" to
-                "${state.completedTiles} tiles${if (!state.isPrecise) " (estimating total)" else ""}"
-        }
-        is PackState.Ready ->
-            "Offline map ready" to "${state.tileCount} tiles · works with no signal"
-        is PackState.Failed -> "Offline map failed" to state.reason
-    }
+private fun PackStatusBanner(state: PackState, isOnline: Boolean, modifier: Modifier = Modifier) {
+    val (headline, detail, showProgress) = packBannerCopy(state, isOnline)
 
     Column(
         modifier = modifier
@@ -358,7 +345,7 @@ private fun PackStatusBanner(state: PackState, modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (state is PackState.Downloading) {
+        if (showProgress && state is PackState.Downloading) {
             val fraction = state.fraction
             if (fraction != null) {
                 LinearProgressIndicator(
