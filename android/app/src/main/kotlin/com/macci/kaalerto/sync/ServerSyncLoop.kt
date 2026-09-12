@@ -65,7 +65,8 @@ class ServerSyncLoop(private val context: Context) {
                 maxLat = bounds.latitudeNorth,
                 since = cursor,
             )
-            val page = decodePullResponse(getJson(url)) ?: return
+            val page = decodePullResponse(getJson(url))
+                ?: error("GET $url did not decode to the expected pull-response shape")
             if (page.events.isNotEmpty()) {
                 repository.insert(stampServerOrigin(page.events))
             }
