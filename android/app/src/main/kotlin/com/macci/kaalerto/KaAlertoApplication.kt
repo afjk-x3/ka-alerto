@@ -8,6 +8,7 @@ import com.macci.kaalerto.geofence.GeofenceNotifier
 import com.macci.kaalerto.notification.NotificationChannels
 import com.macci.kaalerto.sos.SosAlertWatcher
 import com.macci.kaalerto.sos.SosTransmitter
+import com.macci.kaalerto.sync.ServerSyncLoop
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -48,6 +49,9 @@ class KaAlertoApplication : Application() {
         // Build day 11a. Fires when a household-circle member checks in — see
         // family/CircleCheckInNotifier.kt.
         CircleCheckInNotifier(this).start(applicationScope)
+        // Build day 13. Plain-HTTP push/pull against server/ — see sync/ServerSyncLoop.kt.
+        // A no-op on every device until a server address is entered in Profile.
+        ServerSyncLoop(this).start(applicationScope)
         // Day 8. Advances an active SOS's state machine from what is actually
         // observable — see SosTransmitter. It lives here rather than in a screen
         // because a request has to keep escalating while the phone is in a pocket.
