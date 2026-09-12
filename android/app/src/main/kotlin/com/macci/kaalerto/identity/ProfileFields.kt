@@ -235,13 +235,42 @@ internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
  * cycle, no caching, so a changed address takes effect on the very next tick with no
  * restart). Optional and unvalidated, same posture as [PhoneField]: empty means sync is
  * simply off, not an error state.
+ *
+ * "Hanapin" (search) added so nobody has to know their own server's LAN address by
+ * heart: `sync/ServerDiscoveryClient.kt` broadcasts for it and, if found, fills this same
+ * draft field — never a silent auto-save, same as every other field here, "I-save" still
+ * commits it. Manual entry stays fully available underneath, because discovery fails
+ * silently on networks with AP/client isolation (common on guest Wi-Fi) and across
+ * subnets — see that file's doc comment.
  */
 @Composable
-internal fun ServerUrlField(serverUrl: String, onServerUrlChange: (String) -> Unit, lastSyncedAtMs: Long?) {
+internal fun ServerUrlField(
+    serverUrl: String,
+    onServerUrlChange: (String) -> Unit,
+    lastSyncedAtMs: Long?,
+    searching: Boolean,
+    autoDetected: Boolean,
+    onSearch: () -> Unit,
+) {
     val colors = LocalKaAlertoColors.current
     val serverUrlDescription = tr("Address ng server", "Server address")
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FieldLabel(tr("ADDRESS NG SERVER (OPSYONAL)", "SERVER ADDRESS (OPTIONAL)"))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FieldLabel(tr("ADDRESS NG SERVER (OPSYONAL)", "SERVER ADDRESS (OPTIONAL)"))
+            Text(
+                if (searching) tr("Naghahanap…", "Searching…") else tr("Hanapin", "Search"),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier
+                    .clickable(enabled = !searching, onClick = onSearch)
+                    .padding(vertical = 2.dp),
+            )
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -278,7 +307,14 @@ internal fun ServerUrlField(serverUrl: String, onServerUrlChange: (String) -> Un
             }
         }
         Text(
-            serverSyncStatusLabel(lastSyncedAtMs),
+            when {
+                searching -> tr("Hinahanap ang server sa network mo…", "Looking for a server on your network…")
+                autoDetected -> tr(
+                    "Awtomatikong nahanap sa network mo — i-verify at i-save",
+                    "Auto-found on your network — verify and save",
+                )
+                else -> serverSyncStatusLabel(lastSyncedAtMs)
+            },
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

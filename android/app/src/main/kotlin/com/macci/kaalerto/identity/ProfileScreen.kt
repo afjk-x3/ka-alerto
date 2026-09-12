@@ -56,6 +56,9 @@ fun ProfileScreen(
     serverUrl: String,
     onServerUrlChange: (String) -> Unit,
     lastSyncedAtMs: Long?,
+    serverSearching: Boolean,
+    serverAutoDetected: Boolean,
+    onSearchServer: () -> Unit,
     barangay: String,
     onBarangayChange: (String) -> Unit,
     barangayFromLocation: Boolean,
@@ -118,7 +121,14 @@ fun ProfileScreen(
                     onTypedFirstName = { showError = false },
                 )
                 PhoneField(phone = phone, onPhoneChange = onPhoneChange)
-                ServerUrlField(serverUrl = serverUrl, onServerUrlChange = onServerUrlChange, lastSyncedAtMs = lastSyncedAtMs)
+                ServerUrlField(
+                    serverUrl = serverUrl,
+                    onServerUrlChange = onServerUrlChange,
+                    lastSyncedAtMs = lastSyncedAtMs,
+                    searching = serverSearching,
+                    autoDetected = serverAutoDetected,
+                    onSearch = onSearchServer,
+                )
                 HomeSection(
                     home = home,
                     accuracyMeters = accuracyMeters,

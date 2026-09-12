@@ -3,6 +3,7 @@
 const express = require('express');
 const path = require('node:path');
 const { openDatabase } = require('./db');
+const { startDiscoveryResponder } = require('./discovery');
 
 const PORT = process.env.PORT || 3000;
 const DB_PATH = process.env.KAALERTO_DB_PATH || path.join(__dirname, '..', 'kaalerto.db');
@@ -129,9 +130,11 @@ function start() {
   const server = app.listen(PORT, () => {
     console.log(`KaAlerto server listening on :${PORT} (db: ${DB_PATH})`);
   });
+  const discoverySocket = startDiscoveryResponder(Number(PORT));
 
   const shutdown = () => {
     server.close(() => {
+      discoverySocket.close();
       db.close();
       process.exit(0);
     });
