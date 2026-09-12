@@ -24,6 +24,15 @@ import kotlinx.coroutines.launch
  * Only fresh `flood_report` events are notification-worthy — a confirm or dispute is
  * a confidence update, not new flooding, and firing on every one of those would be
  * exactly the alert fatigue docs/03-architecture.md's anti-fatigue rules warn against.
+ *
+ * An event already past its own `expiresAt` is skipped too, regardless of transport.
+ * A device syncing against a server holding a long history (a first sync after being
+ * offline a while, or the first sync ever against a server that has been running for
+ * days) can pull a large batch of old events in one drain, and without this check every
+ * one of them that falls inside the home radius would fire a notification — including
+ * ones that expired days ago. The map already renders these correctly as stale via the
+ * reducer's own `isStale` logic; this is a notification-fatigue fix only, not a display
+ * one, and it applies equally to mesh-relayed backlogs, not just server sync.
  */
 class GeofenceNotifier(private val context: Context) {
     fun start(scope: CoroutineScope) {
@@ -36,9 +45,15 @@ class GeofenceNotifier(private val context: Context) {
                 if (previous != null) {
                     val home = HomeLocationStore.get(context)
                     if (home != null) {
+                        val now = System.currentTimeMillis()
                         events
                             .asSequence()
-                            .filter { it.id !in previous && it.type == "flood_report" && it.origin != "seed" }
+                            .filter {
+                                it.id !in previous &&
+                                    it.type == "flood_report" &&
+                                    it.origin != "seed" &&
+                                    it.expiresAt > now
+                            }
                             .forEach { event ->
                                 val distance = haversineMeters(home.lat, home.lon, event.lat, event.lon)
                                 if (distance <= home.radiusMeters) {
