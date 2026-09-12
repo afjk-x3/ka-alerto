@@ -93,6 +93,8 @@ fun MapScreen(
     onStartReportAt: ((lat: Double, lon: Double) -> Unit)? = null,
     stormMode: Boolean = false,
     onToggleStormMode: (() -> Unit)? = null,
+    /** Non-null while unregistered — Tama / Iba na go through PRD §9's registration first. */
+    onNeedsRegistration: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -255,6 +257,12 @@ fun MapScreen(
             onCheckInPerson = { lat, lon ->
                 selectedFeatureRef = null
                 onStartReportAt?.invoke(lat, lon)
+            },
+            onNeedsRegistration = onNeedsRegistration?.let { needs ->
+                {
+                    selectedFeatureRef = null
+                    needs()
+                }
             },
         )
     } else if (selectedFeatureRef != null && selectedSummary == null) {
