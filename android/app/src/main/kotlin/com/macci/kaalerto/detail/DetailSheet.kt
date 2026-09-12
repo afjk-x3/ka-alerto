@@ -177,7 +177,10 @@ fun DetailSheet(
                 Spacer(Modifier.height(8.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     ActionBar(
-                        label = "Tama",
+                        // Both actions await a GPS fix (ConfirmDisputeSubmit), which can take
+                        // seconds. `submitting` used to only block a double-tap; a button that
+                        // swallows the press and changes nothing reads as broken.
+                        label = if (submitting) "Kinukuha…" else "Tama",
                         icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
                             if (submitting) return@ActionBar
@@ -192,7 +195,7 @@ fun DetailSheet(
                         modifier = Modifier.weight(1f),
                     )
                     ActionBar(
-                        label = "Iba na",
+                        label = if (submitting) "Kinukuha…" else "Iba na",
                         icon = { tint -> XIcon(tint, Modifier.size(18.dp)) },
                         onClick = { showDisputeDialog = true },
                         background = MaterialTheme.colorScheme.background,
