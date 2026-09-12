@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permits plain-HTTP connections app-wide so `sync/ServerSyncLoop.kt` can reach a
+  locally-hosted demo server with no HTTPS. See
+  specs/2026-09-12-server-sync-design.md's "Cleartext traffic exception" section for why
+  this cannot be scoped narrower: Android's network security config only matches by
+  hostname, never by IP/CIDR range, and the server's actual address is whatever a person
+  types into Profile at runtime — there is nothing static to scope a <domain-config> to.
+  The only cleartext call this app ever makes is that one sync request; every other
+  network call this app makes (tile loading, geocoding) already uses HTTPS regardless of
+  what this policy permits.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
