@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -144,6 +145,10 @@ fun MapScreen(
     val geofenceRadius = homeDraft?.radiusMeters?.toDouble() ?: savedHome?.radiusMeters ?: 0.0
     val isOnline by rememberIsOnline()
     val showChrome = !pickMode && homeDraft == null
+
+    // Back while adjusting a home radius cancels the draft, same as its "cancel" button,
+    // instead of closing the app out from under it.
+    BackHandler(enabled = homeDraft != null) { homeDraft = null }
 
     Column(modifier = modifier.fillMaxSize()) {
         // Map-Normal.dc.html's header ("Brgy. ... · synced/report status") is only

@@ -1,5 +1,6 @@
 package com.macci.kaalerto.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -15,6 +16,13 @@ import com.macci.kaalerto.report.ReportScreen
 @Composable
 fun KaAlertoApp(modifier: Modifier = Modifier, stormMode: Boolean = false, onToggleStormMode: (() -> Unit)? = null) {
     var screen by remember { mutableStateOf<Screen>(Screen.Map) }
+
+    // There is no navigation back stack, so without this the system Back button on the
+    // report form or the map-tap picker finishes the activity — closing the app and
+    // throwing away a half-filled report. Back now does what the on-screen arrow and
+    // the picker's cancel already do: return to the map. On the map itself it stays
+    // unhandled, so Back leaves the app as usual.
+    BackHandler(enabled = screen != Screen.Map) { screen = Screen.Map }
 
     when (val current = screen) {
         Screen.Map -> MapScreen(
