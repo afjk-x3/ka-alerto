@@ -16,10 +16,13 @@ import java.net.URL
 /**
  * The second of this app's three transports (`docs/03-architecture.md` §2): a plain-HTTP
  * client for the already-built `server/`, scoped to [SYNCED_TYPES] only (see
- * `sync/ServerSync.kt`). Runs as a coroutine loop from `KaAlertoApplication`, the same
- * shape as `family/CircleCheckInNotifier.kt`/`geofence/GeofenceNotifier.kt` — no
- * WorkManager, no foreground service, because an HTTP call is quick and does not need a
- * held-open connection the way `mesh/MeshService.kt`'s Nearby Connections session does.
+ * `sync/ServerSync.kt`) on *both* push and pull — the server has no write auth either, so
+ * an unfiltered pull would let anyone who can reach it inject `sos*`/`role_*` events into
+ * every syncing device, not just read them back. Runs as a coroutine loop from
+ * `KaAlertoApplication`, the same shape as
+ * `family/CircleCheckInNotifier.kt`/`geofence/GeofenceNotifier.kt` — no WorkManager, no
+ * foreground service, because an HTTP call is quick and does not need a held-open
+ * connection the way `mesh/MeshService.kt`'s Nearby Connections session does.
  *
  * A blank/unset server URL (`SyncPrefs.getServerUrl` returning null) makes every cycle a
  * no-op — a device with no server nearby behaves exactly as it does today, the same
@@ -30,6 +33,7 @@ class ServerSyncLoop(private val context: Context) {
     fun start(scope: CoroutineScope) {
         scope.launch {
             val repository = EventRepository(KaAlertoDatabase.getInstance(context).eventDao())
+            var consecutiveFailures = 0
             while (isActive) {
                 val baseUrl = SyncPrefs.getServerUrl(context)
                 if (!baseUrl.isNullOrBlank()) {
@@ -37,24 +41,62 @@ class ServerSyncLoop(private val context: Context) {
                     val pulled = runCatching { pullDelta(baseUrl, repository) }.isSuccess
                     if (pushed || pulled) {
                         SyncPrefs.setLastSyncedAtMs(context, System.currentTimeMillis())
+                        consecutiveFailures = 0
+                    } else {
+                        consecutiveFailures++
                     }
                 }
-                delay(SYNC_INTERVAL_MS)
+                delay(
+                    nextSyncDelayMs(
+                        consecutiveFailures = consecutiveFailures,
+                        normalIntervalMs = SYNC_INTERVAL_MS,
+                        backedOffIntervalMs = BACKED_OFF_INTERVAL_MS,
+                        failureThreshold = BACKOFF_FAILURE_THRESHOLD,
+                    ),
+                )
             }
         }
     }
 
+    /** Splits into chunks under the server's own `MAX_BATCH_SIZE` (`server/src/server.js`)
+     * so a large qualifying local event count never sends one oversized, permanently-413
+     * request — see `ServerSync.chunkForPush`. A failing chunk throws and fails the whole
+     * cycle via the caller's `runCatching`, same as any other push failure; the next cycle
+     * retries the entire filtered set unchanged, matching this feature's existing
+     * no-push-cursor design. */
     private suspend fun pushBatch(baseUrl: String, repository: EventRepository) {
         val toPush = eventsToSync(repository.all())
         if (toPush.isEmpty()) return
-        postJson(buildBatchUrl(baseUrl), encodeBatchRequest(toPush))
+        val url = buildBatchUrl(baseUrl)
+        chunkForPush(toPush).forEach { chunk ->
+            postJson(url, encodeBatchRequest(chunk))
+        }
     }
 
-    /** Loops on `hasMore` so a backlog drains in one cycle rather than trickling one page
-     * every [SYNC_INTERVAL_MS]. */
+    /**
+     * Loops on `hasMore` so a backlog drains in one cycle rather than trickling one page
+     * every [SYNC_INTERVAL_MS]. Before that loop, validates the locally-stored cursor
+     * against the server's own current cursor (`GET /health`) and resets to 0 if the local
+     * cursor is higher than anything the server could have issued — see
+     * `ServerSync.cursorIsStale`'s doc comment for why that situation is otherwise a
+     * permanently dead pull path that reports as healthy. A failed health check (network
+     * error, bad response) is swallowed here rather than failing the cycle — it means "no
+     * answer to validate against this time," not "the cursor is definitely stale."
+     *
+     * Every pulled event is filtered through [eventsToSync] before insertion, the same
+     * filter `pushBatch` applies going the other way — the server accepts writes from
+     * anyone (ground rule 4, no auth), so an unfiltered pull would let `sos`/`role_*`
+     * events injected by any device that can reach the server land on every other synced
+     * device, not just ones physically nearby the way the mesh requires.
+     */
     private suspend fun pullDelta(baseUrl: String, repository: EventRepository) {
         val bounds = DemoArea.bounds
         var cursor = SyncPrefs.getCursor(context)
+        val serverCursor = runCatching { decodeHealthCursor(getJson(buildHealthUrl(baseUrl))) }.getOrNull()
+        if (serverCursor != null && cursorIsStale(cursor, serverCursor)) {
+            cursor = 0L
+            SyncPrefs.setCursor(context, cursor)
+        }
         var hasMore = true
         while (hasMore) {
             val url = buildPullUrl(
@@ -68,7 +110,7 @@ class ServerSyncLoop(private val context: Context) {
             val page = decodePullResponse(getJson(url))
                 ?: error("GET $url did not decode to the expected pull-response shape")
             if (page.events.isNotEmpty()) {
-                repository.insert(stampServerOrigin(page.events))
+                repository.insert(stampServerOrigin(eventsToSync(page.events)))
             }
             cursor = page.nextCursor
             SyncPrefs.setCursor(context, cursor)
@@ -108,6 +150,12 @@ class ServerSyncLoop(private val context: Context) {
         /** A starting guess, easy to tune once this is running against a real server on
          * a real network — no reason to treat it as fixed. */
         const val SYNC_INTERVAL_MS = 30_000L
+
+        /** The interval once [BACKOFF_FAILURE_THRESHOLD] consecutive cycles have produced
+         * no successful push or pull — see `ServerSync.nextSyncDelayMs`. */
+        const val BACKED_OFF_INTERVAL_MS = 5 * 60_000L
+        const val BACKOFF_FAILURE_THRESHOLD = 3
+
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
     }

@@ -23,8 +23,23 @@ object SyncPrefs {
      */
     fun getServerUrl(context: Context): String? = prefs(context).getString(KEY_SERVER_URL, null)?.ifBlank { null }
 
+    /**
+     * Changing the server address resets the pull cursor to 0. A cursor is meaningless
+     * outside the server that issued it (`server/src/db.js`'s `seq` is a per-database
+     * monotonic counter, not a global one) — carrying an old cursor over to a new address
+     * would make `pullDelta` request `since=<a value the new server never issued>` and
+     * silently get nothing back forever. This covers a changed address; a *same* address
+     * whose underlying database was reset is covered separately by
+     * `ServerSync.cursorIsStale` comparing against the server's own `/health` cursor at the
+     * start of every pull cycle.
+     */
     fun setServerUrl(context: Context, url: String?) {
+        val newValue = url?.trim()?.ifBlank { null }
+        val previous = getServerUrl(context)
         prefs(context).edit().putString(KEY_SERVER_URL, url).apply()
+        if (newValue != previous) {
+            setCursor(context, 0L)
+        }
     }
 
     /**

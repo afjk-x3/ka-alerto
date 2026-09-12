@@ -52,6 +52,19 @@ same server, not just ones within relay range at the right moment.
   `family/CircleEvents.kt`'s disclosed mesh residual). Widening sync to
   those types would be a real privacy step down and needs its own
   explicit decision later, not a side effect of this pass.
+  **The `SYNCED_TYPES` filter is symmetric — applied on pull as well as
+  push.** The server also has no *write* auth: `POST /events/batch`
+  accepts anything from anyone, by design (ground rule 4). An
+  unfiltered pull would mean any device that can reach the server —
+  not just one physically nearby, unlike the mesh — could inject
+  `sos`/`role_*` events into every syncing device, including ones that
+  fire the alarm-stream, DND-bypassing SOS notification channel
+  (`sos/SosAlertWatcher.kt`). Filtering only the outbound side would
+  have closed the read-privacy gap while leaving this write-injection
+  gap wide open, so `sync/ServerSyncLoop.kt`'s `pullDelta` runs pulled
+  events through `eventsToSync(...)` before ever calling
+  `repository.insert(...)`, the identical filter `pushBatch` already
+  applies going the other way.
 - **No HTTPS, no certificate pinning, no signing.** The demo server runs
   on a plain-HTTP laptop on the local network. A scoped cleartext
   exception (below) is the extent of the transport security work here.

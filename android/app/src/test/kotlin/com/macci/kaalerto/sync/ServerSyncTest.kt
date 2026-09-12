@@ -2,6 +2,7 @@ package com.macci.kaalerto.sync
 
 import com.macci.kaalerto.data.Event
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -133,5 +134,61 @@ class ServerSyncTest {
 
         assertTrue(stamped.all { it.origin == "server" })
         assertEquals(2, stamped.last().hopCount) // hopCount is untouched — not a mesh hop measure here
+    }
+
+    @Test
+    fun `buildHealthUrl appends the health path to the normalized base`() {
+        assertEquals("http://192.168.1.42:3000/health", buildHealthUrl("192.168.1.42:3000"))
+    }
+
+    @Test
+    fun `decodeHealthCursor reads the cursor field`() {
+        assertEquals(42L, decodeHealthCursor("""{"ok":true,"cursor":42}"""))
+    }
+
+    @Test
+    fun `decodeHealthCursor returns null for garbage rather than throwing`() {
+        assertNull(decodeHealthCursor("not json"))
+        assertNull(decodeHealthCursor("""{"wrong":"shape"}"""))
+    }
+
+    @Test
+    fun `cursorIsStale is true only when the local cursor exceeds what the server could have issued`() {
+        assertTrue(cursorIsStale(localCursor = 50, serverCursor = 10))
+        assertTrue(cursorIsStale(localCursor = 1, serverCursor = 0))
+        assertFalse(cursorIsStale(localCursor = 10, serverCursor = 50))
+        assertFalse(cursorIsStale(localCursor = 10, serverCursor = 10))
+        assertFalse(cursorIsStale(localCursor = 0, serverCursor = 0))
+    }
+
+    @Test
+    fun `chunkForPush leaves a batch under the cap in a single chunk`() {
+        val events = (1..10).map { event("e$it", "flood_report") }
+
+        assertEquals(1, chunkForPush(events).size)
+        assertEquals(10, chunkForPush(events).single().size)
+    }
+
+    @Test
+    fun `chunkForPush splits a batch over the cap into multiple requests, no event lost or duplicated`() {
+        val events = (1..950).map { event("e$it", "flood_report") }
+
+        val chunks = chunkForPush(events)
+
+        assertTrue(chunks.size > 1)
+        assertTrue(chunks.all { it.size <= MAX_PUSH_CHUNK_SIZE })
+        assertEquals(events.map { it.id }, chunks.flatten().map { it.id })
+    }
+
+    @Test
+    fun `nextSyncDelayMs stays at the normal interval below the failure threshold`() {
+        assertEquals(30_000L, nextSyncDelayMs(consecutiveFailures = 0, normalIntervalMs = 30_000L, backedOffIntervalMs = 300_000L, failureThreshold = 3))
+        assertEquals(30_000L, nextSyncDelayMs(consecutiveFailures = 2, normalIntervalMs = 30_000L, backedOffIntervalMs = 300_000L, failureThreshold = 3))
+    }
+
+    @Test
+    fun `nextSyncDelayMs backs off once the failure threshold is reached`() {
+        assertEquals(300_000L, nextSyncDelayMs(consecutiveFailures = 3, normalIntervalMs = 30_000L, backedOffIntervalMs = 300_000L, failureThreshold = 3))
+        assertEquals(300_000L, nextSyncDelayMs(consecutiveFailures = 10, normalIntervalMs = 30_000L, backedOffIntervalMs = 300_000L, failureThreshold = 3))
     }
 }
