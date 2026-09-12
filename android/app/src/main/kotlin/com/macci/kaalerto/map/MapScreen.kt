@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -196,6 +197,7 @@ fun MapScreen(
                 },
                 geofenceCenter = geofenceCenter,
                 geofenceRadius = geofenceRadius,
+                stormMode = stormMode,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -379,6 +381,8 @@ private fun MapLibreMapView(
     onLongPress: ((LatLng) -> Unit)?,
     geofenceCenter: Pair<Double, Double>?,
     geofenceRadius: Double,
+    /** Day 5's declared condition. Re-tints the basemap — see map/StormMapStyle.kt. */
+    stormMode: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -388,6 +392,31 @@ private fun MapLibreMapView(
     // time this composable enters, so it is called here rather than in the observer.
     val mapView = remember { MapView(context).apply { onCreate(null) } }
     var maplibreMap by remember { mutableStateOf<MapLibreMap?>(null) }
+    // Bumped on every style load. The marker effects key on it because replacing the
+    // style throws away every source and layer we added, including ours — without this
+    // a Storm toggle would leave the basemap re-tinted and the markers gone.
+    var styleEpoch by remember { mutableIntStateOf(0) }
+    var cameraPlaced by remember { mutableStateOf(false) }
+
+    // Storm restyles the loaded style in place rather than swapping to a dark style URL,
+    // because offline packs are style-scoped — see map/StormMapStyle.kt. Reloading is
+    // what makes the tint reversible, and it reads from the pack, so it works offline.
+    LaunchedEffect(maplibreMap, stormMode) {
+        val map = maplibreMap ?: return@LaunchedEffect
+        map.setStyle(DemoArea.STYLE_URL) { style ->
+            applyStormTint(style, stormMode)
+            if (!cameraPlaced) {
+                map.moveCamera(
+                    CameraUpdateFactory.newLatLngZoom(DemoArea.centre, DemoArea.INITIAL_ZOOM)
+                )
+                cameraPlaced = true
+            }
+            if (showLocation) {
+                enableBlueDot(map.locationComponent, context, style)
+            }
+            styleEpoch++
+        }
+    }
 
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
@@ -409,11 +438,13 @@ private fun MapLibreMapView(
     // Markers are pushed reactively once the style is loaded, instead of inside the
     // AndroidView `update` block — that block used to call `setStyle` on every
     // recomposition, which reloaded the whole style each time the event list changed.
-    LaunchedEffect(maplibreMap, featureSummaries) {
+    LaunchedEffect(maplibreMap, styleEpoch, featureSummaries) {
+        if (styleEpoch == 0) return@LaunchedEffect
         maplibreMap?.style?.let { updateEventMarkers(it, featureSummaries) }
     }
 
-    LaunchedEffect(maplibreMap, geofenceCenter, geofenceRadius) {
+    LaunchedEffect(maplibreMap, styleEpoch, geofenceCenter, geofenceRadius) {
+        if (styleEpoch == 0) return@LaunchedEffect
         maplibreMap?.style?.let { updateGeofenceCircle(it, geofenceCenter, geofenceRadius) }
     }
 
@@ -466,18 +497,10 @@ private fun MapLibreMapView(
         factory = { mapView },
         modifier = modifier,
         update = { view ->
+            // The style is loaded by the LaunchedEffect above, not here: it has to be
+            // reloaded when Storm toggles, and this block runs on every recomposition.
             if (maplibreMap == null) {
-                view.getMapAsync { map ->
-                    map.setStyle(DemoArea.STYLE_URL) { style ->
-                        map.moveCamera(
-                            CameraUpdateFactory.newLatLngZoom(DemoArea.centre, DemoArea.INITIAL_ZOOM)
-                        )
-                        if (showLocation) {
-                            enableBlueDot(map.locationComponent, context, style)
-                        }
-                        maplibreMap = map
-                    }
-                }
+                view.getMapAsync { map -> maplibreMap = map }
             }
         },
     )
