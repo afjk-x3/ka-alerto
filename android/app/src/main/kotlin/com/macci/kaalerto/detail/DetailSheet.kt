@@ -47,8 +47,6 @@ import com.macci.kaalerto.report.WaterLevelOption
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 private fun colorFor(severity: String): Color =
     Color(android.graphics.Color.parseColor(SeverityColors.forSeverity(severity)))
@@ -61,16 +59,6 @@ private fun roleLabel(role: String): String = when (role) {
     "responder" -> "Responder"
     else -> "Resident"
 }
-
-private fun originLabel(event: Event): String = when (event.origin) {
-    "mesh" -> "Mesh"
-    "sms" -> "SMS"
-    "server" -> "Server"
-    "seed" -> "Seed data"
-    else -> "Direkta" // local — authored on this device
-}
-
-private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
 
 private fun ageLabel(ms: Long): String {
     val minutes = ms / 60_000
@@ -145,23 +133,25 @@ fun DetailSheet(
                     Text("HULING ULAT", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(ageLabel(System.currentTimeMillis() - summary.lastEventMs), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        timeFormat.format(summary.lastEventMs),
+                        reportedAtLabel(summary.lastEventMs),
                         style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 InfoCard(modifier = Modifier.weight(1f)) {
-                    Text("PAANO DUMATING", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // "Saan galing" (where from) rather than the artboard's "Paano dumating"
+                    // (how did it arrive) — the plainer question for a resident reading fast.
+                    val origin = originText(anchorEvent.origin, anchorEvent.hopCount)
+                    Text("SAAN GALING", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (anchorEvent.origin == "mesh") {
                             MeshIcon(tint = colors.safeFg, modifier = Modifier.size(15.dp))
                             Spacer(Modifier.size(6.dp))
                         }
-                        Text(originLabel(anchorEvent), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(origin.main, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
-                    if (anchorEvent.origin == "mesh" && anchorEvent.hopCount > 0) {
-                        Text("${anchorEvent.hopCount} hops", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    origin.helper?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -418,12 +408,20 @@ private fun ConflictReportRow(event: Event) {
     val (fil, en) = severityTextFor(event.severity ?: "S0")
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(modifier = Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                timeFormat.format(event.timestampMs),
-                style = MaterialTheme.typography.bodyMedium,
-                fontFamily = FontFamily.Monospace,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            // Day above time: the two sides of a conflict can be hours or days apart.
+            Column {
+                Text(
+                    reportedDayLabel(event.timestampMs),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    reportedTimeLabel(event.timestampMs),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             Spacer(Modifier.size(13.dp))
             Column(modifier = Modifier.weight(1f)) {
                 val levelLabel = event.waterLevel?.let { resolveLevelOption(it)?.fil ?: it }
@@ -458,6 +456,7 @@ private fun EventHistoryRow(event: Event) {
             if (detail.isNotBlank()) {
                 Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            Text(reportedAtLabel(event.timestampMs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(ageLabel(System.currentTimeMillis() - event.timestampMs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
