@@ -44,7 +44,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.data.severityTextFor
+import com.macci.kaalerto.demo.isInDemoArea
+import com.macci.kaalerto.location.PlaceLookup
+import com.macci.kaalerto.location.rememberPlaceName
 import com.macci.kaalerto.net.rememberIsOnline
+import com.macci.kaalerto.sos.coord
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
@@ -63,6 +67,7 @@ fun ReportScreen(
     val scope = rememberCoroutineScope()
     val colors = LocalKaAlertoColors.current
     val isOnline by rememberIsOnline()
+    val place = rememberPlaceName(initialLat, initialLon, allowNetwork = true)
 
     var mode by remember { mutableStateOf(ReportMode.BODY) }
     // An index into the current mode's 4 options, not an id: switching between Katawan
@@ -97,9 +102,10 @@ fun ReportScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Location card. Shows raw coordinates, not a resolved street name like the
-        // artboard's "Sampaloc St" — that needs reverse geocoding against the bundled
-        // OSM route data, a real feature no build day has scheduled yet, not a UI change.
+        // Location card: a place name first, like the artboard's "Sampaloc St", then the
+        // coordinates. Inside the demo area the name comes from the bundled OSM streets and
+        // landmarks, so it works offline; outside it, only from the phone's geocoder when
+        // online (location/PlaceNames.kt). The coordinates never wait for the name.
         Surface(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             border = BorderStroke(1.dp, colors.border),
@@ -111,14 +117,31 @@ fun ReportScreen(
                 Icon(Icons.Filled.LocationOn, contentDescription = null, tint = colors.safeFg)
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
+                    val (placeTitle, placeDetail) = when (place) {
+                        is PlaceLookup.Found -> place.place.primary to place.place.secondary
+                        PlaceLookup.Looking -> "Hinahanap ang lugar…" to null
+                        PlaceLookup.Unknown ->
+                            if (isInDemoArea(initialLat, initialLon)) {
+                                "Hindi kilala ang lugar" to null
+                            } else {
+                                "Labas sa demo area" to if (isOnline) "Hindi mahanap ang pangalan ng lugar" else "Kailangan ng internet para sa pangalan ng lugar"
+                            }
+                    }
                     Text(
-                        "%.5f, %.5f".format(initialLat, initialLon),
+                        placeTitle,
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
+                    if (placeDetail != null) {
+                        Text(
+                            placeDetail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                     val accuracyText = initialAccuracyMeters?.let { "GPS ±${it.toInt()} m" } ?: "Itinakda sa mapa"
                     Text(
-                        accuracyText,
+                        "${coord(initialLat)}, ${coord(initialLon)} · $accuracyText",
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

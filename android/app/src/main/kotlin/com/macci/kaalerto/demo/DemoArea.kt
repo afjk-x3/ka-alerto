@@ -1,5 +1,7 @@
 package com.macci.kaalerto.demo
 
+import com.macci.kaalerto.data.haversineMeters
+import kotlin.math.roundToInt
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 
@@ -37,13 +39,25 @@ object DemoArea {
     /** Header display name for the map screen — matches the frozen demo area above. */
     const val BARANGAY_NAME = "Brgy. San Juan Bautista"
 
+    /** The town and province, for place labels outside the header. */
+    const val MUNICIPALITY = "San Nicolas, Ilocos Norte"
+
+    // Plain constants as well as [bounds], so [isInDemoArea] can be unit-tested without
+    // touching MapLibre classes (const reads are inlined; they never initialise this object).
+    const val NORTH = 18.1760
+    const val SOUTH = 18.1660
+    const val EAST = 120.6130
+    const val WEST = 120.5990
+    const val CENTRE_LAT = 18.1709
+    const val CENTRE_LON = 120.6058
+
     val bounds: LatLngBounds = LatLngBounds.Builder()
-        .include(LatLng(18.1760, 120.6130))  // north-east
-        .include(LatLng(18.1660, 120.5990))  // south-west
+        .include(LatLng(NORTH, EAST))
+        .include(LatLng(SOUTH, WEST))
         .build()
 
     /** PhilAtlas centroid — see class doc. */
-    val centre: LatLng = LatLng(18.1709, 120.6058)
+    val centre: LatLng = LatLng(CENTRE_LAT, CENTRE_LON)
 
     /**
      * Zoom envelope for the offline pack.
@@ -87,3 +101,11 @@ object DemoArea {
     /** Identifies our region among any others in MapLibre's offline database. */
     const val REGION_NAME = "kaalerto-demo-area"
 }
+
+/** Inside [DemoArea.bounds] — the only area the offline map and the sample reports cover. */
+fun isInDemoArea(lat: Double, lon: Double): Boolean =
+    lat in DemoArea.SOUTH..DemoArea.NORTH && lon in DemoArea.WEST..DemoArea.EAST
+
+/** Straight-line distance from the demo area's centre, in whole kilometres, never below 1. */
+fun kmFromDemoArea(lat: Double, lon: Double): Int =
+    (haversineMeters(lat, lon, DemoArea.CENTRE_LAT, DemoArea.CENTRE_LON) / 1000).roundToInt().coerceAtLeast(1)

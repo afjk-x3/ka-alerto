@@ -51,6 +51,9 @@ fun rememberIsOnline(): State<Boolean> {
     return isOnline
 }
 
+/** A one-off check, for code that is not a composable. */
+fun isOnlineNow(context: Context): Boolean = currentlyOnline(context.getSystemService<ConnectivityManager>())
+
 private fun currentlyOnline(connectivityManager: ConnectivityManager?): Boolean {
     val network = connectivityManager?.activeNetwork ?: return false
     val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false

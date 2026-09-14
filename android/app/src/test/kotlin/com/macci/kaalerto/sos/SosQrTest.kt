@@ -58,6 +58,14 @@ class SosQrTest {
     }
 
     @Test
+    fun `a known place name goes on its own line just above the coordinates`() {
+        val payload = rescueCardPayload(full.copy(placeName = "Sotto Street, Brgy. San Juan Bautista, San Nicolas, Ilocos Norte"), manila)
+        val lines = payload.lines()
+        assertEquals("Sotto Street, Brgy. San Juan Bautista, San Nicolas, Ilocos Norte", lines[2])
+        assertTrue(lines[3].startsWith("18.17090, 120.60580"))
+    }
+
+    @Test
     fun `the time on the card is Philippine time even on a phone set to another zone`() {
         val saved = java.util.TimeZone.getDefault()
         try {

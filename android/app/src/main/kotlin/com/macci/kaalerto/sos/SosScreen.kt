@@ -49,7 +49,9 @@ import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.detail.reportedAtLabel
 import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.identity.displayFormOf
+import com.macci.kaalerto.location.PlaceName
 import com.macci.kaalerto.location.fetchCurrentLocation
+import com.macci.kaalerto.location.lookupPlaceName
 import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
 
@@ -86,6 +88,7 @@ fun SosScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var people by remember { mutableStateOf<PeopleCount?>(null) }
     var locating by remember { mutableStateOf(true) }
     var location by remember { mutableStateOf<Location?>(null) }
+    var place by remember { mutableStateOf<PlaceName?>(null) }
     val createdAtMs = remember { System.currentTimeMillis() }
     val name = remember {
         if (LocalIdentity.isRegistered(context)) {
@@ -99,8 +102,13 @@ fun SosScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Bounded at 6 s plus a recent last-known fix (location/LocationFetcher.kt), so the
     // card never waits on a phone that cannot get a lock.
     LaunchedEffect(Unit) {
-        location = fetchCurrentLocation(context)
+        val fix = fetchCurrentLocation(context)
+        location = fix
         locating = false
+        // Bundled data only, never the network geocoder: this screen says on its face
+        // that it sends nothing, and a geocoding lookup would send the coordinates out.
+        // Inside the demo area that still names the street; elsewhere it names nothing.
+        if (fix != null) place = lookupPlaceName(context, fix.latitude, fix.longitude, allowNetwork = false)
     }
 
     // "Readable through a window" is a brightness claim as much as a contrast one, so the
@@ -126,6 +134,7 @@ fun SosScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         accuracyMeters = location?.accuracy,
         people = people,
         createdAtMs = createdAtMs,
+        placeName = place?.oneLine,
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -181,6 +190,11 @@ fun SosScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     locating -> CardValue("Kinukuha ang lokasyon…")
                     fix == null -> CardValue("Hindi makuha ang lokasyon. Ilarawan ang lugar sa rescuer.")
                     else -> {
+                        place?.let { named ->
+                            Text(named.primary, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = SosColors.CardInk)
+                            named.secondary?.let { Text(it, fontSize = 16.sp, color = SosColors.CardInk) }
+                            Spacer(Modifier.height(6.dp))
+                        }
                         Coordinate(coord(fix.latitude))
                         Coordinate(coord(fix.longitude))
                         Text(

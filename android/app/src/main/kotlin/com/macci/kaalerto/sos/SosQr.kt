@@ -26,6 +26,8 @@ data class RescueCardInfo(
     val accuracyMeters: Float?,
     val people: PeopleCount?,
     val createdAtMs: Long,
+    /** "Sotto Street, Brgy. San Juan Bautista, …" when the bundled data can name the spot. */
+    val placeName: String? = null,
 )
 
 /**
@@ -50,6 +52,7 @@ fun rescueCardPayload(info: RescueCardInfo, zone: ZoneId = PHILIPPINE_TIME): Str
 
     val hasFix = info.lat != null && info.lon != null
     if (hasFix) {
+        info.placeName?.trim()?.takeIf { it.isNotEmpty() }?.let { lines += it }
         val accuracy = info.accuracyMeters?.let { " (+/-${it.roundToInt()} m)" }.orEmpty()
         lines += "${coord(info.lat!!)}, ${coord(info.lon!!)}$accuracy"
     } else {
