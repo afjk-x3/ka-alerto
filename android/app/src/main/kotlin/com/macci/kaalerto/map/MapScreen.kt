@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -172,6 +173,9 @@ fun MapScreen(
         }
     }
     var homeDraft by remember { mutableStateOf<HomeDraft?>(null) }
+    // Back while adjusting a home radius cancels the draft, same as its cancel button,
+    // instead of closing the app out from under it.
+    BackHandler(enabled = homeDraft != null) { homeDraft = null }
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
     var selectedSeverities by remember { mutableStateOf(ALL_SEVERITIES.toSet()) }
     var recencyFilter by remember { mutableStateOf(RecencyFilter.ALL) }

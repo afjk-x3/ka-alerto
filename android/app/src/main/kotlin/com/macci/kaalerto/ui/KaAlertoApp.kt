@@ -1,5 +1,6 @@
 package com.macci.kaalerto.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -263,6 +264,25 @@ fun KaAlertoApp(
      */
     fun gated(destination: Screen): Screen =
         if (LocalIdentity.isRegistered(context)) destination else Screen.Onboarding(destination)
+
+    // No back stack on this branch, so without this the system Back button would finish
+    // the activity from any screen. Each target is what that screen's own back/cancel
+    // control already does. Null means "leave it to the system", i.e. leave the app.
+    // Ported from passable-v0 (0987318).
+    val backTarget: Screen? = when (val current = screen) {
+        Screen.Map -> null
+        // Back on the first-run gate leaves the app; it must never skip registration.
+        is Screen.Onboarding -> if (LocalIdentity.isRegistered(context)) Screen.Map else null
+        is Screen.Profile -> current.resume
+        Screen.PickHome -> pickHomeReturn
+        is Screen.SosAddContext -> Screen.SosStatus(current.sosId)
+        is Screen.SosRescueCard -> Screen.SosStatus(current.sosId)
+        Screen.QrScanner, Screen.MyCircleQr -> Screen.FamilyCircle
+        else -> Screen.Map
+    }
+    BackHandler(enabled = drawerOpen || backTarget != null) {
+        if (drawerOpen) drawerOpen = false else backTarget?.let { screen = it }
+    }
 
     CompositionLocalProvider(LocalAppLanguage provides language) {
     // Edge-to-edge is on (MainActivity.kt) so the OS draws status/nav bars translucent
