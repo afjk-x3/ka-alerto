@@ -110,11 +110,3 @@ The full target design — 29 screens across Normal, Storm and Survival modes, i
 3. Open it **once with internet** and wait for the map download to finish.
 4. Allow location and notifications, and register (or tap SOS to skip straight to the rescue screen).
 5. Turn on airplane mode, force-close the app, reopen it — the map, the reports and your own new reports all still work. That's the point.
-
----
-
-## More
-
-[Design canvas](https://claude.ai/code/artifact/f1ee7d2c-1462-4788-bb92-5ed9b289f84a) · [Screens](design/) · [Submissions](submissions/) · [Releases](https://github.com/afjk-x3/ka-alerto/releases)
-
-<sub>Android · Kotlin + Jetpack Compose · MapLibre · Room. Server (not yet connected to the app): Node + Express + <code>node:sqlite</code>.</sub>
