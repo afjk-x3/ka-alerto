@@ -49,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.data.severityTextFor
+import com.macci.kaalerto.i18n.LocalAppLanguage
 import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.report.BODY_LEVELS
 import com.macci.kaalerto.report.BodyIllustration
@@ -60,8 +61,6 @@ import com.macci.kaalerto.report.decodeReportPhotoPayload
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 private fun colorFor(severity: String): Color =
     Color(android.graphics.Color.parseColor(SeverityColors.forSeverity(severity)))
@@ -75,39 +74,6 @@ private fun detailRoleLabel(role: String): String = when (role) {
     "official" -> tr("Kagawad", "Barangay official")
     "responder" -> "Responder"
     else -> tr("Residente", "Resident")
-}
-
-@Composable
-private fun originLabel(event: Event): String = when (event.origin) {
-    "mesh" -> "Mesh"
-    "sms" -> "SMS"
-    "server" -> tr("Server", "Server")
-    "seed" -> tr("Seed data", "Seed data")
-    else -> tr("Direkta", "Direct") // local — authored on this device
-}
-
-private val timeFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
-
-// Was English-only in both languages before this pass — CLAUDE.md's own known-issues
-// list flagged "18 min ago" as a stray English string on an otherwise-Filipino screen.
-@Composable
-private fun ageLabel(ms: Long): String {
-    val minutes = ms / 60_000
-    return when {
-        minutes < 1 -> tr("Ngayon lang", "Just now")
-        minutes < 60 -> tr("$minutes min ang nakalipas", "$minutes min ago")
-        else -> tr("${minutes / 60}h ${minutes % 60}m ang nakalipas", "${minutes / 60}h ${minutes % 60}m ago")
-    }
-}
-
-// Also flagged in CLAUDE.md's known issues: these were English-only regardless of
-// the rest of the screen being Filipino.
-@Composable
-private fun bucketLabel(bucket: String): String = when (bucket) {
-    "official" -> tr("Opisyal", "Official")
-    "confirmed" -> tr("Kumpirmado", "Confirmed")
-    "likely" -> tr("Malamang", "Likely")
-    else -> tr("Hindi pa beripikado", "Unverified")
 }
 
 /** Slug featureRefs (geohash cells) get a generic label; seed data's named-street slugs get prettified. */
@@ -141,6 +107,7 @@ fun DetailSheet(
     var showDisputeDialog by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+    val language = LocalAppLanguage.current
     val latestReport = summary.events.firstOrNull { it.type == "flood_report" }
 
     // Lighter than the default scrim: the map behind stays dimly visible rather than
@@ -158,7 +125,7 @@ fun DetailSheet(
                     Text(featureDisplayName(summary.featureRef), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                     if (summary.isStale) {
                         Text(
-                            tr("Naka-decay", "Decayed") + " · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs)}",
+                            tr("Naka-decay", "Decayed") + " · ${ageLabel(System.currentTimeMillis() - summary.lastEventMs, language)}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -183,25 +150,25 @@ fun DetailSheet(
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 InfoCard(modifier = Modifier.weight(1f)) {
                     Text(tr("HULING ULAT", "LATEST REPORT"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(ageLabel(System.currentTimeMillis() - summary.lastEventMs), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(ageLabel(System.currentTimeMillis() - summary.lastEventMs, language), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(
-                        timeFormat.format(summary.lastEventMs),
+                        reportedAtLabel(summary.lastEventMs, language),
                         style = MaterialTheme.typography.bodySmall,
-                        fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 InfoCard(modifier = Modifier.weight(1f)) {
-                    Text(tr("PAANO DUMATING", "HOW IT ARRIVED"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val origin = originText(anchorEvent.origin, anchorEvent.hopCount, LocalAppLanguage.current)
+                    Text(tr("SAAN GALING", "WHERE IT CAME FROM"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (anchorEvent.origin == "mesh") {
                             MeshIcon(tint = colors.safeFg, modifier = Modifier.size(15.dp))
                             Spacer(Modifier.size(6.dp))
                         }
-                        Text(originLabel(anchorEvent), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(origin.main, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     }
-                    if (anchorEvent.origin == "mesh" && anchorEvent.hopCount > 0) {
-                        Text("${anchorEvent.hopCount} hops", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    origin.helper?.let {
+                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -494,7 +461,7 @@ private fun ConfidenceSection(summary: FeatureSummary) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ConfidenceIcon(summary.bucket, tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(19.dp))
                     Spacer(Modifier.size(9.dp))
-                    Text(bucketLabel(summary.bucket), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(bucketLabel(summary.bucket, LocalAppLanguage.current), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
@@ -573,7 +540,7 @@ private fun ConflictReportRow(event: Event) {
     Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
         Row(modifier = Modifier.padding(13.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                timeFormat.format(event.timestampMs),
+                reportedAtLabel(event.timestampMs, LocalAppLanguage.current),
                 style = MaterialTheme.typography.bodyMedium,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -614,7 +581,7 @@ private fun EventHistoryRow(event: Event) {
                 Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Text(ageLabel(System.currentTimeMillis() - event.timestampMs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(ageLabel(System.currentTimeMillis() - event.timestampMs, LocalAppLanguage.current), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
