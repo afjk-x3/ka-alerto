@@ -37,6 +37,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -53,6 +54,8 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.macci.kaalerto.data.severityTextFor
 import com.macci.kaalerto.i18n.tr
+import com.macci.kaalerto.location.Place
+import com.macci.kaalerto.location.describePlace
 import com.macci.kaalerto.net.rememberIsOnline
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
@@ -69,6 +72,11 @@ fun ReportScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    // Named from bundled street data when inside the demo area (offline), else by the
+    // phone's geocoder when online. The coordinates never wait for it.
+    val place by produceState<Place?>(initialValue = null, initialLat, initialLon) {
+        value = describePlace(context, initialLat, initialLon)
+    }
     val scope = rememberCoroutineScope()
     val colors = LocalKaAlertoColors.current
     val isOnline by rememberIsOnline()
@@ -122,9 +130,7 @@ fun ReportScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Location card. Shows raw coordinates, not a resolved street name like the
-        // artboard's "Sampaloc St" — that needs reverse geocoding against the bundled
-        // OSM route data, a real feature no build day has scheduled yet, not a UI change.
+        // Location card: a place name first, like the artboard's "Sampaloc St", then the coordinates.
         Surface(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             border = BorderStroke(1.dp, colors.border),
@@ -137,13 +143,13 @@ fun ReportScreen(
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "%.5f, %.5f".format(initialLat, initialLon),
+                        place?.label ?: tr("Hinahanap ang lugar…", "Looking up the place…"),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     val accuracyText = initialAccuracyMeters?.let { "GPS ±${it.toInt()} m" } ?: tr("Itinakda sa mapa", "Set on the map")
                     Text(
-                        accuracyText,
+                        "%.5f, %.5f · %s".format(java.util.Locale.ROOT, initialLat, initialLon, accuracyText),
                         style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
