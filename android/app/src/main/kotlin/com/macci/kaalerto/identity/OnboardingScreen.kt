@@ -43,8 +43,9 @@ import com.macci.kaalerto.sos.SosColors
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /**
- * PRD §9's registration, from `design/artboards/Onboarding.dc.html`: a given name, an
- * optional surname, and a home barangay, once, at first run. No password, no email.
+ * PRD §9's registration, from `design/artboards/Onboarding.dc.html`: a given name, a
+ * surname, and a home barangay, once, at first run — all three required. No password,
+ * no email.
  *
  * Trimmed from feat/event-sourced-roles for this build.
  *
@@ -80,7 +81,7 @@ fun OnboardingScreen(
     onCancel: (() -> Unit)? = null,
 ) {
     var showError by remember { mutableStateOf(false) }
-    val usable = isUsableName(firstName) && isUsableBarangay(barangay)
+    val usable = isCompleteIdentity(firstName, lastName, barangay)
 
     Column(
         modifier = modifier
@@ -124,7 +125,10 @@ fun OnboardingScreen(
                     showError = false
                 },
                 lastName = lastName,
-                onLastNameChange = onLastNameChange,
+                onLastNameChange = {
+                    onLastNameChange(it)
+                    showError = false
+                },
                 showError = showError,
             )
             BarangayField(
@@ -252,14 +256,18 @@ private fun NameFields(
         if (showError && !usable) {
             Text("Kailangan ng pangalan para may pananagutan ang ulat.", fontSize = 12.sp, color = colors.criticalFg)
         }
-        Row(Modifier.padding(top = 6.dp)) { FieldLabel("APELYIDO (HINDI KAILANGAN)") }
+        val surnameMissing = showError && !isUsableSurname(lastName)
+        Row(Modifier.padding(top = 6.dp)) { FieldLabel("APELYIDO") }
         BoxedField(
             value = lastName,
             onValueChange = onLastNameChange,
             hint = "Dela Cruz",
             description = "Apelyido mo",
-            borderColor = colors.border,
+            borderColor = if (surnameMissing) colors.criticalFg else MaterialTheme.colorScheme.onBackground,
         )
+        if (surnameMissing) {
+            Text("Kailangan ang apelyido mo. Unang titik lang nito ang lalabas sa mga ulat.", fontSize = 12.sp, color = colors.criticalFg)
+        }
         Text(
             if (display.isBlank()) "Lalabas ang maikling anyo ng pangalan mo sa mga ulat." else "Lalabas bilang $display sa mga ulat mo",
             fontSize = 12.sp,

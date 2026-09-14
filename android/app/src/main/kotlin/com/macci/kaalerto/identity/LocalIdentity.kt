@@ -34,8 +34,13 @@ object LocalIdentity {
 
     data class Identity(val authorId: String, val authorName: String, val authorRole: String)
 
-    /** Whether PRD §9's registration has been completed on this device. */
-    fun isRegistered(context: Context): Boolean = registeredFirstName(context).isNotBlank()
+    /**
+     * Whether PRD §9's registration has been completed on this device — given name,
+     * surname and barangay. A one-name registration from before the surname was required
+     * is not complete, so the form comes back for it (see [isCompleteIdentity]).
+     */
+    fun isRegistered(context: Context): Boolean =
+        isCompleteIdentity(registeredFirstName(context), registeredLastName(context), homeBarangay(context))
 
     /** For pre-filling the form only — never for an event. */
     fun registeredFirstName(context: Context): String = prefs(context).getString(KEY_FIRST_NAME, null).orEmpty()
