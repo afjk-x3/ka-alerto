@@ -10,7 +10,8 @@
       "seed-report-018",
       "seed-report-019"
     ],
-    "reportCount": 19
+    "reportCount": 19,
+    "timeSpreadNote": "Ages are spread so every recency chip changes what the map shows: most reports within 1 h (the live demo), seed-report-008 at 100 min (3h chip), 005 at 8 h (24h chip), 013 at ~26 h and 010 at 14 days (Kailanman only). The SX pair (018/019) must stay minutes old: the S0 half decays with a 60-min tau and drops under the 0.5 conflict threshold ~42 min after its own timestamp. Offsets are still re-applied on every cold start (SeedLoader), so a seed's age is relative to app launch, not a real submission time."
   },
   "reports": [
     {
@@ -92,12 +93,12 @@
       "authorId": "seed-author-5",
       "authorName": "Aira L.",
       "authorRole": "resident",
-      "timestampMinutesAgo": 180,
+      "timestampMinutesAgo": 480,
       "ttlMinutes": 60,
       "origin": "seed",
       "hopCount": 0,
       "note": "Wala nang tubig dito, humupa na.",
-      "fixtureNote": "Cleared report, deliberately older than its TTL — should read as stale/decayed by the time this loads if TTL logic runs. Not user-facing — the loader ignores this key."
+      "fixtureNote": "Cleared report from earlier in the day (8 h), long past its TTL — renders stale, and is the one report only the 24h chip adds. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-006",
@@ -144,11 +145,12 @@
       "authorId": "seed-author-1",
       "authorName": "Marites A.",
       "authorRole": "resident",
-      "timestampMinutesAgo": 55,
+      "timestampMinutesAgo": 100,
       "ttlMinutes": 120,
       "origin": "seed",
       "hopCount": 0,
-      "note": null
+      "note": null,
+      "fixtureNote": "Placed between 1 h and 3 h so the 3h recency chip shows something the 1h chip does not. Still inside its 120-min TTL, so it renders live, not stale. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-009",
@@ -179,11 +181,12 @@
       "authorId": "seed-author-2",
       "authorName": "Ronnel D.",
       "authorRole": "resident",
-      "timestampMinutesAgo": 200,
+      "timestampMinutesAgo": 20160,
       "ttlMinutes": 120,
       "origin": "seed",
       "hopCount": 0,
-      "note": null
+      "note": null,
+      "fixtureNote": "Two weeks old (14 days) — the oldest thing on the map, so \"Kailanman\" visibly differs from 24h and the detail sheet's month-day label is exercised. Stale. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-011",
@@ -230,11 +233,12 @@
       "authorId": "seed-author-5",
       "authorName": "Aira L.",
       "authorRole": "resident",
-      "timestampMinutesAgo": 90,
+      "timestampMinutesAgo": 1560,
       "ttlMinutes": 60,
       "origin": "seed",
       "hopCount": 0,
-      "note": null
+      "note": null,
+      "fixtureNote": "Cleared report from ~26 h ago — reads \"Kahapon\" (or two days back just after midnight). Outside the 24h chip; only \"Kailanman\" shows it. Stale. Not user-facing — the loader ignores this key."
     },
     {
       "id": "seed-report-014",

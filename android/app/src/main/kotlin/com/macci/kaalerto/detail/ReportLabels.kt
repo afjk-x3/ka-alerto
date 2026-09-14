@@ -25,6 +25,14 @@ fun originText(origin: String, hopCount: Int): OriginText = when (origin) {
     else -> OriginText("Hindi alam kung saan galing", null)
 }
 
+/**
+ * Philippine Standard Time (UTC+8, no daylight saving), not the phone's own zone. A
+ * report's time has to read the same on every phone that shows it — a hand-me-down or a
+ * traveller's phone left on another zone would otherwise print a different clock time
+ * and even a different day for the same report.
+ */
+val PHILIPPINE_TIME: ZoneId = ZoneId.of("Asia/Manila")
+
 private val MONTHS = listOf(
     "Enero", "Pebrero", "Marso", "Abril", "Mayo", "Hunyo",
     "Hulyo", "Agosto", "Setyembre", "Oktubre", "Nobyembre", "Disyembre",
@@ -34,7 +42,7 @@ private val MONTHS = listOf(
 fun reportedDayLabel(
     timestampMs: Long,
     nowMs: Long = System.currentTimeMillis(),
-    zone: ZoneId = ZoneId.systemDefault(),
+    zone: ZoneId = PHILIPPINE_TIME,
 ): String {
     val day = localDate(timestampMs, zone)
     val today = localDate(nowMs, zone)
@@ -52,7 +60,7 @@ fun reportedDayLabel(
  * a narrow no-break space before AM/PM on some devices and not others, and some locales
  * swap in non-Latin digits.
  */
-fun reportedTimeLabel(timestampMs: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+fun reportedTimeLabel(timestampMs: Long, zone: ZoneId = PHILIPPINE_TIME): String {
     val time = Instant.ofEpochMilli(timestampMs).atZone(zone).toLocalTime()
     val hour12 = (time.hour % 12).let { if (it == 0) 12 else it }
     val suffix = if (time.hour < 12) "AM" else "PM"
@@ -63,7 +71,7 @@ fun reportedTimeLabel(timestampMs: Long, zone: ZoneId = ZoneId.systemDefault()):
 fun reportedAtLabel(
     timestampMs: Long,
     nowMs: Long = System.currentTimeMillis(),
-    zone: ZoneId = ZoneId.systemDefault(),
+    zone: ZoneId = PHILIPPINE_TIME,
 ): String = "${reportedDayLabel(timestampMs, nowMs, zone)}, ${reportedTimeLabel(timestampMs, zone)}"
 
 private fun localDate(epochMs: Long, zone: ZoneId): LocalDate = Instant.ofEpochMilli(epochMs).atZone(zone).toLocalDate()

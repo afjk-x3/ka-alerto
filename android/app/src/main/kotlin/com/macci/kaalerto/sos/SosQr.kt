@@ -3,6 +3,7 @@ package com.macci.kaalerto.sos
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import com.google.zxing.qrcode.encoder.Encoder
+import com.macci.kaalerto.detail.PHILIPPINE_TIME
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
@@ -39,7 +40,7 @@ data class RescueCardInfo(
  * "2–4"), because QR readers disagree about character sets and a mangled accuracy figure
  * is worse than a plain one.
  */
-fun rescueCardPayload(info: RescueCardInfo, zone: ZoneId = ZoneId.systemDefault()): String {
+fun rescueCardPayload(info: RescueCardInfo, zone: ZoneId = PHILIPPINE_TIME): String {
     val lines = mutableListOf("KAILANGAN NG SAGIP / RESCUE NEEDED")
     val who = listOfNotNull(
         info.name?.trim()?.takeIf { it.isNotEmpty() },

@@ -58,6 +58,17 @@ class SosQrTest {
     }
 
     @Test
+    fun `the time on the card is Philippine time even on a phone set to another zone`() {
+        val saved = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"))
+            assertTrue(rescueCardPayload(full).contains("Oras: 2026-09-12 12:40"))
+        } finally {
+            java.util.TimeZone.setDefault(saved)
+        }
+    }
+
+    @Test
     fun `coordinates never use a decimal comma`() {
         assertEquals("18.17090", coord(18.1709012))
         assertEquals("-0.50000", coord(-0.5))

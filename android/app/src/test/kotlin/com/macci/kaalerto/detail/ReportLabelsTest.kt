@@ -31,6 +31,18 @@ class ReportLabelsTest {
         assertEquals("Setyembre 10, 4:15 PM", reportedAtLabel(at(2026, 9, 10, 16, 15), now, manila))
     }
 
+    /** A phone left on another zone must not shift the clock or the day of a report. */
+    @Test
+    fun `labels are in Philippine time whatever the phone's zone`() {
+        val saved = java.util.TimeZone.getDefault()
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/Los_Angeles"))
+            assertEquals("Kahapon, 11:50 PM", reportedAtLabel(at(2026, 9, 11, 23, 50), now))
+        } finally {
+            java.util.TimeZone.setDefault(saved)
+        }
+    }
+
     @Test
     fun `a report from another year includes the year`() {
         assertEquals("Disyembre 30, 2025, 9:05 AM", reportedAtLabel(at(2025, 12, 30, 9, 5), now, manila))
