@@ -36,8 +36,9 @@ import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.evac.submitEvacStatus
 import com.macci.kaalerto.identity.RoleScreen
-import com.macci.kaalerto.map.MapScreen
 import com.macci.kaalerto.map.HOME_REGION_NAME
+import com.macci.kaalerto.map.homeStart
+import com.macci.kaalerto.map.MapScreen
 import com.macci.kaalerto.map.MapViewModel
 import com.macci.kaalerto.map.OfflineMapPack
 import com.macci.kaalerto.map.boundsAround
@@ -297,7 +298,10 @@ fun KaAlertoApp(
         LaunchedEffect(Unit) { if (focusCamera != null) evacFocusCamera = null }
         MapScreen(
             modifier = modifier,
-            initialCamera = focusCamera,
+            // A resident whose home is outside the demo area opens on it — the home pack
+            // covers it offline. Demo phones (home inside) still get null here and open on
+            // the demo area, so the scripted demo is unchanged.
+            initialCamera = focusCamera ?: homeStart(HomeLocationStore.get(context))?.let { (lat, lon) -> LatLng(lat, lon) },
             onStartReport = { lat, lon, accuracy -> screen = gated(Screen.Report(lat, lon, accuracy)) },
             onEnterPickLocation = { screen = gated(Screen.PickLocation) },
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
