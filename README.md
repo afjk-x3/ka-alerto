@@ -74,7 +74,7 @@ Everything below runs on the phone with airplane mode on, once the map has downl
 - **Confirm or dispute** a report ("Tama" / "Iba na", with a reason), and a **deterministic reducer**: weight by role × proximity × time decay, a lone "it's fine now" cannot clear a red road, and genuine disagreement shows as a purple **SX — conflicting** marker instead of being averaged away. Confidence buckets and stale ("luma na") states.
 - **Home radius alerts.** Long-press to set home and drag a radius; a new report inside it raises a local notification — no push server.
 - **Filters** by severity and recency (1h / 3h / 24h / all), and a **Storm Mode** dark theme.
-- **Registration**: first name, optional surname, home barangay. Self-declared and never checked; reports show only "Juan D.", and a name never raises a report's confidence.
+- **Registration**: first name, surname and home barangay, all required. Self-declared and never checked; reports show only "Juan D." (the surname's initial), and a name never raises a report's confidence.
 - **SOS, local only.** A rescue screen that says on its face that it sends nothing: a button that opens the dialer with 911, a high-contrast rescue card with coordinates, name and a plain-text QR code any camera can read, an alarm tone and a screen strobe.
 - Filipino interface; all times in Philippine time.
 
