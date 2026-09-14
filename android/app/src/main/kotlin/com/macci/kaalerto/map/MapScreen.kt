@@ -526,7 +526,10 @@ private fun MapLibreMapView(
 
     LaunchedEffect(maplibreMap, styleEpoch, geofenceCenter, geofenceRadius) {
         if (styleEpoch == 0) return@LaunchedEffect
-        maplibreMap?.style?.let { updateGeofenceCircle(it, geofenceCenter, geofenceRadius) }
+        maplibreMap?.style?.let {
+            updateGeofenceCircle(it, geofenceCenter, geofenceRadius)
+            updateHomeMarker(it, geofenceCenter)
+        }
     }
 
     // Pick-mode (setting a report location) and marker selection are mutually
