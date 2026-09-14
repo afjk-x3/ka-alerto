@@ -25,8 +25,11 @@ val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status"
  * just received it. The server's `INSERT OR IGNORE` on the event's primary key already
  * makes re-posting something it has cost one indexed lookup and a `'duplicate'` status;
  * at this app's event volumes over a local WiFi link, that costs nothing that matters.
+ *
+ * Bundled sample reports (origin "seed") are never pushed: they are demo fixtures,
+ * re-timed on every launch by SeedLoader, not observations.
  */
-fun eventsToSync(all: List<Event>): List<Event> = all.filter { it.type in SYNCED_TYPES }
+fun eventsToSync(all: List<Event>): List<Event> = all.filter { it.type in SYNCED_TYPES && it.origin != "seed" }
 
 /**
  * Turns what someone actually types into Profile's server-address field

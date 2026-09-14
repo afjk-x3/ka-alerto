@@ -88,9 +88,12 @@ fun chunkForPayload(events: List<Event>): List<List<Event>> {
  * limit. Applied both when answering a peer's manifest and when re-sharing something
  * just received, so a stale or over-travelled event dies at the first device that sees
  * it rather than at every device downstream.
+ *
+ * Never a bundled sample (origin "seed"): every phone has its own copy, and a relayed
+ * one would outlive SeedLoader's refresh on the receiving phone.
  */
 fun relayable(events: List<Event>, nowMs: Long): List<Event> =
-    events.filter { it.expiresAt > nowMs && it.hopCount < MESH_MAX_HOPS }
+    events.filter { it.expiresAt > nowMs && it.hopCount < MESH_MAX_HOPS && it.origin != "seed" }
 
 /**
  * The whole receive decision: given what just arrived and what this device already

@@ -168,4 +168,13 @@ class MeshProtocolTest {
         // anonymously on a phone with no way to resolve it.
         assertTrue(encoded.contains("Residente A1B2"))
     }
+
+    /** A relayed sample would arrive as origin "mesh" with the same id, out of reach of any seed reload. */
+    @Test
+    fun `relayable never passes on a sample report`() {
+        val sample = event("s1").copy(origin = "seed")
+        val real = event("r1")
+
+        assertEquals(listOf(real), relayable(listOf(sample, real), now))
+    }
 }

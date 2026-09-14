@@ -191,4 +191,16 @@ class ServerSyncTest {
         assertEquals(300_000L, nextSyncDelayMs(consecutiveFailures = 3, normalIntervalMs = 30_000L, backedOffIntervalMs = 300_000L, failureThreshold = 3))
         assertEquals(300_000L, nextSyncDelayMs(consecutiveFailures = 10, normalIntervalMs = 30_000L, backedOffIntervalMs = 300_000L, failureThreshold = 3))
     }
+
+    /** Samples are demo fixtures, not observations — they must never reach the server or the dashboard. */
+    @Test
+    fun `sample reports never leave the phone`() {
+        val events = listOf(
+            event("s1", "flood_report", origin = "seed"),
+            event("e1", "flood_report"),
+            event("e2", "confirm", origin = "mesh"),
+        )
+
+        assertEquals(setOf("e1", "e2"), eventsToSync(events).map { it.id }.toSet())
+    }
 }
