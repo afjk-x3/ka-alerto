@@ -97,7 +97,7 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier,
 ) {
     var showError by remember { mutableStateOf(false) }
-    val usable = isUsableName(firstName)
+    val usable = isCompleteName(firstName, lastName)
 
     Column(
         modifier = modifier
@@ -140,6 +140,7 @@ fun OnboardingScreen(
                     onLastNameChange = onLastNameChange,
                     showError = showError,
                     onTypedFirstName = { showError = false },
+                    onTypedLastName = { showError = false },
                 )
                 HomeSection(
                     home = home,

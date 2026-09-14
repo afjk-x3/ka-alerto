@@ -75,11 +75,13 @@ internal fun NameFields(
     onLastNameChange: (String) -> Unit,
     showError: Boolean,
     onTypedFirstName: () -> Unit = {},
+    onTypedLastName: () -> Unit = {},
 ) {
     val colors = LocalKaAlertoColors.current
     val keyboard = LocalSoftwareKeyboardController.current
     val focus = remember { FocusRequester() }
     val usable = isUsableName(firstName)
+    val surnameUsable = isUsableSurname(lastName)
     val display = displayFormOf(firstName, lastName)
     val firstNameDescription = tr("Pangalan mo", "Your given name")
     val lastNameDescription = tr("Apelyido mo", "Your surname")
@@ -139,12 +141,18 @@ internal fun NameFields(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.5.dp, colors.border)
+                .border(
+                    1.5.dp,
+                    if (showError && !surnameUsable) colors.criticalFg else MaterialTheme.colorScheme.onBackground,
+                )
                 .padding(horizontal = 12.dp, vertical = 12.dp),
         ) {
             BasicTextField(
                 value = lastName,
-                onValueChange = onLastNameChange,
+                onValueChange = {
+                    onLastNameChange(it)
+                    onTypedLastName()
+                },
                 singleLine = true,
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = 17.sp,
@@ -164,6 +172,16 @@ internal fun NameFields(
             if (lastName.isEmpty()) {
                 Text("Dela Cruz", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.border)
             }
+        }
+        if (showError && !surnameUsable) {
+            Text(
+                tr(
+                    "Kailangan ang apelyido mo. Unang titik lang nito ang lalabas sa mga ulat.",
+                    "Your surname is needed. Only its first letter appears on reports.",
+                ),
+                fontSize = 12.sp,
+                color = colors.criticalFg,
+            )
         }
         Text(
             if (display.isBlank()) {

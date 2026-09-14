@@ -74,7 +74,7 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
 ) {
     var showError by remember { mutableStateOf(false) }
-    val usable = isUsableName(firstName)
+    val usable = isCompleteName(firstName, lastName)
 
     Column(
         modifier = modifier
@@ -119,6 +119,7 @@ fun ProfileScreen(
                     onLastNameChange = onLastNameChange,
                     showError = showError,
                     onTypedFirstName = { showError = false },
+                    onTypedLastName = { showError = false },
                 )
                 PhoneField(phone = phone, onPhoneChange = onPhoneChange)
                 ServerUrlField(

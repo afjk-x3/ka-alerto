@@ -39,8 +39,9 @@ class NameFormatTest {
         assertEquals("Maria S.", displayFormOf("Maria", "Santos"))
     }
 
+    /** The form no longer accepts a blank surname, but an older saved registration can — no stray initial or "." */
     @Test
-    fun `somebody with one name is not forced to invent a surname`() {
+    fun `a blank surname never produces a stray initial`() {
         assertEquals("Juan", displayFormOf("Juan", ""))
         assertEquals("Juan", displayFormOf("Juan", "   "))
     }
@@ -63,14 +64,25 @@ class NameFormatTest {
     }
 
     @Test
-    fun `only an empty given name is refused, and the surname is optional`() {
-        // Deliberately weak. Nothing here verifies anybody — the decision table calls
-        // this self-declared identification, never authentication — and a validator that
-        // decides what counts as a real Filipino name will be wrong about somebody's.
+    fun `a given name and a surname are both required, and neither is checked`() {
+        // Still deliberately weak — self-declared identification, never authentication:
+        // anything non-blank passes. But every author reads "Juan D.", never just "Juan".
         assertTrue(isUsableName("Juan"))
         assertTrue(isUsableName("x"))
         assertFalse(isUsableName(""))
         assertFalse(isUsableName("   "))
+        assertTrue(isUsableSurname("Dela Cruz"))
+        assertTrue(isUsableSurname("D"))
+        assertFalse(isUsableSurname(""))
+        assertFalse(isUsableSurname("   "))
+    }
+
+    @Test
+    fun `a name is complete only with both parts`() {
+        assertTrue(isCompleteName("Juan", "Dela Cruz"))
+        // A one-name registration saved by an older build: incomplete, so the form comes back.
+        assertFalse(isCompleteName("Juan", ""))
+        assertFalse(isCompleteName("", "Dela Cruz"))
     }
 
     // ---- containment ----

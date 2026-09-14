@@ -80,7 +80,8 @@ object LocalIdentity {
     )
 
     /** Whether PRD §9's registration has been completed on this device. */
-    fun isRegistered(context: Context): Boolean = registeredFirstName(context).isNotBlank()
+    fun isRegistered(context: Context): Boolean =
+        isCompleteName(registeredFirstName(context), registeredLastName(context))
 
     /**
      * For pre-filling the edit fields only — never for an event. See [KEY_FULL_NAME].

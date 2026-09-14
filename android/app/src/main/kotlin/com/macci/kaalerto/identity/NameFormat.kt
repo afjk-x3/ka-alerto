@@ -28,9 +28,23 @@ fun displayFormOf(firstName: String, lastName: String): String {
  * The only check on a name, and deliberately the weakest one that still means something.
  *
  * Nothing here verifies anybody: the decision table is explicit that this is
- * *self-declared identification used for attribution*, never authentication. So this
- * refuses an empty given name and nothing else — **the surname is optional**, because
- * plenty of people go by one name and a form that refuses them would be wrong about a
- * real person rather than catching a fake one.
+ * *self-declared identification used for attribution*, never authentication. So each part
+ * is refused only when empty and never checked against anything.
  */
 fun isUsableName(firstName: String): Boolean = firstName.isNotBlank()
+
+/**
+ * **The surname is required** (ported from passable-v0 bf1695a, 14 Sep 2026). PRD §9's
+ * display form is a first name *and* a last initial: a bare "Juan" is not enough to tell
+ * two neighbours apart, which is the attribution the name exists for. Only its initial
+ * ever leaves the device — see [displayFormOf].
+ */
+fun isUsableSurname(lastName: String): Boolean = lastName.isNotBlank()
+
+/**
+ * Both parts present — what the name form requires, and what counts as registered. A
+ * registration saved before the surname became required fails this, so that device sees
+ * the form again, pre-filled, with only the surname to add.
+ */
+fun isCompleteName(firstName: String, lastName: String): Boolean =
+    isUsableName(firstName) && isUsableSurname(lastName)
