@@ -3,6 +3,7 @@ package com.macci.kaalerto.map
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
+import android.location.Location
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -49,6 +50,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.demo.OutsideDemoAreaDialog
+import com.macci.kaalerto.demo.isInDemoArea
 import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.location.fetchCurrentLocation
@@ -69,6 +72,15 @@ private val LOCATION_PERMISSIONS = arrayOf(
 )
 
 private data class HomeDraft(val lat: Double, val lon: Double, val radiusMeters: Float)
+
+/**
+ * Whether this launch has already checked for a phone outside the demo area. Process-wide
+ * rather than `remember`ed, so the notice shows once per launch and not on every return
+ * to the map from a report or SOS.
+ */
+private object OutsideAreaNotice {
+    var checked = false
+}
 
 /**
  * @param onStartReport Reachable only in normal browsing mode. Tries GPS first and
@@ -114,6 +126,10 @@ fun MapScreen(
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
     var selectedSeverities by remember { mutableStateOf(ALL_SEVERITIES.toSet()) }
     var recencyFilter by remember { mutableStateOf(RecencyFilter.ALL) }
+    // A GPS fix outside the demo area: at launch (a notice), or from Mag-ulat (a choice
+    // of where the report goes). See demo/OutsideDemoAreaDialog.kt.
+    var outsideAtLaunch by remember { mutableStateOf<Location?>(null) }
+    var outsideForReport by remember { mutableStateOf<Location?>(null) }
 
     var hasLocation by remember {
         mutableStateOf(
@@ -142,6 +158,15 @@ fun MapScreen(
 
     DisposableEffect(pack) {
         onDispose { pack.release() }
+    }
+
+    // Keyed on hasLocation so it runs again once the first-launch permission prompt is
+    // answered. Browsing mode only — never over the pick-a-spot map.
+    LaunchedEffect(hasLocation) {
+        if (!hasLocation || onStartReport == null || OutsideAreaNotice.checked) return@LaunchedEffect
+        val fix = fetchCurrentLocation(context) ?: return@LaunchedEffect
+        OutsideAreaNotice.checked = true
+        if (!isInDemoArea(fix.latitude, fix.longitude)) outsideAtLaunch = fix
     }
 
     val visibleSummaries = remember(featureSummaries, selectedSeverities, recencyFilter) {
@@ -245,7 +270,9 @@ fun MapScreen(
                     scope.launch {
                         val location = fetchCurrentLocation(context)
                         locatingReport = false
-                        if (location != null) {
+                        if (location != null && !isInDemoArea(location.latitude, location.longitude)) {
+                            outsideForReport = location
+                        } else if (location != null) {
                             onStartReport(location.latitude, location.longitude, location.accuracy)
                         } else {
                             onEnterPickLocation?.invoke()
@@ -278,6 +305,26 @@ fun MapScreen(
         // The feature vanished from under the sheet (e.g. events reloaded) — don't
         // leave a sheet open with nothing to show.
         selectedFeatureRef = null
+    }
+
+    val reportFix = outsideForReport
+    val launchFix = outsideAtLaunch
+    if (reportFix != null) {
+        OutsideDemoAreaDialog(
+            lat = reportFix.latitude,
+            lon = reportFix.longitude,
+            onDismiss = { outsideForReport = null },
+            onPickOnDemoMap = {
+                outsideForReport = null
+                onEnterPickLocation?.invoke()
+            },
+            onUseMyLocation = {
+                outsideForReport = null
+                onStartReport?.invoke(reportFix.latitude, reportFix.longitude, reportFix.accuracy)
+            },
+        )
+    } else if (launchFix != null) {
+        OutsideDemoAreaDialog(lat = launchFix.latitude, lon = launchFix.longitude, onDismiss = { outsideAtLaunch = null })
     }
 }
 
