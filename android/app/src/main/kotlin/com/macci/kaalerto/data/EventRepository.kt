@@ -19,7 +19,7 @@ class EventRepository(private val eventDao: EventDao) {
 
     suspend fun all(): List<Event> = eventDao.all()
 
-    suspend fun isEmpty(): Boolean = eventDao.count() == 0
+    suspend fun replaceSeeds(seeds: List<Event>) = eventDao.replaceSeeds(seeds)
 
     /**
      * Purge long-expired events. Safe to call on every cold start.

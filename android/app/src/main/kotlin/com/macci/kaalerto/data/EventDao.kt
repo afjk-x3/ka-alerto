@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -45,4 +46,18 @@ interface EventDao {
      */
     @Query("DELETE FROM events WHERE expiresAt < :cutoffMs")
     suspend fun deleteExpiredBefore(cutoffMs: Long)
+
+    @Query("DELETE FROM events WHERE origin = 'seed'")
+    suspend fun deleteSeeds()
+
+    /**
+     * Swaps the seed fixtures for fresh copies (SeedLoader). One transaction, so the
+     * event Flow emits once — observers see the old seeds or the new ones, never an
+     * empty map in between. Rows of any other origin are untouched.
+     */
+    @Transaction
+    suspend fun replaceSeeds(seeds: List<Event>) {
+        deleteSeeds()
+        insertAll(seeds)
+    }
 }

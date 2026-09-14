@@ -39,7 +39,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            SeedLoader(application, repository).loadIfEmpty()
+            SeedLoader(application, repository).refresh()
         }
     }
 
