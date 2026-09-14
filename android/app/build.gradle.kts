@@ -28,6 +28,10 @@ android {
             // failure modes to debug under time pressure. Turn on when there is slack.
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // V0 ships a sideloaded APK signed with the Android debug key: installable
+            // today with no keystore to create or lose. A build signed with a real key
+            // later will not install over it without uninstalling first.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
