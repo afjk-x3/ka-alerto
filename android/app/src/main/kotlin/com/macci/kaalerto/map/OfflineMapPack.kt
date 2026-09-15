@@ -25,7 +25,7 @@ const val HOME_REGION_NAME = "kaalerto-home-area"
  * without turning a registration screen into a several-minute download on a phone that
  * may be on a metered connection.
  */
-private const val HOME_HALF_EXTENT_M = 1_500.0
+internal const val HOME_HALF_EXTENT_M = 1_500.0
 
 /**
  * A square bbox around a point. Latitude degrees are near enough constant; longitude
@@ -134,6 +134,28 @@ class OfflineMapPack(
                     _state.value = PackState.Absent
                     create()
                 }
+            }
+
+            override fun onError(error: String) {
+                Log.e(TAG, "listOfflineRegions failed: $error")
+                _state.value = PackState.Failed(error)
+            }
+        })
+    }
+
+    /**
+     * Like [ensureDownloaded], but never creates a region: tracks — and resumes — one that
+     * already exists, else reports [PackState.Absent].
+     *
+     * For the map screen, which must know whether the home pack is on disk but must not
+     * build one: registration builds it, and a second `create()` racing registration's own
+     * would leave two regions with the same name.
+     */
+    fun adoptExisting() {
+        manager.listOfflineRegions(object : OfflineManager.ListOfflineRegionsCallback {
+            override fun onList(offlineRegions: Array<OfflineRegion>?) {
+                val existing = offlineRegions?.firstOrNull { it.isOurs() }
+                if (existing != null) adopt(existing) else _state.value = PackState.Absent
             }
 
             override fun onError(error: String) {

@@ -256,6 +256,21 @@ fun MapScreen(
     }
 
     val isOnline by rememberIsOnline()
+    // The home pack is built at registration (7 Sep) only for a home outside the demo
+    // area. Tracking it here also resumes a download registration started but could not
+    // finish. It counts as coverage only once its tiles are on disk.
+    val homePack = remember(savedHome) {
+        savedHome?.takeUnless { isInDemoArea(it.lat, it.lon) }?.let {
+            OfflineMapPack(context, regionName = HOME_REGION_NAME, bounds = boundsAround(it.lat, it.lon))
+        }
+    }
+    val homePackState = rememberTrackedPackState(homePack)
+    val covered = isCovered(
+        cameraCentre.first,
+        cameraCentre.second,
+        homePackCentre = savedHome?.takeIf { homePackState is PackState.Ready }?.let { it.lat to it.lon },
+        herePackCentre = null,
+    )
     val showChrome = !pickMode && homeDraft == null
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -281,6 +296,9 @@ fun MapScreen(
                 isOnline = isOnline,
                 modifier = Modifier.fillMaxWidth(),
             )
+        }
+        if (showChrome && !covered) {
+            UncoveredAreaNote(onDownloadHere = null, modifier = Modifier.fillMaxWidth())
         }
 
         if (showChrome && onOpenQueue != null) {
@@ -1020,4 +1038,17 @@ private fun ShelterIcon(tint: androidx.compose.ui.graphics.Color, modifier: Modi
         drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.48f), androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.9f), stroke.width, androidx.compose.ui.graphics.StrokeCap.Round)
         drawLine(tint, androidx.compose.ui.geometry.Offset(w * 0.2f, h * 0.9f), androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.9f), stroke.width, androidx.compose.ui.graphics.StrokeCap.Round)
     }
+}
+
+/**
+ * Tracks an existing offline pack's state for as long as this screen shows it, without
+ * ever creating one. A null [pack] is [PackState.Absent].
+ */
+@Composable
+private fun rememberTrackedPackState(pack: OfflineMapPack?): PackState {
+    if (pack == null) return PackState.Absent
+    LaunchedEffect(pack) { pack.adoptExisting() }
+    DisposableEffect(pack) { onDispose { pack.release() } }
+    val state by pack.state.collectAsStateWithLifecycle()
+    return state
 }
