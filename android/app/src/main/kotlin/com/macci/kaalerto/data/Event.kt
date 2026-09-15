@@ -41,13 +41,28 @@ data class Event(
     val disputeReason: String? = null,
     /**
      * Structured, type-specific detail as JSON, for events whose content does not fit
-     * the columns above — today only the `sos*` family (see `sos/SosEvents.kt`), whose
-     * payload is a people count, medical needs and a water trend rather than a severity.
+     * the columns above. Each family that uses it owns its shape and a `decode…Payload`
+     * beside its event factory:
+     *
+     * - `sos`, `sos_amend`, `sos_state` — `SosPayload` (`sos/SosEvents.kt`): the request
+     *   id plus GPS accuracy, the context answers, or the new state.
+     * - `sos_false_alarm`, `sos_false_alarm_undo` — `FalseAlarmPayload` (`sos/SosTriage.kt`).
+     * - `role_claim`, `role_request`, `role_grant`, `role_revoke` — `RolePayload`
+     *   (`identity/RoleEvents.kt`).
+     * - `circle_invite` — `CircleInvitePayload` (`family/CircleEvents.kt`).
+     * - `evac_status` — `EvacPayload` (`evac/EvacCentre.kt`): centre, status, occupancy.
+     * - `flood_report` — `ReportPhotoPayload` (`report/ReportPhoto.kt`), only when a photo
+     *   is attached, and only its hash: the image itself never travels.
+     *
+     * `confirm`, `dispute`, `official_status` and `family_checkin` carry none. This list
+     * is easy to outgrow — `fun decode\w*Payload` in `main/` is the authoritative one.
      *
      * It is a JSON string rather than more columns because the alternative is a table
-     * where most rows have most fields null, and because it travels over the mesh as
-     * part of the event with no extra handling. Nothing queries inside it: the reducer
-     * decodes it in memory, so there is no index to miss.
+     * where most rows have most fields null. Nothing queries inside it: each fold decodes
+     * it in memory, so there is no index to miss. It rides mesh and server sync as part
+     * of the event, unchanged with one exception — `sos/SosMeshPolicy.kt`'s
+     * `redactForMesh` strips medical detail from an SOS payload before it leaves the
+     * device (it blanks [authorName] in the same pass).
      */
     val payload: String? = null,
 )
