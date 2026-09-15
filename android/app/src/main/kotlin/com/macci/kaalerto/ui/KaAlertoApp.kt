@@ -169,10 +169,16 @@ fun KaAlertoApp(
     // null until the very first fold of the event log resolves, so this fires again as
     // that real value arrives, but never redirects a second time — a *new* SOS started
     // later in the same session must not yank the user away from wherever they are.
+    //
+    // The first-run form counts as an untouched start too. An unregistered device — and
+    // since the surname became required, every one-name registration — opens on
+    // Screen.Onboarding(Screen.Map), and an active SOS outranks finishing a form
+    // (PRD §9: SOS is never gated).
     var initialSosRedirectDone by remember { mutableStateOf(false) }
     LaunchedEffect(activeSos) {
         val sos = activeSos
-        if (!initialSosRedirectDone && sos != null && screen == Screen.Map) {
+        val untouchedStart = screen == Screen.Map || screen == Screen.Onboarding(Screen.Map)
+        if (!initialSosRedirectDone && sos != null && untouchedStart) {
             initialSosRedirectDone = true
             screen = Screen.SosStatus(sos.sosId)
         }
