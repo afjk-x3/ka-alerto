@@ -533,4 +533,4 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `python -m graphify update .` to keep the graph current (AST-only, no API cost). The post-commit git hook also does this automatically.
-- The graph is **code-only** (AST of 154 files). `docs/`, `design/` artboards and the markdown files are not in it — for product questions, `docs/02-prd.md` and this file remain the source.
+- The graph began **code-only** (AST of 154 files, no LLM). The post-commit hook also adds a markdown file's heading structure whenever a commit changes it — so far that is only this file. `docs/` (gitignored) and `design/` artboards are not in it, and no document's prose is — for product questions, `docs/02-prd.md` and this file remain the source.
