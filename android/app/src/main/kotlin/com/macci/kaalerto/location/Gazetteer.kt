@@ -4,6 +4,8 @@ import android.content.Context
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.demo.isInDemoArea
+import com.macci.kaalerto.i18n.AppLanguage
+import com.macci.kaalerto.i18n.tr
 import kotlin.math.cos
 import kotlin.math.sqrt
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +44,7 @@ private const val LANDMARK_NEAR_METERS = 200.0
  */
 class Gazetteer(private val streets: List<NamedLine>, private val landmarks: List<NamedPoint>) {
 
-    fun describe(lat: Double, lon: Double): PlaceName? {
+    fun describe(lat: Double, lon: Double, language: AppLanguage = AppLanguage.FIL): PlaceName? {
         if (!isInDemoArea(lat, lon)) return null
         val area = "${DemoArea.BARANGAY_NAME}, ${DemoArea.MUNICIPALITY}"
 
@@ -56,7 +58,7 @@ class Gazetteer(private val streets: List<NamedLine>, private val landmarks: Lis
             .map { it.name to haversineMeters(lat, lon, it.lat, it.lon) }
             .filter { (_, meters) -> meters <= LANDMARK_NEAR_METERS }
             .minByOrNull { (_, meters) -> meters }
-            ?.let { (name, _) -> return PlaceName("Malapit sa $name", area) }
+            ?.let { (name, _) -> return PlaceName(tr(language, "Malapit sa $name", "Near $name"), area) }
 
         return PlaceName(DemoArea.BARANGAY_NAME, DemoArea.MUNICIPALITY)
     }

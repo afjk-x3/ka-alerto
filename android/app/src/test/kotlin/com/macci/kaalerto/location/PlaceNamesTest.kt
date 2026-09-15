@@ -2,6 +2,7 @@ package com.macci.kaalerto.location
 
 import com.macci.kaalerto.demo.isInDemoArea
 import com.macci.kaalerto.demo.kmFromDemoArea
+import com.macci.kaalerto.i18n.AppLanguage
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -44,6 +45,14 @@ class PlaceNamesTest {
     @Test
     fun `off every street but near a named building, it gives directions by the building`() {
         assertEquals(PlaceName("Malapit sa San Nicolas National High School", area), gazetteer.describe(18.17036, 120.61090))
+    }
+
+    @Test
+    fun `off every street but near a named building, English says near`() {
+        assertEquals(
+            PlaceName("Near San Nicolas National High School", area),
+            gazetteer.describe(18.17036, 120.61090, AppLanguage.EN),
+        )
     }
 
     @Test

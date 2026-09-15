@@ -4,6 +4,7 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.Build
+import com.macci.kaalerto.i18n.LanguagePrefs
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -39,7 +40,7 @@ suspend fun describePlace(context: Context, lat: Double, lon: Double): Place? {
     // Bundled OSM streets and landmarks first: they work offline, and inside the demo area
     // they name the street. barangay stays null on purpose — the demo area's bounding box
     // is not a surveyed barangay boundary, so it must never fill the registration barangay.
-    BundledPlaces.get(context).describe(lat, lon)?.let { return Place(barangay = null, label = it.oneLine) }
+    BundledPlaces.get(context).describe(lat, lon, LanguagePrefs.get(context))?.let { return Place(barangay = null, label = it.oneLine) }
 
     if (!Geocoder.isPresent()) return null
     val geocoder = Geocoder(context, Locale("fil", "PH"))
