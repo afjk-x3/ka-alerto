@@ -61,6 +61,12 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import com.macci.kaalerto.ui.theme.SeverityColors
 import kotlinx.coroutines.launch
 
+/** The report card's place-name lookup: still looking, or finished with a place or none. */
+private sealed interface PlaceLookup {
+    data object Looking : PlaceLookup
+    data class Done(val place: Place?) : PlaceLookup
+}
+
 @Composable
 fun ReportScreen(
     initialLat: Double,
@@ -73,9 +79,11 @@ fun ReportScreen(
 ) {
     val context = LocalContext.current
     // Named from bundled street data when inside the demo area (offline), else by the
-    // phone's geocoder when online. The coordinates never wait for it.
-    val place by produceState<Place?>(initialValue = null, initialLat, initialLon) {
-        value = describePlace(context, initialLat, initialLon)
+    // phone's geocoder when online, else a cached nearby name. The coordinates never wait
+    // for it. Looking and done are separate states: a lookup that finds nothing must stop
+    // saying it is looking, or the card claims progress that will never complete.
+    val placeLookup by produceState<PlaceLookup>(initialValue = PlaceLookup.Looking, initialLat, initialLon) {
+        value = PlaceLookup.Done(describePlace(context, initialLat, initialLon))
     }
     val scope = rememberCoroutineScope()
     val colors = LocalKaAlertoColors.current
@@ -142,11 +150,19 @@ fun ReportScreen(
                 Icon(Icons.Filled.LocationOn, contentDescription = null, tint = colors.safeFg)
                 Spacer(Modifier.size(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        place?.label ?: tr("Hinahanap ang lugar…", "Looking up the place…"),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    // A lookup that finished with no name hides the line rather than
+                    // staying on "Hinahanap…"; the coordinates below still say where.
+                    val placeLine = when (val lookup = placeLookup) {
+                        PlaceLookup.Looking -> tr("Hinahanap ang lugar…", "Looking up the place…")
+                        is PlaceLookup.Done -> lookup.place?.label
+                    }
+                    if (placeLine != null) {
+                        Text(
+                            placeLine,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                     val accuracyText = initialAccuracyMeters?.let { "GPS ±${it.toInt()} m" } ?: tr("Itinakda sa mapa", "Set on the map")
                     Text(
                         "%.5f, %.5f · %s".format(java.util.Locale.ROOT, initialLat, initialLon, accuracyText),
