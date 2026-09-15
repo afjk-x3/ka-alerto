@@ -956,6 +956,10 @@ private fun MapLibreMapView(
         map.animateCamera(
             CameraUpdateFactory.newLatLngZoom(LatLng(request.lat, request.lon), DemoArea.INITIAL_ZOOM),
         )
+        // A user's jump must never be undone by the opening placement: without this, a
+        // tap that lands before the style finishes loading gets silently overridden the
+        // moment the style-load callback above sees cameraPlaced == false.
+        cameraPlaced = true
     }
 
     androidx.compose.ui.viewinterop.AndroidView(
