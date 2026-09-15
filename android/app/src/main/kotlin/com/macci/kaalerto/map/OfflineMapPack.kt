@@ -181,6 +181,10 @@ class OfflineMapPack(
     fun replaceWith(newBounds: LatLngBounds) {
         bounds = newBounds
         release()
+        // The old pack's Ready described the bounds it was actually downloaded for, not
+        // newBounds — leaving it in place during the list/delete/create round trip would
+        // have a caller read this slot as covering a spot it has not downloaded yet.
+        _state.value = PackState.Absent
         manager.listOfflineRegions(object : OfflineManager.ListOfflineRegionsCallback {
             override fun onList(offlineRegions: Array<OfflineRegion>?) {
                 deleteThenCreate(offlineRegions?.filter { it.isOurs() }.orEmpty())
