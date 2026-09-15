@@ -265,12 +265,27 @@ fun MapScreen(
         }
     }
     val homePackState = rememberTrackedPackState(homePack)
+    // The single "here" slot. The instance's bounds are set by replaceWith; until then
+    // it only ever tracks whatever region already carries HERE_REGION_NAME.
+    var hereCentre by remember { mutableStateOf(HerePackStore.get(context)) }
+    val herePack = remember { OfflineMapPack(context, regionName = HERE_REGION_NAME) }
+    val herePackState = rememberTrackedPackState(herePack)
     val covered = isCovered(
         cameraCentre.first,
         cameraCentre.second,
         homePackCentre = savedHome?.takeIf { homePackState is PackState.Ready }?.let { it.lat to it.lon },
-        herePackCentre = null,
+        herePackCentre = hereCentre?.takeIf { herePackState is PackState.Ready },
     )
+    val onDownloadHere: (() -> Unit)? = if (isOnline) {
+        {
+            val (lat, lon) = cameraCentre
+            HerePackStore.set(context, lat, lon)
+            hereCentre = lat to lon
+            herePack.replaceWith(boundsAround(lat, lon))
+        }
+    } else {
+        null
+    }
     val showChrome = !pickMode && homeDraft == null
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -297,8 +312,16 @@ fun MapScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (showChrome && !covered) {
-            UncoveredAreaNote(onDownloadHere = null, modifier = Modifier.fillMaxWidth())
+        // Progress for a "download here" in flight, in the same banner the demo pack uses.
+        if (herePackState is PackState.Downloading || herePackState is PackState.Failed) {
+            PackStatusBanner(
+                state = herePackState,
+                isOnline = isOnline,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (showChrome && !covered && herePackState !is PackState.Downloading) {
+            UncoveredAreaNote(onDownloadHere = onDownloadHere, modifier = Modifier.fillMaxWidth())
         }
 
         if (showChrome && onOpenQueue != null) {

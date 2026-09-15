@@ -20,6 +20,12 @@ private const val TAG = "OfflineMapPack"
 const val HOME_REGION_NAME = "kaalerto-home-area"
 
 /**
+ * Metadata name for the single pack downloaded on request around wherever the camera is —
+ * somewhere that is neither the demo area nor home. A new download replaces it.
+ */
+const val HERE_REGION_NAME = "kaalerto-here-area"
+
+/**
  * Half-width of the home pack, in metres. ~1.5 km each way covers the walk a flood
  * actually changes — the routes somebody takes to a shop, a school, higher ground —
  * without turning a registration screen into a several-minute download on a phone that
@@ -104,7 +110,7 @@ sealed interface PackState {
 class OfflineMapPack(
     context: Context,
     private val regionName: String = DemoArea.REGION_NAME,
-    private val bounds: LatLngBounds = DemoArea.bounds,
+    private var bounds: LatLngBounds = DemoArea.bounds,
 ) {
 
     // MapLibre holds this for the process lifetime; use the application context so a
@@ -161,6 +167,42 @@ class OfflineMapPack(
             override fun onError(error: String) {
                 Log.e(TAG, "listOfflineRegions failed: $error")
                 _state.value = PackState.Failed(error)
+            }
+        })
+    }
+
+    /**
+     * Deletes this pack's region (matched by name, so no other pack is touched) and
+     * downloads a fresh one over [newBounds].
+     *
+     * Delete-then-create means a failed download leaves no pack in this slot. Accepted for
+     * the "here" slot: the old one covered a spot the person has already left.
+     */
+    fun replaceWith(newBounds: LatLngBounds) {
+        bounds = newBounds
+        release()
+        manager.listOfflineRegions(object : OfflineManager.ListOfflineRegionsCallback {
+            override fun onList(offlineRegions: Array<OfflineRegion>?) {
+                deleteThenCreate(offlineRegions?.filter { it.isOurs() }.orEmpty())
+            }
+
+            override fun onError(error: String) {
+                Log.e(TAG, "listOfflineRegions failed: $error")
+                _state.value = PackState.Failed(error)
+            }
+        })
+    }
+
+    private fun deleteThenCreate(remaining: List<OfflineRegion>) {
+        val next = remaining.firstOrNull() ?: return create()
+        next.delete(object : OfflineRegion.OfflineRegionDeleteCallback {
+            override fun onDelete() = deleteThenCreate(remaining.drop(1))
+
+            override fun onError(error: String) {
+                // Leaves a stale region on disk, which costs space but not correctness:
+                // isOurs() still matches it, and the next replaceWith tries again.
+                Log.w(TAG, "Could not delete old $regionName region: $error")
+                deleteThenCreate(remaining.drop(1))
             }
         })
     }
