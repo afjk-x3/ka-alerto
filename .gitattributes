@@ -18,3 +18,4 @@ gradlew.bat    text eol=crlf
 # Map fixtures (arriving with the seed data).
 *.mbtiles      binary
 *.pbf          binary
+graphify-out/graph.json merge=graphify

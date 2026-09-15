@@ -42,6 +42,9 @@ docs/*
 # ---------- macOS ----------
 .DS_Store
 
+# ---------- graphify (generated; rebuilt by the post-commit hook) ----------
+graphify-out/
+
 # ---------- Scratch ----------
 /tmp/
 /scratch/

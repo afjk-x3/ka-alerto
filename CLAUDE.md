@@ -522,3 +522,15 @@ The project follows a 15-day build schedule divided into five gates (one per Sep
 
 **Archive:** earlier drafts, the superseded 40-page PRD, and the hackathon-template PRD are in
 `C:\Users\pol\Documents\Team-MACCI\Climate-Resilience-and-Hydrometeorological-Disaster-Management\temp-repo`.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- **Invoke it as `python -m graphify`, not bare `graphify`** — it is a `pip install --user` package and its `Scripts` dir is not on PATH on the dev machine. Same reason `.claude/settings.json`'s hooks use that form.
+- For codebase questions, first run `python -m graphify query "<question>"` when graphify-out/graph.json exists. Use `python -m graphify path "<A>" "<B>"` for relationships and `python -m graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `python -m graphify update .` to keep the graph current (AST-only, no API cost). The post-commit git hook also does this automatically.
+- The graph is **code-only** (AST of 154 files). `docs/`, `design/` artboards and the markdown files are not in it — for product questions, `docs/02-prd.md` and this file remain the source.
