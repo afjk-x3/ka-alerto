@@ -36,12 +36,10 @@ import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.evac.submitEvacStatus
 import com.macci.kaalerto.identity.RoleScreen
-import com.macci.kaalerto.map.HOME_REGION_NAME
+import com.macci.kaalerto.map.ensureHomePack
 import com.macci.kaalerto.map.homeStart
 import com.macci.kaalerto.map.MapScreen
 import com.macci.kaalerto.map.MapViewModel
-import com.macci.kaalerto.map.OfflineMapPack
-import com.macci.kaalerto.map.boundsAround
 import com.macci.kaalerto.official.OfficialStatusScreen
 import com.macci.kaalerto.official.submitOfficialStatus
 import kotlinx.coroutines.launch
@@ -523,12 +521,11 @@ fun KaAlertoApp(
                     // artboard's "I-download habang may signal pa" is exactly this, and
                     // somebody who has just installed the app is the likeliest they will
                     // ever be to have a connection.
+                    //
+                    // Rebuilt, not just adopted, when the home differs from the centre the
+                    // existing pack was built for (map/HomePackStore.kt).
                     if (!DemoArea.bounds.contains(LatLng(lat, lon))) {
-                        OfflineMapPack(
-                            appContext,
-                            regionName = HOME_REGION_NAME,
-                            bounds = boundsAround(lat, lon),
-                        ).ensureDownloaded()
+                        ensureHomePack(appContext, lat, lon)
                     }
                 }
                 screen = current.resume ?: Screen.Map
@@ -614,12 +611,9 @@ fun KaAlertoApp(
                     SyncPrefs.setServerUrl(context, draftServerUrl)
                     draftHome?.let { (lat, lon) ->
                         HomeLocationStore.set(context, lat, lon, HomeLocationStore.DEFAULT_RADIUS_METERS)
+                        // A moved home gets a new pack; see map/HomePackStore.kt.
                         if (!DemoArea.bounds.contains(LatLng(lat, lon))) {
-                            OfflineMapPack(
-                                appContext,
-                                regionName = HOME_REGION_NAME,
-                                bounds = boundsAround(lat, lon),
-                            ).ensureDownloaded()
+                            ensureHomePack(appContext, lat, lon)
                         }
                     }
                     screen = current.resume

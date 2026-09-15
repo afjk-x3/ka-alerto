@@ -259,10 +259,19 @@ fun MapScreen(
     val isOnline by rememberIsOnline()
     // The home pack is built at registration (7 Sep) only for a home outside the demo
     // area. Tracking it here also resumes a download registration started but could not
-    // finish. It counts as coverage only once its tiles are on disk.
-    val homePack = remember(savedHome) {
-        savedHome?.takeUnless { isInDemoArea(it.lat, it.lon) }?.let {
-            OfflineMapPack(context, regionName = HOME_REGION_NAME, bounds = boundsAround(it.lat, it.lon))
+    // finish. It counts as coverage only once its tiles are on disk, and only around the
+    // centre it was actually built for (HomePackStore), never the current home: a home
+    // moved since — the long-press below builds no pack — is not covered until one is
+    // built around it, and the uncovered-area note must say so.
+    val homeBuiltCentre = remember(savedHome) { HomePackStore.get(context) }
+    // A pack built before HomePackStore existed has no recorded centre. It is still
+    // tracked around the saved home so an unfinished download resumes, as before, but it
+    // counts as coverage nowhere.
+    val homePackTrackedCentre = homeBuiltCentre
+        ?: savedHome?.takeUnless { isInDemoArea(it.lat, it.lon) }?.let { it.lat to it.lon }
+    val homePack = remember(homePackTrackedCentre) {
+        homePackTrackedCentre?.let { (lat, lon) ->
+            OfflineMapPack(context, regionName = HOME_REGION_NAME, bounds = boundsAround(lat, lon))
         }
     }
     val homePackState = rememberTrackedPackState(homePack)
@@ -274,7 +283,7 @@ fun MapScreen(
     val covered = isCovered(
         cameraCentre.first,
         cameraCentre.second,
-        homePackCentre = savedHome?.takeIf { homePackState is PackState.Ready }?.let { it.lat to it.lon },
+        homePackCentre = homeBuiltCentre?.takeIf { homePackState is PackState.Ready },
         herePackCentre = hereCentre?.takeIf { herePackState is PackState.Ready },
     )
     val onDownloadHere: (() -> Unit)? = if (isOnline) {
