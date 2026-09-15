@@ -393,10 +393,17 @@ fun MapScreen(
             }
             if (showChrome) {
                 val noGps = tr("Walang GPS ngayon", "No GPS right now")
+                val needPermission = tr("Kailangan ng pahintulot sa lokasyon", "Location permission needed")
                 MapCameraControls(
                     locating = locatingMe,
                     onLocateMe = {
-                        if (!locatingMe) {
+                        if (!hasLocation) {
+                            // No permission is not "no GPS", though fetchCurrentLocation
+                            // returns null for both. Say which, and ask again through the
+                            // existing request, whose callback updates hasLocation.
+                            android.widget.Toast.makeText(context, needPermission, android.widget.Toast.LENGTH_SHORT).show()
+                            permissionLauncher.launch(LOCATION_PERMISSIONS)
+                        } else if (!locatingMe) {
                             locatingMe = true
                             scope.launch {
                                 // Bounded at 6 s with a last-known fallback (LocationFetcher),
