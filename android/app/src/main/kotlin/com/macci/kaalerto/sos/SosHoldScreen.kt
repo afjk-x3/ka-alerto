@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.demo.isInDemoArea
 import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.location.Place
 import com.macci.kaalerto.location.describePlace
@@ -242,6 +243,18 @@ private fun HoldRing(progress: Float, holding: Boolean, modifier: Modifier = Mod
     }
 }
 
+/**
+ * The place line above the SOS hold screen's coordinates, or null for none.
+ *
+ * A label is shown alone. The gazetteer's already names the barangay, so appending one
+ * read it twice, and a cached out-of-area name ("Malapit sa Quiapo, Manila") paired with
+ * the demo barangay put two contradictory places on an emergency screen. With no label,
+ * the demo barangay is named only for a point actually inside the demo area. Anywhere
+ * else nothing is claimed; the coordinates underneath still say where.
+ */
+internal fun holdPlaceLine(placeLabel: String?, lat: Double, lon: Double): String? =
+    placeLabel ?: DemoArea.BARANGAY_NAME.takeIf { isInDemoArea(lat, lon) }
+
 /** SOSHold.dc.html's "Ipapadala agad" panel — what leaves the phone the instant the hold lands. */
 @Composable
 private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modifier: Modifier = Modifier) {
@@ -249,12 +262,11 @@ private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modi
     val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
     // Best-effort, same as the registration home row (location/PlaceName.kt): a name is
     // a courtesy label over the coordinate, never a replacement for it, so the raw fix
-    // stays visible underneath whether or not this resolves. The barangay itself never
-    // waits on it — the app is frozen to one demo barangay, so that much is already
-    // known the instant the hold screen opens.
+    // stays visible underneath whether or not this resolves. Inside the demo area the
+    // barangay line shows at once and the label replaces it when it arrives.
     var place by remember(lat, lon) { mutableStateOf<Place?>(null) }
     LaunchedEffect(lat, lon) { place = describePlace(context, lat, lon) }
-    val barangay = place?.barangay?.takeIf { it.isNotBlank() } ?: DemoArea.BARANGAY_NAME
+    val placeLine = holdPlaceLine(place?.label, lat, lon)
 
     Column(
         modifier = modifier
@@ -274,13 +286,14 @@ private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modi
             PinGlyph(SosColors.Mesh, Modifier.size(18.dp))
             Spacer(Modifier.size(10.dp))
             Column {
-                val placeLabel = place?.label
-                Text(
-                    if (placeLabel != null) "$placeLabel · $barangay" else barangay,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = SosColors.PrimaryText,
-                )
+                if (placeLine != null) {
+                    Text(
+                        placeLine,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = SosColors.PrimaryText,
+                    )
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                     Text(
                         "%.4f, %.4f".format(lat, lon),
