@@ -46,13 +46,14 @@ suspend fun describePlace(context: Context, lat: Double, lon: Double): Place? {
 
     geocode(context, lat, lon)?.let { found ->
         // Remembered, so the same area still has a name the next time there is no signal.
-        PlaceCache.put(context, lat, lon, found.label)
+        // Prefs I/O and JSON off the caller's dispatcher, which is Main for every caller.
+        withContext(Dispatchers.IO) { PlaceCache.put(context, lat, lon, found.label) }
         return found
     }
     // Offline, or the geocoder failed: the nearest name this phone has been given before,
     // marked as approximate. barangay stays null — a name from up to 1 km away is a guess
     // and must never fill the registration barangay.
-    val cached = PlaceCache.nearest(context, lat, lon) ?: return null
+    val cached = withContext(Dispatchers.IO) { PlaceCache.nearest(context, lat, lon) } ?: return null
     return Place(
         barangay = null,
         label = tr(LanguagePrefs.get(context), "Malapit sa ${cached.label}", "Near ${cached.label}"),
