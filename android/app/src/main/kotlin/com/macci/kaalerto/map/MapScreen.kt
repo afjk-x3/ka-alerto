@@ -57,6 +57,7 @@ import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.i18n.tr
+import com.macci.kaalerto.location.describePlace
 import com.macci.kaalerto.location.fetchCurrentLocation
 import com.macci.kaalerto.mesh.MeshPermissions
 import com.macci.kaalerto.mesh.MeshService
@@ -282,6 +283,9 @@ fun MapScreen(
             HerePackStore.set(context, lat, lon)
             hereCentre = lat to lon
             herePack.replaceWith(boundsAround(lat, lon))
+            // Online right now, by construction — the one cheap moment to name this spot
+            // for later. describePlace caches whatever the geocoder answers.
+            scope.launch { describePlace(context, lat, lon) }
         }
     } else {
         null

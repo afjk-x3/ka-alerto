@@ -5,6 +5,7 @@ import android.location.Address
 import android.location.Geocoder
 import android.os.Build
 import com.macci.kaalerto.i18n.LanguagePrefs
+import com.macci.kaalerto.i18n.tr
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -32,9 +33,10 @@ data class Place(val barangay: String?, val label: String)
  * the datum and this is a courtesy label above it. A screen that showed only the name
  * would be a screen that shows nothing in a flood.
  *
- * Registration is the one moment where a network is *likely* — somebody has just
- * installed the app — which is the same reason the artboard puts the map download here.
- * So the name is worth asking for here and nowhere else.
+ * Resolution order: the bundled demo-area gazetteer (offline), then the geocoder (online;
+ * each answer is written to [PlaceCache]), then the nearest cached name within 1 km,
+ * labelled "Malapit sa …". Registration and "download here" are the moments a network is
+ * likely, which is what seeds the cache for later.
  */
 suspend fun describePlace(context: Context, lat: Double, lon: Double): Place? {
     // Bundled OSM streets and landmarks first: they work offline, and inside the demo area
@@ -42,6 +44,23 @@ suspend fun describePlace(context: Context, lat: Double, lon: Double): Place? {
     // is not a surveyed barangay boundary, so it must never fill the registration barangay.
     BundledPlaces.get(context).describe(lat, lon, LanguagePrefs.get(context))?.let { return Place(barangay = null, label = it.oneLine) }
 
+    geocode(context, lat, lon)?.let { found ->
+        // Remembered, so the same area still has a name the next time there is no signal.
+        PlaceCache.put(context, lat, lon, found.label)
+        return found
+    }
+    // Offline, or the geocoder failed: the nearest name this phone has been given before,
+    // marked as approximate. barangay stays null — a name from up to 1 km away is a guess
+    // and must never fill the registration barangay.
+    val cached = PlaceCache.nearest(context, lat, lon) ?: return null
+    return Place(
+        barangay = null,
+        label = tr(LanguagePrefs.get(context), "Malapit sa ${cached.label}", "Near ${cached.label}"),
+    )
+}
+
+/** The phone's geocoder — a network client on almost every device, so null offline. */
+private suspend fun geocode(context: Context, lat: Double, lon: Double): Place? {
     if (!Geocoder.isPresent()) return null
     val geocoder = Geocoder(context, Locale("fil", "PH"))
 
