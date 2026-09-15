@@ -36,6 +36,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +51,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.demo.isInDemoArea
 import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
@@ -177,6 +179,16 @@ fun MapScreen(
     // instead of closing the app out from under it.
     BackHandler(enabled = homeDraft != null) { homeDraft = null }
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
+    // Where the camera sits once it settles. Drives the "Demo" jump, and the offline-
+    // coverage note below. It starts where the map opens, so both are right before the
+    // first idle event arrives.
+    var cameraCentre by remember {
+        mutableStateOf(
+            initialCamera?.let { it.latitude to it.longitude } ?: (DemoArea.CENTRE_LAT to DemoArea.CENTRE_LON),
+        )
+    }
+    var cameraRequest by remember { mutableStateOf<CameraRequest?>(null) }
+    var locatingMe by remember { mutableStateOf(false) }
     var selectedSeverities by remember { mutableStateOf(ALL_SEVERITIES.toSet()) }
     var recencyFilter by remember { mutableStateOf(RecencyFilter.ALL) }
 
@@ -317,11 +329,39 @@ fun MapScreen(
                 evacStates = evacStateList,
                 stormMode = stormMode,
                 initialCamera = initialCamera,
+                cameraRequest = cameraRequest,
+                onCameraIdle = { lat, lon -> cameraCentre = lat to lon },
                 modifier = Modifier.fillMaxSize(),
             )
 
             if (showChrome) {
                 MapLegend(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+            }
+            if (showChrome) {
+                val noGps = tr("Walang GPS ngayon", "No GPS right now")
+                MapCameraControls(
+                    locating = locatingMe,
+                    onLocateMe = {
+                        if (!locatingMe) {
+                            locatingMe = true
+                            scope.launch {
+                                // Bounded at 6 s with a last-known fallback (LocationFetcher),
+                                // so this label can never hang on "Hinahanap…".
+                                val fix = fetchCurrentLocation(context)
+                                locatingMe = false
+                                if (fix != null) {
+                                    cameraRequest = CameraRequest(fix.latitude, fix.longitude)
+                                } else {
+                                    android.widget.Toast.makeText(context, noGps, android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    },
+                    showDemoJump = !isInDemoArea(cameraCentre.first, cameraCentre.second),
+                    onJumpToDemo = { cameraRequest = CameraRequest(DemoArea.CENTRE_LAT, DemoArea.CENTRE_LON) },
+                    // Directly above the 52 dp "Silungan" control and its 12 dp margin.
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 72.dp),
+                )
             }
             // Day 10's evacuation centres. A floating control on the map rather than a
             // third button in the header, which pushed the barangay name onto two lines
@@ -745,6 +785,10 @@ private fun MapLibreMapView(
     stormMode: Boolean,
     /** Where the camera opens; the frozen demo area when null. */
     initialCamera: LatLng? = null,
+    /** A one-shot move from the camera controls; each new value animates once. */
+    cameraRequest: CameraRequest? = null,
+    /** The camera centre, each time it settles after a pan, zoom or animation. */
+    onCameraIdle: ((lat: Double, lon: Double) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -869,6 +913,31 @@ private fun MapLibreMapView(
             map.addOnMapLongClickListener(listener)
             onDispose { map.removeOnMapLongClickListener(listener) }
         }
+    }
+
+    // Read through rememberUpdatedState so the listener is registered once per map rather
+    // than re-registered on every recomposition (the lambda is a new object each time).
+    val latestOnCameraIdle by rememberUpdatedState(onCameraIdle)
+    DisposableEffect(maplibreMap) {
+        val map = maplibreMap
+        if (map == null) {
+            onDispose { }
+        } else {
+            val listener = MapLibreMap.OnCameraIdleListener {
+                val target = map.cameraPosition.target ?: return@OnCameraIdleListener
+                latestOnCameraIdle?.invoke(target.latitude, target.longitude)
+            }
+            map.addOnCameraIdleListener(listener)
+            onDispose { map.removeOnCameraIdleListener(listener) }
+        }
+    }
+
+    LaunchedEffect(maplibreMap, cameraRequest) {
+        val map = maplibreMap ?: return@LaunchedEffect
+        val request = cameraRequest ?: return@LaunchedEffect
+        map.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(LatLng(request.lat, request.lon), DemoArea.INITIAL_ZOOM),
+        )
     }
 
     androidx.compose.ui.viewinterop.AndroidView(
