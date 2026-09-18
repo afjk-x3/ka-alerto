@@ -141,7 +141,7 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 - **FR-2.1** Submit a report by selecting a location and a depth on the body or vehicle scale; derive severity from depth automatically.
 - **FR-2.2** Write the report to device storage and display it on the author's own map before attempting any transmission.
 - **FR-2.3** Attach an optional photo captured in the application at the time of reporting; the device photo library is not offered as a source.
-- **FR-2.4** Carry the existence and content hash of a photo in the report event itself, queueing the image separately at the lowest priority, so every device computes the same confidence whether or not the image has arrived.
+- **FR-2.4** Carry the existence and content hash of a photo in the report event itself, queueing the image separately at the lowest priority, so every device computes the same confidence whether or not the image has arrived. The image itself uploads and downloads by hash through Supabase only, best-effort, when a connection is available; it never travels over the self-hosted server or the device-to-device relay (FR-4.4).
 - **FR-2.5** Present a report without a photo as less corroborated rather than as doubtful, and never require a photo to submit.
 - **FR-2.6** Record two independent presence signals with each event: asserted position, and relay attestation — how many nearby devices received it directly over short-range radio.
 - **FR-2.7** Count corroboration only from distinct devices, weighting a confirmation by relay attestation rather than by asserted position.
@@ -157,6 +157,7 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 - **FR-3.2** Support a home radius and saved routes as alert scopes.
 - **FR-3.3** Relay PAGASA and NDRRMC advisories verbatim, presented alongside but visually distinct from community reports.
 - **FR-3.4** Escalate a rescue request in range to a critical alert that overrides silent mode.
+- **FR-3.5** Detect a genuinely slow or failing sync connection from real, observed sync attempts — never an inferred signal-strength estimate — and prompt the resident to enable the device-to-device relay as a backup.
 
 **AC-3** An alert fires on a device in airplane mode when a matching event arrives over the relay.
 
@@ -249,11 +250,11 @@ A responsive web console, built last. Authenticated accounts scoped to one LGU w
 
 **Three transports**, offered in order by a transport manager:
 
-1. **Server sync** — batch POST, idempotent on event ID; pull by bounding box and cursor. Carries photos.
+1. **Server sync** — batch POST, idempotent on event ID; pull by bounding box and cursor, against either the self-hosted server or Supabase. Only the Supabase path carries photos, by hash, best-effort.
 2. **Device-to-device relay** — Bluetooth and Wi-Fi Direct. Devices exchange event-ID lists and transfer the difference. No server involved.
 3. **SMS** — a bit-packed encoding for the cellular-but-no-data case, which also reaches feature phones.
 
-**Stack.** Kotlin and Jetpack Compose, min SDK 26; MapLibre with pre-downloaded offline tiles; Room over SQLite; Nearby Connections for the relay; `SmsManager` for the SMS path. Server: Node and Express with the built-in `node:sqlite` module — Express is the only dependency. Dashboard: one HTML page with MapLibre GL JS. FCM is an optional sync-wake optimisation; every alert fires without it.
+**Stack.** Kotlin and Jetpack Compose, min SDK 26; MapLibre with pre-downloaded offline tiles; Room over SQLite; Nearby Connections for the relay; `SmsManager` for the SMS path. Server: Node and Express with the built-in `node:sqlite` module — Express is the only dependency. Supabase runs alongside it as a second, always-on remote target, baked into the app with no address to configure — reachable anywhere with signal, unlike the self-hosted server, which needs zero internet but only works on its own local network. Dashboard: one HTML page with MapLibre GL JS. FCM is an optional sync-wake optimisation; every alert fires without it.
 
 **What is lost with no server:** reach beyond relay range, the dashboard, official feed ingestion, SMS gateway bridging. **What survives:** the map, reporting, confirm and dispute, local notifications, and SOS to nearby phones.
 
