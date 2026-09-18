@@ -55,6 +55,17 @@ object PhotoStore {
         return hash
     }
 
+    /**
+     * Writes bytes fetched from Supabase Storage, but only if they actually hash to
+     * [hash] — a wrong or tampered download must never get filed under someone else's
+     * report. See `sync/SupabaseSyncLoop.kt`'s `fetchPhotoFromSupabase`, the only caller.
+     */
+    fun storeDownloaded(context: Context, hash: String, bytes: ByteArray): Boolean {
+        if (sha256(bytes) != hash) return false
+        FileOutputStream(fileFor(context, hash)).use { it.write(bytes) }
+        return true
+    }
+
     /** A downsampled preview — reports never need the full-resolution capture on screen. */
     fun loadThumbnail(context: Context, hash: String, maxDimension: Int = 512): Bitmap? = runCatching {
         val file = fileFor(context, hash)

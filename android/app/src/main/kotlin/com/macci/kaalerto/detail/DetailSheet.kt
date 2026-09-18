@@ -360,14 +360,17 @@ private fun ReadingCard(waterLevelId: String, severity: String) {
 @Composable
 private fun PhotoStatusCard(photoHash: String) {
     val context = LocalContext.current
-    val thumbnail = remember(photoHash) { PhotoStore.loadThumbnail(context, photoHash) }
+    val scope = rememberCoroutineScope()
+    var thumbnail by remember(photoHash) { mutableStateOf(PhotoStore.loadThumbnail(context, photoHash)) }
+    var fetching by remember(photoHash) { mutableStateOf(false) }
     var showFullImage by remember { mutableStateOf(false) }
     InfoCard {
         Text(tr("LARAWAN", "PHOTO"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(6.dp))
-        if (thumbnail != null) {
+        val bmp = thumbnail
+        if (bmp != null) {
             Image(
-                bitmap = thumbnail.asImageBitmap(),
+                bitmap = bmp.asImageBitmap(),
                 contentDescription = tr("Larawan ng ulat — i-tap para palakihin", "Report photo — tap to enlarge"),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -387,6 +390,24 @@ private fun PhotoStatusCard(photoHash: String) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            // No dead switch when Supabase isn't set up — same rule as every other
+            // primer in this app (identity/OnboardingScreen.kt's PermissionSection).
+            if (com.macci.kaalerto.sync.SupabaseConfig.isConfigured) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    if (fetching) tr("Kinukuha…", "Fetching…") else tr("Kunin ang larawan", "Fetch the photo"),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable(enabled = !fetching) {
+                        fetching = true
+                        scope.launch {
+                            val ok = com.macci.kaalerto.sync.fetchPhotoFromSupabase(context, photoHash)
+                            if (ok) thumbnail = PhotoStore.loadThumbnail(context, photoHash)
+                            fetching = false
+                        }
+                    },
+                )
+            }
         }
     }
 }

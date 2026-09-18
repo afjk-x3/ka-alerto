@@ -28,7 +28,10 @@ import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.detail.MeshIcon
 import com.macci.kaalerto.mesh.MeshStatus
+import com.macci.kaalerto.sync.SupabaseSyncState
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 /**
  * Map-Normal.dc.html / Map-Storm.dc.html's top bar. The artboards show this as "Synced
@@ -88,6 +91,7 @@ fun MapHeader(
                 )
             }
             MeshStatusLine(meshStatus)
+            SlowConnectionLine()
         }
         // Day 10 put the acting role here as a badge; moved to the hamburger drawer
         // (nav/NavDrawer.kt already shows it and already routes to the same role
@@ -121,6 +125,27 @@ fun MapHeader(
  * Copy follows the design system's own phrase for this, "kalapit na phone"
  * (SOSStatus.dc.html, DetailConfirmed-*.dc.html), not a fresh translation.
  */
+/**
+ * Not a bandwidth guess — [SupabaseSyncState.slow] flips true only after real,
+ * observed sync failures in a row (`sync/SupabaseSyncLoop.kt`). Enabling Bluetooth
+ * makes this phone reachable over mesh; it does not promise anyone is nearby to
+ * receive it, so the copy stops short of that claim.
+ */
+@Composable
+private fun SlowConnectionLine() {
+    val slow by SupabaseSyncState.slow.collectAsStateWithLifecycle()
+    if (!slow) return
+    val colors = LocalKaAlertoColors.current
+    Text(
+        tr("Mabagal ang koneksyon — buksan ang Bluetooth", "Slow connection — turn on Bluetooth"),
+        style = MaterialTheme.typography.bodySmall,
+        color = colors.warningFg,
+        maxLines = 1,
+        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 2.dp),
+    )
+}
+
 @Composable
 private fun MeshStatusLine(status: MeshStatus) {
     if (!status.running && status.error == null) return
