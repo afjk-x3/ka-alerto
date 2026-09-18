@@ -15,17 +15,24 @@ import kotlinx.serialization.json.Json
 fun buildEventsUrl(baseUrl: String): String = "$baseUrl/rest/v1/events"
 
 /**
- * No pull cursor, on purpose — the same choice already made for push
- * (`ServerSync.eventsToSync`'s doc comment: re-sending costs one indexed lookup at this
- * app's volumes). A `seq`-style cursor needs a column Supabase's schema does not have and
- * this app does not need one to add: pulling the whole bbox every cycle and relying on
- * Room's own id-primary-key dedup on insert is the smaller diff for a barangay's worth of
- * events.
+ * No pull cursor and no location filter, on purpose — the same choice already made for
+ * push (`ServerSync.eventsToSync`'s doc comment: re-sending costs one indexed lookup at
+ * this app's volumes). A bbox filter here used to hardcode [com.macci.kaalerto.demo.DemoArea]
+ * (removed 18 Sep 2026): that silently dropped every report filed from a real GPS location
+ * outside the frozen demo box, since push has no such filter but pull did — push a report
+ * from real life and no other device would ever pull it back. Pulling everything and
+ * relying on Room's own id-primary-key dedup on insert is the smaller diff for a
+ * barangay's worth of events.
  */
-fun buildPullUrl(baseUrl: String, minLon: Double, minLat: Double, maxLon: Double, maxLat: Double): String =
-    "$baseUrl/rest/v1/events?lon=gte.$minLon&lon=lte.$maxLon&lat=gte.$minLat&lat=lte.$maxLat&select=*"
+fun buildPullUrl(baseUrl: String): String = "$baseUrl/rest/v1/events?select=*"
 
-private val supabaseJson = Json { ignoreUnknownKeys = true }
+/**
+ * `encodeDefaults = true`: PostgREST's batch insert rejects an array whose objects don't
+ * all have the same keys (`PGRST102`). [Event.disputeReason] and [Event.payload] default to
+ * null, so kotlinx.serialization's own default (omit a field at its default value) makes
+ * two events serialize to different key sets — always encode every field so every row matches.
+ */
+private val supabaseJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 private val eventListSerializer = ListSerializer(Event.serializer())
 
 /** PostgREST wants a bare JSON array of rows — `Event` is already the wire format. */

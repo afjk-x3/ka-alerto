@@ -1,10 +1,10 @@
 package com.macci.kaalerto.sync
 
 import android.content.Context
+import android.util.Log
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
-import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.mesh.newlyAppeared
 import com.macci.kaalerto.report.PhotoStore
 import kotlinx.coroutines.CoroutineScope
@@ -48,8 +48,10 @@ class SupabaseSyncLoop(private val context: Context) {
         scope.launch {
             var consecutiveFailures = 0
             while (isActive) {
-                val pushed = runCatching { pushAll(repository) }.isSuccess
-                val pulled = runCatching { pullBbox(repository) }.isSuccess
+                val pushed = runCatching { pushAll(repository) }
+                    .onFailure { Log.w(TAG, "push cycle failed", it) }.isSuccess
+                val pulled = runCatching { pullAll(repository) }
+                    .onFailure { Log.w(TAG, "pull cycle failed", it) }.isSuccess
                 if (pushed || pulled) {
                     SyncPrefs.setLastSyncedAtMs(context, System.currentTimeMillis())
                     consecutiveFailures = 0
@@ -78,7 +80,7 @@ class SupabaseSyncLoop(private val context: Context) {
                 runCatching {
                     pushEvents(fresh)
                     uploadPhotos(fresh)
-                }
+                }.onFailure { Log.w(TAG, "immediate push failed", it) }
             }
         }
     }
@@ -95,6 +97,7 @@ class SupabaseSyncLoop(private val context: Context) {
     private suspend fun uploadPhotos(events: List<Event>) {
         eventsNeedingPhotoUpload(context, events).forEach { (_, hash) ->
             runCatching { uploadPhoto(hash) }
+                .onFailure { Log.w(TAG, "photo upload failed for $hash", it) }
         }
     }
 
@@ -117,15 +120,8 @@ class SupabaseSyncLoop(private val context: Context) {
         }
     }
 
-    private suspend fun pullBbox(repository: EventRepository) {
-        val bounds = DemoArea.bounds
-        val url = buildPullUrl(
-            SupabaseConfig.URL,
-            minLon = bounds.longitudeWest,
-            minLat = bounds.latitudeSouth,
-            maxLon = bounds.longitudeEast,
-            maxLat = bounds.latitudeNorth,
-        )
+    private suspend fun pullAll(repository: EventRepository) {
+        val url = buildPullUrl(SupabaseConfig.URL)
         val events = decodeEvents(getJson(url)) ?: error("GET $url did not decode to an event array")
         if (events.isNotEmpty()) repository.insert(stampSupabaseOrigin(eventsToSync(events)))
     }
@@ -142,7 +138,11 @@ class SupabaseSyncLoop(private val context: Context) {
             connection.setRequestProperty("Content-Type", "application/json")
             if (upsert) connection.setRequestProperty("Prefer", "resolution=merge-duplicates")
             connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-            check(connection.responseCode < 400) { "POST $urlString failed: ${connection.responseCode}" }
+            val code = connection.responseCode
+            if (code >= 400) {
+                val err = connection.errorStream?.bufferedReader()?.use { it.readText() }
+                error("POST $urlString failed: $code $err")
+            }
         } finally {
             connection.disconnect()
         }
@@ -156,7 +156,11 @@ class SupabaseSyncLoop(private val context: Context) {
             connection.readTimeout = READ_TIMEOUT_MS
             connection.setRequestProperty("apikey", SupabaseConfig.ANON_KEY)
             connection.setRequestProperty("Authorization", "Bearer ${SupabaseConfig.ANON_KEY}")
-            check(connection.responseCode < 400) { "GET $urlString failed: ${connection.responseCode}" }
+            val code = connection.responseCode
+            if (code >= 400) {
+                val err = connection.errorStream?.bufferedReader()?.use { it.readText() }
+                error("GET $urlString failed: $code $err")
+            }
             connection.inputStream.bufferedReader().use { it.readText() }
         } finally {
             connection.disconnect()
@@ -167,6 +171,7 @@ class SupabaseSyncLoop(private val context: Context) {
         const val SYNC_INTERVAL_MS = 30_000L
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
+        private const val TAG = "SupabaseSync"
     }
 }
 
@@ -182,9 +187,14 @@ suspend fun fetchPhotoFromSupabase(context: Context, hash: String): Boolean = wi
         connection.requestMethod = "GET"
         connection.setRequestProperty("apikey", SupabaseConfig.ANON_KEY)
         connection.setRequestProperty("Authorization", "Bearer ${SupabaseConfig.ANON_KEY}")
-        if (connection.responseCode != 200) return@withContext false
+        val code = connection.responseCode
+        if (code != 200) {
+            Log.w("SupabaseSync", "photo fetch for $hash failed: $code")
+            return@withContext false
+        }
         PhotoStore.storeDownloaded(context, hash, connection.inputStream.use { it.readBytes() })
     } catch (e: java.io.IOException) {
+        Log.w("SupabaseSync", "photo fetch for $hash failed", e)
         false
     } finally {
         connection.disconnect()

@@ -3,7 +3,6 @@ package com.macci.kaalerto.sync
 import com.macci.kaalerto.data.Event
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SupabaseSyncTest {
@@ -32,13 +31,9 @@ class SupabaseSyncTest {
     }
 
     @Test
-    fun `the pull url filters by bbox with no cursor`() {
-        val url = buildPullUrl("https://x.supabase.co", minLon = 1.0, minLat = 2.0, maxLon = 3.0, maxLat = 4.0)
-        assertTrue(url.contains("lon=gte.1.0"))
-        assertTrue(url.contains("lon=lte.3.0"))
-        assertTrue(url.contains("lat=gte.2.0"))
-        assertTrue(url.contains("lat=lte.4.0"))
-        assertTrue(!url.contains("since"))
+    fun `the pull url has no location filter and no cursor`() {
+        val url = buildPullUrl("https://x.supabase.co")
+        assertEquals("https://x.supabase.co/rest/v1/events?select=*", url)
     }
 
     @Test
