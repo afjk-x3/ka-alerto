@@ -135,6 +135,12 @@ fun KaAlertoApp(
     // see the LaunchedEffect(Unit) at that branch. A tap should move the camera exactly
     // once, not pin every later visit to the map on a shelter the user tapped an hour ago.
     var evacFocusCamera by remember { mutableStateOf<LatLng?>(null) }
+    // Set when a responder taps "Nakita ko" / "Nakita ko — papunta na" on the SOS queue,
+    // so the map they land on immediately shows the request's location — unlike
+    // evacFocusCamera this is not cleared on entry, since the marker and banner
+    // (map/MapScreen.kt's SosFocusBanner) are meant to persist until dismissed, not just
+    // move the camera once.
+    var sosFocus by remember { mutableStateOf<LatLng?>(null) }
     var draftPlaceName by remember { mutableStateOf<String?>(null) }
     var locatingHome by remember { mutableStateOf(false) }
     val sosViewModel: SosViewModel = viewModel()
@@ -305,7 +311,9 @@ fun KaAlertoApp(
             // A resident whose home is outside the demo area opens on it — the home pack
             // covers it offline. Demo phones (home inside) still get null here and open on
             // the demo area, so the scripted demo is unchanged.
-            initialCamera = focusCamera ?: homeStart(HomeLocationStore.get(context))?.let { (lat, lon) -> LatLng(lat, lon) },
+            initialCamera = sosFocus ?: focusCamera ?: homeStart(HomeLocationStore.get(context))?.let { (lat, lon) -> LatLng(lat, lon) },
+            sosFocus = sosFocus,
+            onDismissSosFocus = { sosFocus = null },
             onStartReport = { lat, lon, accuracy -> screen = gated(Screen.Report(lat, lon, accuracy)) },
             onEnterPickLocation = { screen = gated(Screen.PickLocation) },
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
@@ -585,6 +593,11 @@ fun KaAlertoApp(
                         if (found != null) {
                             draftServerUrl = found
                             serverAutoDetected = true
+                            // A discovery reply is a real round trip to that address, so
+                            // it already proves reachability more strongly than typing an
+                            // address ever could — save it immediately rather than making
+                            // the resident find and tap "I-save" a second time.
+                            SyncPrefs.setServerUrl(context, found)
                         }
                         discoveringServer = false
                     }
@@ -755,13 +768,23 @@ fun KaAlertoApp(
         Screen.SosQueue -> {
             val incidents by sosViewModel.incidents.collectAsStateWithLifecycle()
             val isOfficial = role == LocalIdentity.ROLE_OFFICIAL
+            // Acknowledging is also "I need to find this place" — land back on the map
+            // with the exact spot marked rather than leaving the responder on a queue
+            // list with no way to see where to go.
+            fun focusAndAdvance(sosId: String, state: SosState) {
+                incidents.firstOrNull { it.primary.sosId == sosId }?.let {
+                    sosFocus = LatLng(it.primary.lat, it.primary.lon)
+                }
+                sosViewModel.advance(sosId, state)
+                screen = Screen.Map
+            }
             SosQueueScreen(
                 modifier = modifier,
                 incidents = incidents,
                 myLat = HomeLocationStore.get(context)?.lat,
                 myLon = HomeLocationStore.get(context)?.lon,
-                onAcknowledge = { sosViewModel.advance(it, SosState.ACKNOWLEDGED) },
-                onEnRoute = { sosViewModel.advance(it, SosState.EN_ROUTE) },
+                onAcknowledge = { focusAndAdvance(it, SosState.ACKNOWLEDGED) },
+                onEnRoute = { focusAndAdvance(it, SosState.EN_ROUTE) },
                 isOfficial = isOfficial,
                 onMarkFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = false) }) else null,
                 onUndoFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = true) }) else null,

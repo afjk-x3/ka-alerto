@@ -256,10 +256,13 @@ internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
  *
  * "Hanapin" (search) added so nobody has to know their own server's LAN address by
  * heart: `sync/ServerDiscoveryClient.kt` broadcasts for it and, if found, fills this same
- * draft field — never a silent auto-save, same as every other field here, "I-save" still
- * commits it. Manual entry stays fully available underneath, because discovery fails
- * silently on networks with AP/client isolation (common on guest Wi-Fi) and across
- * subnets — see that file's doc comment.
+ * draft field. Unlike every other field here, a discovery hit also saves immediately
+ * (reopened 18 Sep 2026, user's own call) — a UDP reply from that address is a real round
+ * trip proving it is reachable, a stronger signal than typing an address and tapping
+ * "I-save" ever gave. Manual entry stays fully available underneath, still gated on
+ * "I-save" like the rest of the form, because discovery fails silently on networks with
+ * AP/client isolation (common on guest Wi-Fi) and across subnets — see that file's doc
+ * comment.
  */
 @Composable
 internal fun ServerUrlField(

@@ -1,17 +1,28 @@
 package com.macci.kaalerto.sync
 
 import com.macci.kaalerto.data.Event
+import com.macci.kaalerto.sos.TYPE_SOS
+import com.macci.kaalerto.sos.TYPE_SOS_AMEND
+import com.macci.kaalerto.sos.TYPE_SOS_STATE
+import com.macci.kaalerto.sos.redactSosOnEgress
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * Only these event types leave the device via the server transport. `sos*`,
- * `family_checkin`, `circle_invite`, and `role_*` events stay mesh-only — the server has
- * no auth (ground rule 4) and anyone who can reach it can read back everything ever
- * posted for a bbox with `GET /events?bbox=...`, no access control. See
+ * Only these event types leave the device via the server transport. `family_checkin`,
+ * `circle_invite`, and `role_*` events stay mesh-only — the server has no auth (ground
+ * rule 4) and anyone who can reach it can read back everything ever posted for a bbox
+ * with `GET /events?bbox=...`, no access control. See
  * `specs/2026-09-12-server-sync-design.md`'s Non-goals for the full reasoning.
+ *
+ * `sos`/`sos_amend`/`sos_state` were added 18 Sep 2026 — SOS used to be mesh-only, but a
+ * requester or responder with real internet should not have to wait for a Bluetooth
+ * neighbour when a server or Supabase would deliver it immediately. [eventsToSync] applies
+ * [redactSosOnEgress] to every event, same policy the mesh transport already enforced, so
+ * this addition does not change what leaves the device unredacted, only how fast it can
+ * arrive.
  */
-val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status")
+val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE)
 
 /**
  * Every locally-held event worth pushing this cycle — mesh-received ones included, not
@@ -28,8 +39,12 @@ val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status"
  *
  * Bundled sample reports (origin "seed") are never pushed: they are demo fixtures,
  * re-timed on every launch by SeedLoader, not observations.
+ *
+ * [redactSosOnEgress] is a no-op for every non-SOS type, so mapping it over the whole
+ * filtered list rather than branching on type first is the smaller diff.
  */
-fun eventsToSync(all: List<Event>): List<Event> = all.filter { it.type in SYNCED_TYPES && it.origin != "seed" }
+fun eventsToSync(all: List<Event>): List<Event> =
+    all.filter { it.type in SYNCED_TYPES && it.origin != "seed" }.map(::redactSosOnEgress)
 
 /**
  * Turns what someone actually types into Profile's server-address field

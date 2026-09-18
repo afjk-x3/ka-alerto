@@ -1,6 +1,7 @@
 package com.macci.kaalerto.sync
 
 import com.macci.kaalerto.data.Event
+import com.macci.kaalerto.sos.REDACTED_AUTHOR
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -28,7 +29,7 @@ class ServerSyncTest {
     )
 
     @Test
-    fun `flood-reporting types are synced, everything else is excluded`() {
+    fun `flood-reporting and SOS types are synced, family and role events are excluded`() {
         val events = listOf(
             event("e1", "flood_report"),
             event("e2", "confirm"),
@@ -38,11 +39,20 @@ class ServerSyncTest {
             event("e6", "family_checkin"),
             event("e7", "circle_invite"),
             event("e8", "role_grant"),
+            event("e9", "sos_amend"),
+            event("e10", "sos_state"),
         )
 
         val result = eventsToSync(events)
 
-        assertEquals(setOf("e1", "e2", "e3", "e4"), result.map { it.id }.toSet())
+        assertEquals(setOf("e1", "e2", "e3", "e4", "e5", "e9", "e10"), result.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `an SOS is redacted the same way for the server as it is for the mesh`() {
+        val result = eventsToSync(listOf(event("e1", "sos")))
+
+        assertEquals(REDACTED_AUTHOR, result.single().authorName)
     }
 
     @Test

@@ -6,14 +6,22 @@ import com.macci.kaalerto.data.Event
 const val REDACTED_AUTHOR = "Hindi ipinapakita"
 
 /**
- * What an SOS is allowed to carry when it leaves this device.
+ * What an SOS is allowed to carry when it leaves this device — over *any* transport, not
+ * only mesh. Originally mesh-only (hence the name this function used to have); 18 Sep 2026
+ * extended `sync/ServerSync.kt`'s `eventsToSync` to also carry `sos`/`sos_amend`/`sos_state`
+ * over the Node server and Supabase, and Supabase is a strictly bigger exposure than a
+ * relaying phone in Bluetooth range — its anon key ships inside the APK and the table has
+ * zero access control, so anything unredacted posted there is readable by anyone who
+ * extracts that key, permanently, not just to whoever is briefly nearby. Applying this on
+ * every egress path rather than writing a second, transport-specific redaction keeps that
+ * guarantee uniform instead of accidentally weaker on one path.
  *
  * `docs/03-architecture.md` §6.5 says mesh-relaying peers store an **encrypted** payload
  * they cannot read — only a coarse routing header in the clear — so that "neighbours
  * relay a rescue request without learning that the family down the street needs
  * dialysis". Ground rule 4 says no crypto in this build. Those two cannot both hold, so
  * the sensitive fields are **removed** rather than encrypted: what is not sent cannot be
- * read off a relaying phone.
+ * read off a relaying phone, or found in a public database.
  *
  * Two fields go:
  *
@@ -36,12 +44,15 @@ const val REDACTED_AUTHOR = "Hindi ipinapakita"
  * coarsens them to an approximate circle (see [com.macci.kaalerto.sos.SosNearbyScreen]),
  * but that is a display choice, not a guarantee — anyone dumping a relaying device would
  * find the exact point. Only real §6.5 encryption fixes that, and it is out of scope
- * here.
+ * here. Over Supabase specifically this residual is worse than over mesh: a relaying
+ * phone only ever holds what passed through it briefly, while Supabase's table keeps
+ * every coordinate ever posted, queryable by anyone holding the (embedded, extractable)
+ * anon key, indefinitely.
  *
  * Redaction happens on the way **out**, so it is irreversible at the first hop: a peer
  * that relays onward is passing on what it received, which never contained the detail.
  */
-fun redactForMesh(event: Event): Event = when (event.type) {
+fun redactSosOnEgress(event: Event): Event = when (event.type) {
     TYPE_SOS, TYPE_SOS_AMEND -> event.copy(
         authorName = REDACTED_AUTHOR,
         payload = redactPayload(event.payload),

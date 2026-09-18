@@ -61,7 +61,7 @@ data class Event(
      * where most rows have most fields null. Nothing queries inside it: each fold decodes
      * it in memory, so there is no index to miss. It rides mesh and server sync as part
      * of the event, unchanged with one exception — `sos/SosMeshPolicy.kt`'s
-     * `redactForMesh` strips medical detail from an SOS payload before it leaves the
+     * `redactSosOnEgress` strips medical detail from an SOS payload before it leaves the
      * device (it blanks [authorName] in the same pass).
      */
     val payload: String? = null,

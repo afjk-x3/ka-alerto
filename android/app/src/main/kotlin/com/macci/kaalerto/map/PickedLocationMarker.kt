@@ -42,3 +42,39 @@ fun updatePickedLocationMarker(style: Style, latLng: LatLng?) {
     )
     style.addLayer(layer)
 }
+
+private const val SOS_FOCUS_SOURCE_ID = "kaalerto-sos-focus"
+private const val SOS_FOCUS_LAYER_ID = "kaalerto-sos-focus-circle"
+
+/**
+ * Marks the exact spot a responder just acknowledged, on their own map, after tapping
+ * "Nakita ko" / "Nakita ko — papunta na" (`sos/SosQueueScreen.kt`). Same drawing pattern
+ * as [updatePickedLocationMarker] — a plain `CircleLayer`, no new dependency — but its own
+ * source/layer id so the two never collide, and a distinct orange rather than the picked-
+ * location pin's red, since they can in principle both exist at once (a responder mid
+ * pick-mode who also has an open SOS focused). `kaalerto-` prefix means Storm Mode's
+ * re-tint already skips it (`map/StormMapStyle.kt`) with no extra wiring.
+ */
+fun updateSosFocusMarker(style: Style, latLng: LatLng?) {
+    val collection = if (latLng == null) {
+        FeatureCollection.fromFeatures(emptyArray())
+    } else {
+        FeatureCollection.fromFeatures(arrayOf(Feature.fromGeometry(Point.fromLngLat(latLng.longitude, latLng.latitude))))
+    }
+
+    val existingSource = style.getSourceAs<GeoJsonSource>(SOS_FOCUS_SOURCE_ID)
+    if (existingSource != null) {
+        existingSource.setGeoJson(collection)
+        return
+    }
+    if (latLng == null) return
+
+    style.addSource(GeoJsonSource(SOS_FOCUS_SOURCE_ID, collection))
+    val layer = CircleLayer(SOS_FOCUS_LAYER_ID, SOS_FOCUS_SOURCE_ID).withProperties(
+        PropertyFactory.circleRadius(14f),
+        PropertyFactory.circleColor(Color.parseColor("#F2994A")),
+        PropertyFactory.circleStrokeColor(Color.WHITE),
+        PropertyFactory.circleStrokeWidth(4f),
+    )
+    style.addLayer(layer)
+}

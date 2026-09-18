@@ -2,7 +2,9 @@ package com.macci.kaalerto.map
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -143,6 +145,15 @@ fun MapScreen(
     onToggleStormMode: (() -> Unit)? = null,
     /** Non-null on the Map screen only when normal chrome is showing — see [showChrome]. */
     onOpenMenu: (() -> Unit)? = null,
+    /**
+     * The request a responder just acknowledged — set by `ui/KaAlertoApp.kt` when
+     * "Nakita ko" / "Nakita ko — papunta na" is tapped (`sos/SosQueueScreen.kt`), so the
+     * map they land on already shows exactly where to go rather than an empty barangay.
+     * Cleared by [onDismissSosFocus]; the marker and banner persist across camera moves
+     * until then, since panning away to get bearings shouldn't lose the spot.
+     */
+    sosFocus: LatLng? = null,
+    onDismissSosFocus: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -385,6 +396,7 @@ fun MapScreen(
                 initialCamera = initialCamera,
                 cameraRequest = cameraRequest,
                 onCameraIdle = { lat, lon -> cameraCentre = lat to lon },
+                sosFocus = sosFocus,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -460,6 +472,14 @@ fun MapScreen(
 
         if (showChrome) {
             MapDisclaimer()
+        }
+
+        if (sosFocus != null) {
+            SosFocusBanner(
+                latLng = sosFocus,
+                onDismiss = { onDismissSosFocus?.invoke() },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         when {
@@ -566,6 +586,55 @@ fun MapScreen(
         // this only fires for a summary that genuinely disappeared after being shown,
         // not for one that simply hasn't arrived yet — see that flag's own comment.
         selectedFeatureRef = null
+    }
+}
+
+/**
+ * Shown after a responder taps "Nakita ko" / "Nakita ko — papunta na" on the SOS queue
+ * (`sos/SosQueueScreen.kt`) and lands back on the map with [MapScreen]'s `sosFocus` set —
+ * the orange marker (`updateSosFocusMarker`) is where to look, this banner is how to get
+ * there. "Buksan sa Maps" hands off to whatever navigation app is installed via a plain
+ * `geo:` intent: this app has no routing engine of its own (day 11's route check was
+ * never built), so real turn-by-turn is only ever available through that handoff, and
+ * only once there is a connection to fetch a route with.
+ */
+@Composable
+private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    Row(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.inverseSurface)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                tr("Dito ang hiling ng tulong", "The request is here"),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+            )
+            Text(
+                "%.5f, %.5f".format(latLng.latitude, latLng.longitude),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+            )
+        }
+        Text(
+            tr("Buksan sa Maps", "Open in Maps"),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            modifier = Modifier
+                .clickable {
+                    val uri = Uri.parse("geo:${latLng.latitude},${latLng.longitude}?q=${latLng.latitude},${latLng.longitude}")
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                }
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"), tint = MaterialTheme.colorScheme.inverseOnSurface)
+        }
     }
 }
 
@@ -850,6 +919,8 @@ private fun MapLibreMapView(
     cameraRequest: CameraRequest? = null,
     /** The camera centre, each time it settles after a pan, zoom or animation. */
     onCameraIdle: ((lat: Double, lon: Double) -> Unit)? = null,
+    /** Where a responder just acknowledged an SOS; drawn by [updateSosFocusMarker]. */
+    sosFocus: LatLng? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -929,6 +1000,11 @@ private fun MapLibreMapView(
     LaunchedEffect(maplibreMap, styleEpoch, pickedLocation) {
         if (styleEpoch == 0) return@LaunchedEffect
         maplibreMap?.style?.let { updatePickedLocationMarker(it, pickedLocation) }
+    }
+
+    LaunchedEffect(maplibreMap, styleEpoch, sosFocus) {
+        if (styleEpoch == 0) return@LaunchedEffect
+        maplibreMap?.style?.let { updateSosFocusMarker(it, sosFocus) }
     }
 
     // Pick-mode (setting a report location) and marker selection are mutually

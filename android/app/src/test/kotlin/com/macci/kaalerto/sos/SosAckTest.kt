@@ -41,7 +41,7 @@ class SosAckTest {
 
     @Test
     fun `medical detail and the requester's name never leave the device`() {
-        val sent = redactForMesh(request(fullContext))
+        val sent = redactSosOnEgress(request(fullContext))
         val context = decodeSosPayload(sent.payload)!!.context!!
 
         // docs/03-architecture.md 6.5 wants this encrypted. With no crypto, the honest
@@ -54,7 +54,7 @@ class SosAckTest {
 
     @Test
     fun `what a responder actually needs still travels`() {
-        val context = decodeSosPayload(redactForMesh(request(fullContext)).payload)!!.context!!
+        val context = decodeSosPayload(redactSosOnEgress(request(fullContext)).payload)!!.context!!
 
         // QueueVolunteer.dc.html's own footer: a registered volunteer gets "lokasyon at
         // bilang ng tao". Strip those too and the queue screen is useless.
@@ -68,8 +68,8 @@ class SosAckTest {
     fun `redaction survives being relayed onward`() {
         // B redacts before sending to C. C stores what it was given and re-shares that,
         // so the detail is gone irreversibly at the first hop rather than at each one.
-        val onB = acceptForStore(listOf(redactForMesh(request(fullContext))), emptySet(), now).single()
-        val onC = acceptForStore(relayable(listOf(redactForMesh(onB)), now), emptySet(), now).single()
+        val onB = acceptForStore(listOf(redactSosOnEgress(request(fullContext))), emptySet(), now).single()
+        val onC = acceptForStore(relayable(listOf(redactSosOnEgress(onB)), now), emptySet(), now).single()
 
         assertTrue(decodeSosPayload(onC.payload)!!.context!!.medical.isEmpty())
         assertEquals(REDACTED_AUTHOR, onC.authorName)
@@ -83,14 +83,14 @@ class SosAckTest {
 
         // The artboard says "Papunta na si Boy". Stripping the person volunteering to
         // walk into floodwater would remove the one name the requester needs.
-        assertEquals("Boy R.", redactForMesh(ack).authorName)
+        assertEquals("Boy R.", redactSosOnEgress(ack).authorName)
     }
 
     @Test
     fun `a flood report is untouched by the SOS policy`() {
         val report = request().copy(type = "flood_report", payload = null, authorName = "Maria S.")
 
-        assertEquals("Maria S.", redactForMesh(report).authorName)
+        assertEquals("Maria S.", redactSosOnEgress(report).authorName)
     }
 
     // ------------------------------------------------------------ acknowledgement fold
@@ -176,7 +176,7 @@ class SosAckTest {
 
     @Test
     fun `a relayed request reports the mesh as its origin so the queue can say so`() {
-        val relayed = acceptForStore(listOf(redactForMesh(request())), emptySet(), now).single()
+        val relayed = acceptForStore(listOf(redactSosOnEgress(request())), emptySet(), now).single()
 
         val snapshot = SosReducer.snapshot(
             decodeSosPayload(relayed.payload)!!.sosId,

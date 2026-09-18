@@ -14,7 +14,7 @@ data class SosSnapshot(
     val authorName: String,
     /**
      * The requester's device id. Survives the mesh where [authorName] does not —
-     * `SosMeshPolicy.redactForMesh` replaces the name and leaves the id, so this is what
+     * `SosMeshPolicy.redactSosOnEgress` replaces the name and leaves the id, so this is what
      * the official queue's false-alarm history can key on even though the official
      * cannot see who they are looking at.
      */
