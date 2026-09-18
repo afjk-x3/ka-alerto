@@ -36,7 +36,7 @@ import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.notification.NotificationChannels
-import com.macci.kaalerto.sos.redactForMesh
+import com.macci.kaalerto.sos.redactSosOnEgress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -198,8 +198,13 @@ class MeshService : Service() {
     }
 
     private fun startNearby() {
-        val options = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
-        val discoveryOptions = DiscoveryOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).build()
+        // Low power: P2P_CLUSTER's default medium set includes Wi-Fi Direct/Hotspot for
+        // bandwidth, and Play Services silently switches the Wi-Fi radio on to use it the
+        // moment advertising/discovery starts — even with Wi-Fi off and no network at all.
+        // Low power restricts Nearby to Bluetooth LE only, at the cost of range/speed, so
+        // opening the app never touches a radio the resident didn't already have on.
+        val options = AdvertisingOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).setLowPower(true).build()
+        val discoveryOptions = DiscoveryOptions.Builder().setStrategy(Strategy.P2P_CLUSTER).setLowPower(true).build()
 
         connections
             .startAdvertising(endpointName(), MESH_SERVICE_ID, connectionLifecycle, options)
@@ -345,7 +350,7 @@ class MeshService : Service() {
         // leaves this device. §6.5 wants that payload encrypted; with no crypto in this
         // build the honest equivalent is not to send it at all — what is not sent
         // cannot be read off a relaying phone. See sos/SosMeshPolicy.kt.
-        val outbound = events.map(::redactForMesh)
+        val outbound = events.map(::redactSosOnEgress)
         for (batch in chunkForPayload(outbound)) {
             val payload = Payload.fromBytes(encode(MeshMessage.Events(batch)))
             connections.sendPayload(endpointIds.toList(), payload)
