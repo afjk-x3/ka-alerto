@@ -115,11 +115,11 @@ Focus: code and feature work only. Stage submissions are handled separately in t
 
 ## Days 6–10 — V1 (Mesh + SOS)
 
-### Days 6–7: Nearby Connections mesh — CODE COMPLETE 5 Sep 2026, **DoD NOT MET**
+### Days 6–7: Nearby Connections mesh — DONE, **DoD MET 18 Sep 2026 on real hardware**
 
 **Hard gate — allocate full two days.**
 
-Everything is written and every part that can run without a second radio has been verified on the `API34_Test` emulator. **The DoD itself has not been met and cannot be until the three phones exist** — see `SETUP_CHECKLIST.md`. Do not describe the mesh as working.
+Everything is written and every part that can run without a second radio has been verified on the `API34_Test` emulator. **Real-hardware DoD closed 18 Sep 2026**: three real phones connected over the mesh (one showed 3 nearby phones, another showed 1), a flood report filed on one relayed to another with mesh doing the delivery (server sync and internet were both confirmed not the path that time) — the two-real-device radio hop this section used to say was impossible without more hardware is now proven. Not yet separately re-verified with airplane mode strictly on throughout every phone for the full formal DoD script below; do that pass before calling day 6–7 airplane-mode-clean.
 
 - [x] Foreground service hosting Nearby client, persistent notification — `mesh/MeshService.kt`, `foregroundServiceType="connectedDevice"`, low-importance channel with a "Ihinto" stop action so the relay is never un-stoppable
 - [x] `startAdvertising()` + `startDiscovery()` on `Strategy.P2P_CLUSTER`, auto-accept — `authenticationDigits` deliberately ignored (ground rule 4)
@@ -128,7 +128,7 @@ Everything is written and every part that can run without a second radio has bee
 - [x] Peer counter in UI ("3 nearby phones connected") — third line of the map header, using the design system's own phrase ("kalapit na phone")
 - [x] Mark received events with `origin: mesh`, increment `hopCount` — the content-hash `id` is left alone, so the same report still dedupes against a copy arriving later by SMS or server
 - [x] Detail sheet shows "via mesh · 2 hops" — already built during the UI rebuild (`detail/DetailSheet.kt`)
-- [ ] **DoD — NOT MET.** Two airplane-mode phones (report on A appears on B; phone C, out of A's range and in B's, receives via B) requires hardware this project does not yet have. The hop arithmetic that DoD checks is covered by unit test (`MeshProtocolTest`: A→B at one hop, B→C at two), which is a test of the decision, not of the radio.
+- [x] **DoD MET 18 Sep 2026.** Three real phones, mesh-connected (3 nearby / 1 nearby seen from each side), a flood report relayed device-to-device with no server and no internet in the path. The hop arithmetic itself is also covered by unit test (`MeshProtocolTest`: A→B at one hop, B→C at two). Still to do: the *formal* three-phone airplane-mode script (report on A → B → out-of-range C via B) exactly as scripted below, rather than the ad hoc two/three-phone test that closed this gate.
 - [x] **Critical debugging note** — verified as far as an emulator allows, and it paid for itself twice. (a) Nearby also needs `ACCESS_WIFI_STATE` + `CHANGE_WIFI_STATE` in the manifest; without them `startAdvertising()` fails at runtime with `MISSING_PERMISSION_CHANGE_WIFI_STATE` (8033) and nothing catches it at build or install time. (b) `startAdvertising()` reports **success even when the radios underneath it are unusable** — so `mesh/MeshRadios.kt` checks Bluetooth and location *services* directly, and `MeshService` watches `ACTION_STATE_CHANGED`/`MODE_CHANGED_ACTION` so switching Bluetooth back on after airplane mode brings the mesh up within a second with no app restart. Confirmed on the emulator in airplane mode: BT off → header reads "Buksan ang Bluetooth para sa mesh" in amber; BT on → "Naghahanap ng kalapit na phone", no relaunch.
 - **If behind end of day 6:** Fall back to single-hop, drop multi-hop relay, keep moving — *not taken; multi-hop is implemented.*
 
@@ -156,7 +156,7 @@ Whole path lives in `sos/`: SOSHold → SOSContext → SOSStatus → RescueCard,
 
 **Schema change: `Event.payload` (`String?`), DB version 3.** Structured type-specific detail as JSON, for events whose content does not fit the columns — today only the `sos*` family, whose payload is a people count, medical needs and a water trend rather than a severity. It travels over the mesh as part of the event with no extra handling. `fallbackToDestructiveMigration` was already set, so upgrading wipes and reseeds.
 
-### Day 9: SOS over mesh + acknowledgement — CODE COMPLETE 5 Sep 2026, **DoD NOT MET** (needs two phones)
+### Day 9: SOS over mesh + acknowledgement — DONE, **DoD MET 18 Sep 2026 on real hardware**
 
 **The money demo — hard gate.**
 
@@ -169,8 +169,10 @@ Every step was exercised on one `API34_Test` emulator in airplane mode by inject
 - [x] Originator screen updates — §6.2's own requester-facing strings, driven by the fold: "Nakita na ng barangay responder ang hiling mo." then "Papunta na ang tulong."
 - [x] Monotonic states — `SosState.rank` + `mergeSosState`, with tests for out-of-order arrival and for a stale `BEACONING` failing to un-acknowledge a claimed request.
 - [x] **ACKNOWLEDGED + EN_ROUTE**, both, matching the artboard's own two buttons ("Nakita ko" / "Nakita ko — papunta na"). The queue card then shows "Papunta na si …" with the responder's real name.
-- [ ] **DoD NOT MET.** Two airplane-mode phones (SOS on A → critical alert on B → acknowledge → A updates) needs hardware this project does not have. Everything either side of the radio is verified; the radio is not.
-- **If behind:** Demo one-way SOS; note the ack as designed-not-built — *not taken; the ack round trip is built.*
+- [x] **DoD MET 18 Sep 2026.** Two real phones: SOS held on A, critical full-screen alert fired on B, B acknowledged, A's status screen updated with the responder's name — full round trip over Bluetooth, no server, no internet.
+- [x] **Extended the same night, user's own call:** SOS now also syncs over the Node server and Supabase (`sync/ServerSync.kt`'s `SYNCED_TYPES`), not mesh-only — a requester or responder with real internet no longer has to wait for a Bluetooth neighbour. The same redaction the mesh transport already enforced (`sos/SosMeshPolicy.kt`, renamed `redactSosOnEgress` since it is no longer mesh-specific) applies before anything reaches the server or Supabase, so this does not change what leaves the device unredacted — only how fast it can arrive. Supabase is a bigger exposure than mesh even after redaction (its anon key ships in the APK, the table has no access control, and unlike a relaying phone it keeps every coordinate posted, permanently) — documented in `SosMeshPolicy.kt`'s doc comment for whoever touches this next.
+- [x] **Also added:** acknowledging a request ("Nakita ko" / "Nakita ko — papunta na") now takes the responder straight to the map with the request's exact location marked (`map/PickedLocationMarker.kt`'s `updateSosFocusMarker`) and a banner offering "Buksan sa Maps" to hand off to whatever navigation app is installed for real turn-by-turn directions — this app has no routing engine of its own (day 11b was never built), so that handoff is the only way to get routed directions, and only once there is a connection to fetch a route with.
+- **If behind:** Demo one-way SOS; note the ack as designed-not-built — *not taken; the ack round trip is built and proven.*
 
 **The privacy conflict this day forced, and how it was resolved.** `SOSNearby.dc.html` tells a plain resident "Hindi ipinapakita ang eksaktong lokasyon o kung sino sila" and "Dinadala rin ito ng phone mo papunta sa iba — hindi mo ito kayang basahin". That last line is `docs/03-architecture.md` §6.5: relaying peers hold an **encrypted** payload. Ground rule 4 forbids crypto, and the mesh relays whole `Event` rows — so medical needs and the requester's name would have sat readable on every phone in the barangay, which is exactly the RA 10173 exposure the PRD flags.
 
@@ -202,37 +204,49 @@ The full cycle was walked on device: one official cleared the pair (blue S0) →
 
 ## Days 11–15 — MVP (Full Integration)
 
-### Day 11: Family check-in + route check
+### Day 11a: Family check-in — DONE on two emulators, QR camera step unproven on hardware
 
-**Route check is first on the cut ladder if behind.**
+**Route check is first on the cut ladder if behind — see below, it was taken.**
 
-- [ ] Check-in: circle pairing by QR (works offline). "Ligtas ako" emits ~20-byte event
-- [ ] Circle list showing each member's status and age
+- [x] Check-in: circle pairing by QR (works offline). "Ligtas ako" emits ~20-byte event — `family/CircleEvents.kt`, `family/CircleReducer.kt`, `family/FamilyCircleScreen.kt`
+- [x] Circle list showing each member's status and age
+- [ ] **Not proven on real hardware**: the QR camera scan step for pairing has only run on two emulators, never a real camera against a real printed/displayed code.
+
+### Day 11b: Route check — NOT BUILT, cut ladder taken
+
 - [ ] Route check: load bundled route GeoJSONs, buffer, intersect with flooded segments
 - [ ] Route detail: *"2 flooded segments — 1 impassable"*, offenders highlighted
-- **If behind:** Cut route check entirely (it's on the ladder); keep check-in (cheaper demo)
+- **Status:** no code exists for this under any package. Treat as cut rather than pending unless reopened — confirm with the user before spending a day rebuilding it this late.
 
-### Day 12: SMS fallback
+**Recommendation if real turn-by-turn routing (not just route check) is ever picked up (discussed 18 Sep 2026, not started):**
 
+The SOS acknowledge flow (day 9, see above) currently hands off to an external Maps app via a `geo:` intent for directions, because this app has no routing engine and only has road data for the frozen demo area (the day-0 OSM extract) — outside it, there is nothing to route on, anywhere in the country.
+
+Building our own routing needs a road *graph* (which roads connect to which, and their names) — this is a fundamentally smaller problem than the offline map *tiles* (the pictures of every street, building and label at every zoom level) `OfflineMapPack`/`ensureHomePack` already download per-area. Conflating the two is the trap: a nationwide MapLibre `OfflineManager` tile pack would likely run into multiple GB, since this project's tooling has no access to the specialized compression apps like OsmAnd use to fit a whole country in a few hundred MB — genuinely impractical to ship or to ask a resident's phone to store.
+
+A **nationwide roads-only graph**, by contrast, is tractable: the Philippines' full OSM extract is ~300-400MB (Geofabrik), but that includes buildings, land use and every POI. Filtering to just `highway=*` ways and their nodes — the only thing a routing graph needs — cuts that drastically. The recommendation is to keep the *visual* map scoped as it is today (demo area + per-home packs) and separately ship a one-time, nationwide, roads-only graph download so the app can compute a route and turn-by-turn text to any SOS location in the country, even where the pretty map was never downloaded.
+
+Scope if taken: fetch the roads-only extract (same Overpass API bbox technique `tools/osm-extract/` already uses for the demo area, just nationwide and `highway=*`-filtered), parse ways/nodes into a graph, snap an arbitrary GPS point to the nearest road, run Dijkstra/A* for the path, and generate turn-by-turn text from the resulting way sequence. This is a multi-day build on the scale of the original route check, not a quick add — not started, needs an explicit decision to schedule it against the remaining gates (dashboard, SMS, rehearsal) before the 30 Sep deadline.
+
+### Day 12: SMS fallback — SCAFFOLDED ONLY, not functional
+
+- [x] Receiver skeleton exists: `broadcast/SmsReceiver.kt`, registered in the manifest, guarded by `BROADCAST_SMS` (not `RECEIVE_SMS` — the security fix from `android/README.md`'s toolchain notes is already in place even though the receiver itself does nothing yet)
+- [ ] `handleSmsMessage` is a bare `TODO` — no bit-packed encoder, no decode logic
 - [ ] Bit-packed encoder: type (3 bits) + geohash-9 + severity (3) + timestamp-minutes (20) + people count + medical flag → Base32, one GSM-7 segment
 - [ ] `SmsManager.sendTextMessage()` to configured gateway number (second phone)
-- [ ] `SMS_RECEIVED` receiver parsing back to event
 - [ ] UI showing "No data connection — sent by SMS" with character count visible (29 chars carrying a rescue request is visceral)
-- **If behind:** Send-only. Show the received SMS in the stock app and explain the parser. 80% impact for 20% work.
+- **If behind:** Send-only. Show the received SMS in the stock app and explain the parser. 80% impact for 20% work. — **this is roughly where it sits right now**, minus even the send half.
 
-### Day 13: Server + sync + dashboard
+### Day 13: Server + sync + dashboard — server sync DONE and verified; dashboard NOT BUILT
 
-**150 lines total. If it exceeds a day, cut it.**
-
-- [ ] Express endpoints:
-  - `POST /events/batch` (idempotent on event ID, returns deduped count)
-  - `GET /events?since=<cursor>&bbox=<bbox>` (cursor-based pagination)
-- [ ] Sync on reconnect: flush **entire** local queue including mesh-acquired events authored by other devices (carry-forward)
-- [ ] One-page dashboard: MapLibre GL JS, all events plotted, SOS list, event detail
+- [x] Express endpoints: `POST /events/batch` (idempotent on event ID), `GET /events?since=<cursor>&bbox=<bbox>` (cursor-based pagination), plus `GET /health` — `server/src/server.js`, `server/src/db.js`
+- [x] Sync on reconnect: flush entire local queue, carry-forward, no per-device cursor — `sync/ServerSyncLoop.kt`. Verified on two emulators; LAN auto-discovery ("Hanapin") root-caused 18 Sep to a broadcast/router client-isolation issue on the tested network, not a code defect — manual address entry works, and a found address now saves immediately instead of needing a separate "I-save" tap.
+- [x] **Went beyond the original plan (18 Sep 2026, user's own call, reopening the 5 Sep Supabase rejection):** Supabase added as a second, always-on sync target needing zero manual server address — `sync/SupabaseSync.kt`, `sync/SupabaseSyncLoop.kt`, `supabase/schema.sql`. Includes photo upload/download over Supabase Storage (photos never traveled over the Node server or mesh, per the architecture guardrail). Two real bugs found and fixed the same night: a PostgREST batch-insert rejection from kotlinx.serialization omitting default-valued fields (`encodeDefaults = true` fix), and a pull query hardcoded to the frozen demo bounding box that silently dropped every report filed from a real GPS location outside it (bbox filter removed, pulls everything like push already did). The Node server stays — it is still the only transport that needs zero internet, just a working LAN.
+- [ ] Dashboard: Next.js + MapLibre GL JS, all events plotted, SOS list, event detail — `dashboard/` is still an empty placeholder, per `CLAUDE.md`'s own open items list; being started 18 Sep 2026 in a separate OpenCode session against the same `server/src/server.js` endpoints
 - [ ] Dashboard read-only by default (acknowledge action is optional cut)
-- [ ] Polish: Filipino strings on every user-facing label, Storm Mode audit, tap-target pass on demo path, honest offline copy everywhere (no spinners, no fake "sent")
+- [ ] Polish: Filipino strings on every user-facing label, Storm Mode audit, tap-target pass on demo path, honest offline copy everywhere (no spinners, no fake "sent") — partially done (i18n pass noted in `CLAUDE.md`'s known open items, unreviewed by a native speaker; some English strings still found inside Filipino screens)
 - [ ] App icon, splash screen, final seed tuning
-- **If behind:** Cut dashboard's acknowledge action (read-only is fine). Cut polling; refresh button is fine.
+- **If behind:** Cut dashboard's acknowledge action (read-only is fine). Cut polling; refresh button is fine. — **the whole dashboard itself is the piece actually at risk of being cut**, not just its acknowledge action.
 
 ### Day 14: Rehearsal + backup
 
@@ -278,21 +292,24 @@ Cut anything else first.
 
 | Day | Feature | DoD | Status |
 |---|---|---|---|
-| 1 | Offline map | App launches offline, map renders, blue dot visible | ⬜ |
-| 2 | Event store + seeding | 20 markers on map, right colors, right places | ✅ |
+| 1 | Offline map | App launches offline, map renders, blue dot visible | ✅ |
+| 2 | Event store + seeding | 19 markers on map, right colors, right places | ✅ |
 | 3 | Reporting flow | Report filed in <15s in airplane mode | ✅ |
 | 4 | Confirm/dispute + reducer | Conflicting pair renders as SX, confirming moves bucket | ✅ |
 | 5 | Notifications + filters | In-radius report triggers notification | ✅ |
-| 6 | Nearby Connections | Two phones exchange events over mesh (single-hop) | ⬜ |
-| 7 | Nearby — multi-hop | Three-phone relay, C receives via B | ⬜ |
-| 8 | SOS + Lighthouse card | SOS → BEACONING, QR card appears | ⬜ |
-| 9 | SOS mesh + ack | SOS A → alert B → acknowledge → A updates | ⬜ |
-| 10 | Official role + evacuation | Official status overrides and badge appears | ⬜ |
-| 11 | Check-in + route check | Both features work, route check shows flooded segments | ⬜ |
-| 12 | SMS fallback | Report encoded to 29 chars, sends via SMS | ⬜ |
-| 13 | Server + sync + dashboard | /events/batch and /events?since= work, dashboard shows events | ⬜ |
-| 14 | Rehearsal + backup | Full demo rehearsed 10×, backup video recorded | ⬜ |
-| 15 | Demo day prep | All devices charged, no new code, ready to ship | ⬜ |
+| 6 | Nearby Connections | Two phones exchange events over mesh (single-hop) | ✅ (real hardware, 18 Sep) |
+| 7 | Nearby — multi-hop | Three-phone relay, C receives via B | ✅ (ad hoc real-hardware test 18 Sep; formal scripted DoD still to run) |
+| 8 | SOS + Lighthouse card | SOS → BEACONING, QR card appears | ✅ |
+| 9 | SOS mesh + ack | SOS A → alert B → acknowledge → A updates | ✅ real hardware, 18 Sep; also extended to sync over server/Supabase (redacted) and to mark the location on acknowledge |
+| 10 | Official role + evacuation | Official status overrides and badge appears | ✅ |
+| 11a | Family check-in | QR pairing, circle list with status/age | ✅ (two emulators; camera step unproven on hardware) |
+| 11b | Route check | Route check shows flooded segments | ⬜ not built — no code exists; treat as cut, confirm with user before rebuilding |
+| 12 | SMS fallback | Report encoded to 29 chars, sends via SMS | ⬜ receiver stub only, `handleSmsMessage` is a bare TODO |
+| 13a | Server sync (Node) | /events/batch and /events?since= work | ✅ verified on two emulators |
+| 13b | Supabase sync (added 18 Sep) | Push/pull + photo upload work with zero manual address | ✅ verified against real device, both bugs found and fixed same night |
+| 13c | Dashboard | Dashboard shows events | ⬜ empty placeholder, not started |
+| 14 | Rehearsal + backup | Full demo rehearsed 10×, backup video recorded | ⬜ not started |
+| 15 | Demo day prep | All devices charged, no new code, ready to ship | ⬜ N/A yet |
 
 ---
 
@@ -336,7 +353,7 @@ Three rules that are easy to break by accident:
 - **Serialization:** `kotlinx.serialization` → JSON (bit-packed encoder for SMS only)
 - **Permissions:** Accompanist Permissions lib
 - **Server:** Node 24 + Express + `node:sqlite` (~150 lines, only Express dependency)
-- **Dashboard:** One HTML page + MapLibre GL JS (not React)
+- **Dashboard:** Next.js + MapLibre GL JS (reopened 18 Sep 2026, user's own call — was "one HTML page, not React," kept dependency-free and zero-setup on purpose; the tradeoff is a real build pipeline this late in the timeline). **Gated by one shared PIN, demo purposes only** (also 18 Sep 2026, also reopened — ground rule 4 said "no auth" for the whole system): a single server-side secret every official uses, not per-official accounts, checked on the `GET /events` endpoint itself so the gate is real rather than just hiding the dashboard's webpage while the same data stays readable by anyone who calls the API directly. Real username/password accounts were considered and rejected for now — the server runs plain HTTP with no TLS, so real passwords would travel unencrypted, worse than no login at all.
 - **Location:** FusedLocationProviderClient
 
 ---
