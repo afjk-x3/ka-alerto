@@ -177,4 +177,25 @@ class MeshProtocolTest {
 
         assertEquals(listOf(real), relayable(listOf(sample, real), now))
     }
+
+    /** The first emission is the existing backlog, not anything new — nothing to push yet. */
+    @Test
+    fun `newlyAppeared reports nothing on the first emission`() {
+        assertEquals(emptyList<Event>(), newlyAppeared(null, listOf(event("e1"), event("e2"))))
+    }
+
+    @Test
+    fun `newlyAppeared finds only the ids not seen before`() {
+        val e1 = event("e1")
+        val e2 = event("e2")
+
+        assertEquals(listOf(e2), newlyAppeared(setOf("e1"), listOf(e1, e2)))
+    }
+
+    @Test
+    fun `newlyAppeared is empty when nothing has changed`() {
+        val e1 = event("e1")
+
+        assertEquals(emptyList<Event>(), newlyAppeared(setOf("e1"), listOf(e1)))
+    }
 }

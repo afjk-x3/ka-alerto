@@ -96,6 +96,27 @@ fun relayable(events: List<Event>, nowMs: Long): List<Event> =
     events.filter { it.expiresAt > nowMs && it.hopCount < MESH_MAX_HOPS && it.origin != "seed" }
 
 /**
+ * Which of [events] are new since [previousIds] — the diff [MeshService] pushes to
+ * peers it is already connected to.
+ *
+ * `sendManifest`/`answerManifest` only run once, at the moment a connection reaches
+ * `STATUS_OK`; a report filed while two phones are already paired never went through
+ * either, so it never left the device until the next reconnect. Found on real
+ * hardware, 18 Sep 2026: two phones, both open and already connected, one filed a
+ * report the other never saw until it was relaunched — relaunching is what tore the
+ * connection down and rebuilt it, retriggering the one-time exchange.
+ * `MeshService.observeNewLocalEvents` diffs the event table's own `Flow` the same way
+ * `GeofenceNotifier` and `SosAlertWatcher` already do elsewhere in this app; this is
+ * that diff, pulled out so it can be tested without a live `Flow` or a connected peer.
+ *
+ * `previousIds == null` means this is the first emission — the existing backlog, not
+ * anything new — so it returns nothing rather than resending everything already on
+ * disk to whoever happens to already be connected.
+ */
+fun newlyAppeared(previousIds: Set<String>?, events: List<Event>): List<Event> =
+    if (previousIds == null) emptyList() else events.filter { it.id !in previousIds }
+
+/**
  * The whole receive decision: given what just arrived and what this device already
  * holds, which events does it store, and how are they rewritten?
  *

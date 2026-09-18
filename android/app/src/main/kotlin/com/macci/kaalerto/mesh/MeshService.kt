@@ -140,6 +140,7 @@ class MeshService : Service() {
         if (!started) {
             started = true
             observeStatusForNotification()
+            observeNewLocalEvents()
             syncRadioState()
         }
         return START_STICKY
@@ -359,6 +360,37 @@ class MeshService : Service() {
     private fun observeStatusForNotification() {
         scope.launch {
             MeshState.status.collect { status -> promoteToForeground(status) }
+        }
+    }
+
+    /**
+     * Pushes a newly-created local event straight to every peer we are already
+     * connected to, instead of waiting for the next connection to form.
+     *
+     * [sendManifest]/[answerManifest] only run once, at the moment a connection reaches
+     * `STATUS_OK` — enough for two phones that connect after a report exists, but
+     * nothing for one filed while they are already paired. Found on real hardware, 18
+     * Sep 2026: two phones, both open, already connected — filing on one never reached
+     * the other until the app was relaunched, because relaunching is what tears down
+     * and rebuilds the connection that triggers the one-time exchange.
+     *
+     * [newlyAppeared] is the pure diff; this is just the `Flow` around it, matching the
+     * "skip the first emission, then act on what's new" shape `GeofenceNotifier` and
+     * `SosAlertWatcher` already use elsewhere in this app. [relayable] still gates what
+     * may leave the device (never a seed, an expired event, or one past
+     * [MESH_MAX_HOPS]), and the receiver's own content-hash id makes a duplicate
+     * delivery harmless either way.
+     */
+    private fun observeNewLocalEvents() {
+        scope.launch {
+            var knownIds: Set<String>? = null
+            repository.observeAll().collect { events ->
+                val fresh = newlyAppeared(knownIds, events)
+                knownIds = events.map { it.id }.toSet()
+                if (fresh.isEmpty()) return@collect
+                val relayed = relayable(fresh, System.currentTimeMillis())
+                if (relayed.isNotEmpty()) sendEvents(connected.toSet(), relayed)
+            }
         }
     }
 
