@@ -236,6 +236,14 @@ private fun PermissionSection() {
         )
     }
     var meshed by remember { mutableStateOf(MeshPermissions.allGranted(context)) }
+    var cameraGranted by remember {
+        mutableStateOf(
+            androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA,
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED,
+        )
+    }
 
     val notifyLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -243,6 +251,9 @@ private fun PermissionSection() {
     val meshLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
     ) { meshed = MeshPermissions.allGranted(context) }
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted -> cameraGranted = granted }
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FieldLabel(tr("PAPAYAGAN MO BA", "WILL YOU ALLOW"))
@@ -261,6 +272,17 @@ private fun PermissionSection() {
             granted = meshed,
         ) {
             meshLauncher.launch(MeshPermissions.required())
+        }
+        // Gates only the Family Circle QR scanner (zxing's embedded CaptureActivity,
+        // which draws its own live preview). Report photos use an external camera
+        // intent (TakePicturePreview) and need no permission of this app's own — the
+        // copy below must not claim otherwise.
+        PermissionRow(
+            title = tr("Camera", "Camera"),
+            detail = tr("Para sa pag-scan ng QR ng Aking Pamilya", "For scanning your Family Circle's QR"),
+            granted = cameraGranted,
+        ) {
+            cameraLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 }
