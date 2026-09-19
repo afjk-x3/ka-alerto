@@ -43,9 +43,15 @@ interface EventDao {
      * expiry means that after any cold start a stale road silently disappears from the
      * map instead of prompting someone to go and check it — which is the opposite of
      * what expiry is for. Callers pass `now - RETENTION_AFTER_EXPIRY_MS`.
+     *
+     * Split into a read and a delete so the repository can keep events that have not yet
+     * reached the cloud (see `EventRepository.deleteExpired`).
      */
-    @Query("DELETE FROM events WHERE expiresAt < :cutoffMs")
-    suspend fun deleteExpiredBefore(cutoffMs: Long)
+    @Query("SELECT * FROM events WHERE expiresAt < :cutoffMs")
+    suspend fun expiredBefore(cutoffMs: Long): List<Event>
+
+    @Query("DELETE FROM events WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
 
     @Query("DELETE FROM events WHERE origin = 'seed'")
     suspend fun deleteSeeds()

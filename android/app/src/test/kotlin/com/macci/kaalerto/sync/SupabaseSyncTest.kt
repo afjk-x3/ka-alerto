@@ -3,6 +3,8 @@ package com.macci.kaalerto.sync
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.sos.REDACTED_AUTHOR
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -77,5 +79,36 @@ class SupabaseSyncTest {
         val events = listOf(event("s1", origin = "seed"), event("e1"), event("e2", origin = "mesh", type = "confirm"))
 
         assertEquals(setOf("e1", "e2"), eventsToSync(events).map { it.id }.toSet())
+    }
+
+    @Test
+    fun `sync slows down after three failed cycles in a row, and speeds back up`() {
+        assertEquals(30_000L, nextSyncDelayMs(0))
+        assertEquals(30_000L, nextSyncDelayMs(SLOW_THRESHOLD - 1))
+        assertEquals(120_000L, nextSyncDelayMs(SLOW_THRESHOLD))
+        assertEquals(120_000L, nextSyncDelayMs(50))
+    }
+
+    // event() expires at 1_700_000_100_000.
+    private val expiry = 1_700_000_100_000L
+
+    @Test
+    fun `a report is held back from the purge until a full push has succeeded since it expired`() {
+        assertTrue(isAwaitingUpload(event("e1", origin = "local"), lastFullPushOkMs = 0L))
+        assertTrue(isAwaitingUpload(event("e1", origin = "local"), lastFullPushOkMs = expiry - 1))
+        assertFalse(isAwaitingUpload(event("e1", origin = "local"), lastFullPushOkMs = expiry))
+        assertFalse(isAwaitingUpload(event("e1", origin = "local"), lastFullPushOkMs = expiry + 1))
+    }
+
+    @Test
+    fun `a relayed report is held back too, because carry-forward has to upload it`() {
+        assertTrue(isAwaitingUpload(event("e1", origin = "mesh"), lastFullPushOkMs = 0L))
+    }
+
+    @Test
+    fun `things that never upload, or already came from the cloud, are never held back`() {
+        assertFalse(isAwaitingUpload(event("s1", origin = "seed"), lastFullPushOkMs = 0L))
+        assertFalse(isAwaitingUpload(event("c1", origin = "server"), lastFullPushOkMs = 0L))
+        assertFalse(isAwaitingUpload(event("f1", type = "family_checkin"), lastFullPushOkMs = 0L))
     }
 }

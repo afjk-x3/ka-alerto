@@ -77,3 +77,24 @@ fun eventsNeedingPhotoUpload(context: android.content.Context, events: List<Even
             ?.takeIf { PhotoStore.exists(context, it) }
             ?.let { event to it }
     }
+
+/** Consecutive failed cycles before the loop slows down. Also what the "slow connection" banner waits for. */
+const val SLOW_THRESHOLD = 3
+
+/**
+ * 30 s while sync works, 2 min once [SLOW_THRESHOLD] cycles in a row have failed. Offline the
+ * attempts fail fast, but there is nothing to gain from making one every 30 s for hours.
+ * New reports still push immediately (observeAndPushImmediately), and the WorkManager job
+ * plus the first cycle after a reconnect pick up the rest, so the slower tier only delays
+ * pulling other people's reports.
+ */
+fun nextSyncDelayMs(consecutiveFailures: Int): Long = if (consecutiveFailures >= SLOW_THRESHOLD) 120_000L else 30_000L
+
+/**
+ * True for an event the cloud has probably never received: a type that syncs, not a sample,
+ * not something we pulled from the cloud ourselves, and no full push has succeeded since it
+ * expired. Once one full push succeeds after expiry, every event we then held was in it.
+ * ([com.macci.kaalerto.data.EventRepository.deleteExpired] keeps these past the 24 h grace.)
+ */
+fun isAwaitingUpload(event: Event, lastFullPushOkMs: Long): Boolean =
+    event.type in SYNCED_TYPES && event.origin != "seed" && event.origin != "server" && lastFullPushOkMs < event.expiresAt

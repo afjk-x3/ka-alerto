@@ -8,6 +8,7 @@ import com.macci.kaalerto.geofence.GeofenceNotifier
 import com.macci.kaalerto.notification.NotificationChannels
 import com.macci.kaalerto.sos.SosAlertWatcher
 import com.macci.kaalerto.sos.SosTransmitter
+import com.macci.kaalerto.sync.PushState
 import com.macci.kaalerto.sync.SupabaseSyncLoop
 import com.macci.kaalerto.sync.SupabaseSyncWorker
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +45,7 @@ class KaAlertoApplication : Application() {
         // watcher and the SOS transmitter both start collecting immediately.
         applicationScope.launch {
             EventRepository(KaAlertoDatabase.getInstance(this@KaAlertoApplication).eventDao())
-                .deleteExpired()
+                .deleteExpired(PushState.lastOkMs(this@KaAlertoApplication))
         }
         GeofenceNotifier(this).start(applicationScope)
         // Build day 11a. Fires when a household-circle member checks in — see

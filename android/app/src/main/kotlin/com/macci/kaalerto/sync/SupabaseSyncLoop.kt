@@ -19,9 +19,6 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** How many consecutive failed cycles before the header tells someone to turn Bluetooth on. */
-private const val SLOW_THRESHOLD = 3
-
 /**
  * A real, observed run of failures — not an OS bandwidth guess, which is routinely wrong
  * on Wi-Fi. `map/MapHeader.kt` reads [slow] to show "Mabagal ang koneksyon — buksan ang
@@ -37,7 +34,7 @@ object SupabaseSyncState {
  * Phone-to-cloud sync, always on whenever [SupabaseConfig.isConfigured]: no address to
  * type, no server to find. Two ways an event leaves this device — the periodic
  * push-everything/pull-everything cycle, and [observeAndPushImmediately], which pushes a
- * just-filed report the moment it lands rather than waiting up to [SYNC_INTERVAL_MS].
+ * just-filed report the moment it lands rather than waiting for the next cycle ([nextSyncDelayMs]).
  * [SupabaseSyncWorker] repeats the push when the app is closed.
  */
 class SupabaseSyncLoop(private val context: Context) {
@@ -58,7 +55,7 @@ class SupabaseSyncLoop(private val context: Context) {
                     consecutiveFailures++
                 }
                 SupabaseSyncState.setSlow(consecutiveFailures >= SLOW_THRESHOLD)
-                delay(SYNC_INTERVAL_MS)
+                delay(nextSyncDelayMs(consecutiveFailures))
             }
         }
     }
@@ -84,7 +81,11 @@ class SupabaseSyncLoop(private val context: Context) {
         }
     }
 
-    private suspend fun pushAll(repository: EventRepository) = pushEvents(repository.all())
+    private suspend fun pushAll(repository: EventRepository) {
+        pushEvents(repository.all())
+        // A full push held everything local, so anything that expires later is already up there.
+        PushState.markOk(context, System.currentTimeMillis())
+    }
 
     /** One push of everything local, for [SupabaseSyncWorker]. Throws on failure so the worker retries. */
     suspend fun pushNow() = pushAll(EventRepository(KaAlertoDatabase.getInstance(context).eventDao()))
@@ -170,7 +171,6 @@ class SupabaseSyncLoop(private val context: Context) {
     }
 
     companion object {
-        const val SYNC_INTERVAL_MS = 30_000L
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
         private const val TAG = "SupabaseSync"

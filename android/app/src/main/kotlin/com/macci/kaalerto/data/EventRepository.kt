@@ -1,5 +1,6 @@
 package com.macci.kaalerto.data
 
+import com.macci.kaalerto.sync.isAwaitingUpload
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -28,8 +29,13 @@ class EventRepository(private val eventDao: EventDao) {
      * forgotten. It exists so an expired report still renders as stale for a while
      * rather than vanishing — see [EventDao.deleteExpiredBefore].
      */
-    suspend fun deleteExpired(nowMs: Long = System.currentTimeMillis()) =
-        eventDao.deleteExpiredBefore(nowMs - RETENTION_AFTER_EXPIRY_MS)
+    suspend fun deleteExpired(lastFullPushOkMs: Long, nowMs: Long = System.currentTimeMillis()) {
+        val expired = eventDao.expiredBefore(nowMs - RETENTION_AFTER_EXPIRY_MS)
+        // Never purge a report the cloud has not received yet: a phone offline for days
+        // would otherwise delete its own reports before it ever got a chance to upload them.
+        val doomed = expired.filterNot { isAwaitingUpload(it, lastFullPushOkMs) }.map { it.id }
+        doomed.chunked(500).forEach { eventDao.deleteByIds(it) } // stay under SQLite's variable limit
+    }
 
     companion object {
         /**
