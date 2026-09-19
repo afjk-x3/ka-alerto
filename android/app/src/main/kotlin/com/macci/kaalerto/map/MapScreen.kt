@@ -169,6 +169,7 @@ fun MapScreen(
     // simply never navigated. Observed on device as the red button doing nothing.
     var locatingSos by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
+    var showBackgroundTip by remember { mutableStateOf(BackgroundTip.shouldShow(context)) }
     // Whether featureSummaries has ever actually contained selectedFeatureRef. Guards
     // the "vanished feature" auto-clear below: a freshly-picked selectedFeatureRef (the
     // registration-gate resume, or a just-submitted report's own featureRef) can easily
@@ -346,6 +347,15 @@ fun MapScreen(
         }
         if (showChrome && !covered && herePackState !is PackState.Downloading) {
             UncoveredAreaNote(onDownloadHere = onDownloadHere, modifier = Modifier.fillMaxWidth())
+        }
+        if (showChrome && showBackgroundTip) {
+            BackgroundTipBanner(
+                onDismiss = {
+                    BackgroundTip.dismiss(context)
+                    showBackgroundTip = false
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
         }
 
         if (showChrome && onOpenQueue != null) {
