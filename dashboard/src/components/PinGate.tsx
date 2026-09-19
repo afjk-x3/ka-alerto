@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Logo from '@/components/Logo';
 
 interface PinGateProps {
   wrongPin: boolean;
@@ -22,7 +23,9 @@ export default function PinGate({ wrongPin, onSubmit }: PinGateProps) {
           if (pin.trim()) onSubmit(pin.trim());
         }}
       >
-        <div className="gate-mark" aria-hidden="true">K</div>
+        <div className="gate-mark">
+          <Logo size={56} />
+        </div>
         <h1>KaAlerto LGU Dashboard</h1>
         <p>Enter the shared PIN to view incoming flood reports and SOS requests.</p>
         <label htmlFor="pin" className="sr-only">PIN</label>
