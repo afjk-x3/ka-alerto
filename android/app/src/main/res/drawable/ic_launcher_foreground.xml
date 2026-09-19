@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Adaptive-icon foreground: 108x108dp canvas, 72x72dp safe zone (18dp inset).
+<!-- Adaptive-icon foreground: 108x108dp canvas. Launchers mask to a circle, and the guaranteed
+     safe zone is a circle of about 66dp around the centre (54,54): everything below stays
+     inside it (the wave used to poke out and get clipped on the splash screen).
      Beacon: a red lamp on a white tower sending signal arcs, over a wave line.
-     Drawn on a 160-unit canvas (same as dashboard/src/components/Logo.tsx) and scaled into
-     the safe zone by the group. Strokes are thick on purpose: thin arcs vanish at 48dp. -->
+     Drawn on a 160-unit canvas and scaled by the group; the dashboard logo
+     (dashboard/src/components/Logo.tsx) is the same drawing with a wider wave, since it has
+     no circular mask. Strokes are thick on purpose: thin arcs vanish at 48dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
@@ -10,10 +13,10 @@
     android:viewportHeight="108">
 
     <group
-        android:scaleX="0.62"
-        android:scaleY="0.62"
-        android:translateX="4.4"
-        android:translateY="0.7">
+        android:scaleX="0.5"
+        android:scaleY="0.5"
+        android:translateX="14"
+        android:translateY="9.25">
 
         <!-- Tower -->
         <path
@@ -23,22 +26,22 @@
         <!-- Signal arcs, inner then outer -->
         <path
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="6"
+            android:strokeWidth="7"
             android:strokeLineCap="round"
             android:pathData="M59,54 q-8,10 0,20" />
         <path
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="6"
+            android:strokeWidth="7"
             android:strokeLineCap="round"
             android:pathData="M101,54 q8,10 0,20" />
         <path
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="6"
+            android:strokeWidth="7"
             android:strokeLineCap="round"
             android:pathData="M48,46 q-14,18 0,36" />
         <path
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="6"
+            android:strokeWidth="7"
             android:strokeLineCap="round"
             android:pathData="M112,46 q14,18 0,36" />
 
@@ -46,14 +49,14 @@
         <path
             android:fillColor="#C42B2B"
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="3"
+            android:strokeWidth="3.5"
             android:pathData="M80,64m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
 
-        <!-- Water -->
+        <!-- Water: shorter than the dashboard's, so its ends stay inside the circle -->
         <path
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="7"
+            android:strokeWidth="8"
             android:strokeLineCap="round"
-            android:pathData="M28,132 q13,-9 26,0 t26,0 t26,0 t26,0" />
+            android:pathData="M38,130 q10.5,-9 21,0 t21,0 t21,0 t21,0" />
     </group>
 </vector>

@@ -1,5 +1,6 @@
 // The KaAlerto mark: a red lamp on a white tower sending signal arcs, over a wave line, on the
-// app's blue. Same drawing as android/.../drawable/ic_launcher_foreground.xml (160-unit canvas).
+// app's blue. Same drawing as android/.../drawable/ic_launcher_foreground.xml (160-unit canvas),
+// except the wave is full width here: the Android one is shortened to fit a circular icon mask.
 export default function Logo({ size = 48 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 160 160" role="img" aria-label="KaAlerto">
