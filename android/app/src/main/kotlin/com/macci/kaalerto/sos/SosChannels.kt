@@ -29,6 +29,13 @@ sealed interface ChannelStatus {
     /** No code attempts this channel yet. [buildDay] is when it is scheduled. */
     data class NotBuilt(val buildDay: String) : ChannelStatus
 
+    /**
+     * Supabase sync is running and this request is queued for it. Deliberately not
+     * [Broadcasting] and never "delivered": an upload attempt says nothing about whether
+     * anyone read it, and `anyBroadcasting` must not count it.
+     */
+    data object Uploading : ChannelStatus
+
     /** The radio is up and this request is in what peers reconcile against. */
     data class Broadcasting(val peerCount: Int) : ChannelStatus
 
@@ -58,8 +65,11 @@ fun List<SosChannelRow>.anyBroadcasting(): Boolean =
  * acknowledge storage, which is day 9. Until then this says only that peers are
  * connected and the request is being offered to them.
  */
-fun sosChannelRows(mesh: MeshStatus): List<SosChannelRow> = listOf(
-    SosChannelRow(SosChannel.SERVER, ChannelStatus.NotBuilt("build day 13")),
+fun sosChannelRows(mesh: MeshStatus, cloudOffline: Boolean = false): List<SosChannelRow> = listOf(
+    SosChannelRow(
+        SosChannel.SERVER,
+        if (cloudOffline) ChannelStatus.Unavailable("Walang koneksyon sa internet") else ChannelStatus.Uploading,
+    ),
     SosChannelRow(SosChannel.SMS, ChannelStatus.NotBuilt("build day 12")),
     SosChannelRow(
         SosChannel.MESH,
@@ -75,6 +85,7 @@ fun sosChannelRows(mesh: MeshStatus): List<SosChannelRow> = listOf(
 @Composable
 fun ChannelStatus.shortLabel(): String = when (this) {
     is ChannelStatus.NotBuilt -> tr("Hindi pa gawa", "Not built yet")
+    is ChannelStatus.Uploading -> tr("Ina-upload", "Uploading")
     is ChannelStatus.Broadcasting -> if (peerCount > 0) tr("$peerCount konektado", "$peerCount connected") else tr("Nagba-broadcast", "Broadcasting")
     is ChannelStatus.Unavailable -> tr("Hindi magamit", "Unavailable")
 }
@@ -83,6 +94,10 @@ fun ChannelStatus.shortLabel(): String = when (this) {
 @Composable
 fun ChannelStatus.detail(): String = when (this) {
     is ChannelStatus.NotBuilt -> tr("Wala pang code sa build na ito — $buildDay", "No code for this in this build yet — $buildDay")
+    is ChannelStatus.Uploading -> tr(
+        "Ipinapadala kapag may internet — hindi pa kumpirmadong natanggap",
+        "Sent whenever there is internet — not confirmed received",
+    )
     is ChannelStatus.Broadcasting ->
         if (peerCount > 0) {
             tr("Inaalok ang SOS sa $peerCount kalapit na phone", "Offering the SOS to $peerCount nearby phone(s)")

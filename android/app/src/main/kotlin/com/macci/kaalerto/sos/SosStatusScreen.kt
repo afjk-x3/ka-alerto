@@ -19,6 +19,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.i18n.tr
+import com.macci.kaalerto.sync.SupabaseSyncState
 import com.macci.kaalerto.mesh.MeshRadios
 import com.macci.kaalerto.mesh.MeshStatus
 
@@ -65,7 +68,8 @@ fun SosStatusScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState()),
         ) {
-            val channels = sosChannelRows(meshStatus)
+            val cloudOffline by SupabaseSyncState.slow.collectAsStateWithLifecycle()
+            val channels = sosChannelRows(meshStatus, cloudOffline)
             HeadlineRow(snapshot.state, channels.anyBroadcasting())
 
             Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
@@ -204,6 +208,7 @@ private fun ChannelRow(row: SosChannelRow) {
         is ChannelStatus.Broadcasting -> SosColors.Mesh
         is ChannelStatus.Unavailable -> SosColors.Warning
         is ChannelStatus.NotBuilt -> SosColors.MutedText
+        is ChannelStatus.Uploading -> SosColors.Mesh
     }
     val context = LocalContext.current
     // Only the mesh row, and only when Bluetooth specifically is the reason it's
