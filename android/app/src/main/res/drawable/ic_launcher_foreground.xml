@@ -1,31 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Adaptive-icon foreground: 108x108dp canvas, 72x72dp safe zone (18dp inset).
-     Placeholder mark — three flood lines rising under an alert dot. -->
+     Beacon: a red lamp on a white tower sending signal arcs, over a wave line.
+     Drawn on a 160-unit canvas (same as dashboard/src/components/Logo.tsx) and scaled into
+     the safe zone by the group. Strokes are thick on purpose: thin arcs vanish at 48dp. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Alert dot -->
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,30m-6,0a6,6 0 1,0 12,0a6,6 0 1,0 -12,0" />
+    <group
+        android:scaleX="0.62"
+        android:scaleY="0.62"
+        android:translateX="4.4"
+        android:translateY="0.7">
 
-    <!-- Water lines, shallow to deep -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:pathData="M40,52 q7,-6 14,0 q7,6 14,0" />
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:pathData="M36,64 q9,-6 18,0 q9,6 18,0" />
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
-        android:strokeLineCap="round"
-        android:pathData="M32,76 q11,-6 22,0 q11,6 22,0" />
+        <!-- Tower -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M72,80 L88,80 L94,118 L66,118 Z" />
+
+        <!-- Signal arcs, inner then outer -->
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:pathData="M59,54 q-8,10 0,20" />
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:pathData="M101,54 q8,10 0,20" />
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:pathData="M48,46 q-14,18 0,36" />
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="6"
+            android:strokeLineCap="round"
+            android:pathData="M112,46 q14,18 0,36" />
+
+        <!-- Red lamp with a white ring so it stays visible on the blue -->
+        <path
+            android:fillColor="#C42B2B"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3"
+            android:pathData="M80,64m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
+
+        <!-- Water -->
+        <path
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="7"
+            android:strokeLineCap="round"
+            android:pathData="M28,132 q13,-9 26,0 t26,0 t26,0 t26,0" />
+    </group>
 </vector>
