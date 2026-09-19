@@ -21,3 +21,12 @@ export async function fetchEvents(): Promise<Event[]> {
   if (!res.ok) throw new Error(body.error ?? `Server error (${res.status})`);
   return body.events;
 }
+
+/** A report's photo as an object URL, or null if it hasn't been uploaded (only the phone that took it has it until then). */
+export async function fetchPhoto(hash: string): Promise<string | null> {
+  const pin = getPin();
+  const res = await fetch(`/api/photo/${hash}`, { headers: pin ? { 'X-Dashboard-Pin': pin } : {} });
+  if (res.status === 401) throw new AuthError();
+  if (!res.ok) return null;
+  return URL.createObjectURL(await res.blob());
+}

@@ -81,11 +81,14 @@ export interface ReportItem {
   event: Event;
   stale: boolean;
   updatedAtMs: number;
+  /** SHA-256 of the attached photo, if any (see ReportPhotoPayload on the phone). */
+  photoHash?: string;
 }
 
 export type Item = SosItem | ReportItem;
 
 interface Payload {
+  photoHash?: string;
   sosId?: string;
   state?: string;
   accuracyMeters?: number;
@@ -122,6 +125,7 @@ export function buildItems(events: Event[], now = Date.now()): Item[] {
         event: e,
         stale: e.expiresAt > 0 && e.expiresAt < now,
         updatedAtMs: e.timestampMs,
+        photoHash: parsePayload(e.payload)?.photoHash,
       });
     }
   }
