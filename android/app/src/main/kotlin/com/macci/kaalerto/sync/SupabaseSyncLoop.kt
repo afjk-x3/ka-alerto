@@ -34,11 +34,11 @@ object SupabaseSyncState {
 }
 
 /**
- * The always-on counterpart to [ServerSyncLoop]: no [SyncPrefs]-typed address, unconditional
- * whenever [SupabaseConfig.isConfigured], no manual server to lose. Two ways an event
- * leaves this device — the periodic pull-everyone-up-to-date cycle, same shape as
- * [ServerSyncLoop], and [observeAndPushImmediately], which pushes a just-filed report the
- * moment it lands rather than waiting up to [SYNC_INTERVAL_MS].
+ * Phone-to-cloud sync, always on whenever [SupabaseConfig.isConfigured]: no address to
+ * type, no server to find. Two ways an event leaves this device — the periodic
+ * push-everything/pull-everything cycle, and [observeAndPushImmediately], which pushes a
+ * just-filed report the moment it lands rather than waiting up to [SYNC_INTERVAL_MS].
+ * [SupabaseSyncWorker] repeats the push when the app is closed.
  */
 class SupabaseSyncLoop(private val context: Context) {
     fun start(scope: CoroutineScope) {
@@ -53,7 +53,6 @@ class SupabaseSyncLoop(private val context: Context) {
                 val pulled = runCatching { pullAll(repository) }
                     .onFailure { Log.w(TAG, "pull cycle failed", it) }.isSuccess
                 if (pushed || pulled) {
-                    SyncPrefs.setLastSyncedAtMs(context, System.currentTimeMillis())
                     consecutiveFailures = 0
                 } else {
                     consecutiveFailures++
@@ -86,6 +85,9 @@ class SupabaseSyncLoop(private val context: Context) {
     }
 
     private suspend fun pushAll(repository: EventRepository) = pushEvents(repository.all())
+
+    /** One push of everything local, for [SupabaseSyncWorker]. Throws on failure so the worker retries. */
+    suspend fun pushNow() = pushAll(EventRepository(KaAlertoDatabase.getInstance(context).eventDao()))
 
     private suspend fun pushEvents(events: List<Event>) {
         val toPush = eventsToSync(events)

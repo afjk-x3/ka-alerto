@@ -72,8 +72,6 @@ import com.macci.kaalerto.family.myLastCheckInMs
 import com.macci.kaalerto.family.encode
 import com.macci.kaalerto.family.submitCheckIn
 import com.macci.kaalerto.family.submitCircleInvite
-import com.macci.kaalerto.sync.ServerDiscoveryClient
-import com.macci.kaalerto.sync.SyncPrefs
 import kotlinx.coroutines.delay
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
@@ -112,12 +110,6 @@ fun KaAlertoApp(
     }
     var draftAccuracy by remember { mutableStateOf<Float?>(null) }
     var draftPhone by remember { mutableStateOf(LocalIdentity.registeredPhone(appContext)) }
-    var draftServerUrl by remember { mutableStateOf(SyncPrefs.getServerUrl(appContext) ?: "") }
-    var discoveringServer by remember { mutableStateOf(false) }
-    // True only while the current draftServerUrl is exactly what discovery found and
-    // untouched since — typing over it (see onServerUrlChange below) clears this, so the
-    // status line never claims "auto-found" about something someone has since edited.
-    var serverAutoDetected by remember { mutableStateOf(false) }
     // The hamburger drawer, shared by every screen that shows one — see NavDrawer.kt
     // for why this lives here rather than being duplicated per screen.
     var drawerOpen by remember { mutableStateOf(false) }
@@ -228,23 +220,6 @@ fun KaAlertoApp(
         }
     }
 
-    // Auto-tries LAN discovery once on opening Profile with the field still empty —
-    // never on Onboarding, which has no server field to show a result in. A pre-fill
-    // only: draftServerUrl is a draft like every other field here, and "I-save" is what
-    // actually commits it. Guarded so a fresh, still-empty field left by discovery
-    // finding nothing does not retrigger on every recomposition.
-    val onProfileScreen = screen is Screen.Profile
-    LaunchedEffect(onProfileScreen) {
-        if (onProfileScreen && draftServerUrl.isBlank() && !discoveringServer) {
-            discoveringServer = true
-            val found = ServerDiscoveryClient.discover()
-            if (found != null && draftServerUrl.isBlank()) {
-                draftServerUrl = found
-                serverAutoDetected = true
-            }
-            discoveringServer = false
-        }
-    }
     // The feature whose sheet the registration gate interrupted, reopened on return.
     var reopenFeatureRef by remember { mutableStateOf<String?>(null) }
 
@@ -578,30 +553,6 @@ fun KaAlertoApp(
                 onLastNameChange = { draftLastName = it },
                 phone = draftPhone,
                 onPhoneChange = { draftPhone = it },
-                serverUrl = draftServerUrl,
-                onServerUrlChange = {
-                    draftServerUrl = it
-                    serverAutoDetected = false
-                },
-                lastSyncedAtMs = SyncPrefs.getLastSyncedAtMs(context),
-                serverSearching = discoveringServer,
-                serverAutoDetected = serverAutoDetected,
-                onSearchServer = {
-                    scope.launch {
-                        discoveringServer = true
-                        val found = ServerDiscoveryClient.discover()
-                        if (found != null) {
-                            draftServerUrl = found
-                            serverAutoDetected = true
-                            // A discovery reply is a real round trip to that address, so
-                            // it already proves reachability more strongly than typing an
-                            // address ever could — save it immediately rather than making
-                            // the resident find and tap "I-save" a second time.
-                            SyncPrefs.setServerUrl(context, found)
-                        }
-                        discoveringServer = false
-                    }
-                },
                 barangay = draftBarangay,
                 onBarangayChange = {
                     draftBarangay = it
@@ -627,7 +578,6 @@ fun KaAlertoApp(
                 onPickOnMap = { screen = Screen.PickHome },
                 onSave = {
                     LocalIdentity.register(context, draftFirstName, draftLastName, draftPhone, draftBarangay)
-                    SyncPrefs.setServerUrl(context, draftServerUrl)
                     draftHome?.let { (lat, lon) ->
                         HomeLocationStore.set(context, lat, lon, HomeLocationStore.DEFAULT_RADIUS_METERS)
                         // A moved home gets a new pack; see map/HomePackStore.kt.

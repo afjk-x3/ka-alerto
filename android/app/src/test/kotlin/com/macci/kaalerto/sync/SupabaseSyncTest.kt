@@ -1,15 +1,16 @@
 package com.macci.kaalerto.sync
 
 import com.macci.kaalerto.data.Event
+import com.macci.kaalerto.sos.REDACTED_AUTHOR
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SupabaseSyncTest {
 
-    private fun event(id: String, origin: String = "local") = Event(
+    private fun event(id: String, origin: String = "local", type: String = "flood_report") = Event(
         id = id,
-        type = "flood_report",
+        type = type,
         lat = 18.17,
         lon = 120.60,
         featureRef = "geohash-1",
@@ -51,5 +52,30 @@ class SupabaseSyncTest {
     fun `stampSupabaseOrigin marks every event as server-origin`() {
         val stamped = stampSupabaseOrigin(listOf(event("e1", origin = "mesh")))
         assertEquals("server", stamped.single().origin)
+    }
+
+    @Test
+    fun `flood-reporting and SOS types are synced, family and role events are excluded`() {
+        val events = listOf("flood_report", "confirm", "dispute", "official_status", "sos", "sos_amend", "sos_state",
+            "family_checkin", "circle_invite", "role_grant").mapIndexed { i, t -> event("e$i", type = t) }
+
+        assertEquals(setOf("e0", "e1", "e2", "e3", "e4", "e5", "e6"), eventsToSync(events).map { it.id }.toSet())
+    }
+
+    @Test
+    fun `an SOS is redacted before it can reach Supabase`() {
+        assertEquals(REDACTED_AUTHOR, eventsToSync(listOf(event("e1", type = "sos"))).single().authorName)
+    }
+
+    @Test
+    fun `a mesh-received event is synced the same as a self-authored one`() {
+        assertEquals(listOf("e1"), eventsToSync(listOf(event("e1", origin = "mesh"))).map { it.id })
+    }
+
+    @Test
+    fun `sample reports never leave the phone`() {
+        val events = listOf(event("s1", origin = "seed"), event("e1"), event("e2", origin = "mesh", type = "confirm"))
+
+        assertEquals(setOf("e1", "e2"), eventsToSync(events).map { it.id }.toSet())
     }
 }

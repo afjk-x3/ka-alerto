@@ -8,8 +8,8 @@ const val REDACTED_AUTHOR = "Hindi ipinapakita"
 /**
  * What an SOS is allowed to carry when it leaves this device — over *any* transport, not
  * only mesh. Originally mesh-only (hence the name this function used to have); 18 Sep 2026
- * extended `sync/ServerSync.kt`'s `eventsToSync` to also carry `sos`/`sos_amend`/`sos_state`
- * over the Node server and Supabase, and Supabase is a strictly bigger exposure than a
+ * extended `sync/SupabaseSync.kt`'s `eventsToSync` to also carry `sos`/`sos_amend`/`sos_state`
+ * over Supabase, and Supabase is a strictly bigger exposure than a
  * relaying phone in Bluetooth range — its anon key ships inside the APK and the table has
  * zero access control, so anything unredacted posted there is readable by anyone who
  * extracts that key, permanently, not just to whoever is briefly nearby. Applying this on

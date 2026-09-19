@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.maplibre.android.sdk)
 
     // Local event store. The local DB is a replica, not a cache.
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)

@@ -1,23 +1,45 @@
 package com.macci.kaalerto.sync
 
 import com.macci.kaalerto.data.Event
+import com.macci.kaalerto.sos.TYPE_SOS
+import com.macci.kaalerto.sos.TYPE_SOS_AMEND
+import com.macci.kaalerto.sos.TYPE_SOS_STATE
+import com.macci.kaalerto.sos.redactSosOnEgress
 import com.macci.kaalerto.report.PhotoStore
 import com.macci.kaalerto.report.decodeReportPhotoPayload
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 /**
+ * Only these event types leave the device. `family_checkin`, `circle_invite` and `role_*`
+ * stay mesh-only: Supabase has no access control (the anon key ships in the APK), so
+ * anything posted is readable by anyone who extracts it. SOS is included, but always
+ * redacted first — see [eventsToSync].
+ */
+val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE)
+
+/**
+ * Every locally-held event worth pushing — mesh-received ones included, not just
+ * self-authored, which is what makes carry-forward work: a device that relayed someone
+ * else's report with no connectivity must still upload it the next time it is online.
+ * No push-side cursor, on purpose: a timestamp cursor would skip a relayed event whose own
+ * `timestampMs` is old, and Supabase's upsert on the id makes re-sending free.
+ *
+ * Bundled sample reports (origin "seed") are never pushed: they are demo fixtures.
+ * [redactSosOnEgress] is a no-op for every non-SOS type, so it maps over the whole list.
+ */
+fun eventsToSync(all: List<Event>): List<Event> =
+    all.filter { it.type in SYNCED_TYPES && it.origin != "seed" }.map(::redactSosOnEgress)
+
+/**
  * PostgREST's own upsert: an events row whose `id` already exists is merged, not
- * duplicated — same idempotent-on-id contract `server/src/server.js`'s
- * `INSERT OR IGNORE` has, so [SYNCED_TYPES]'s existing no-push-cursor reasoning
- * (`ServerSync.eventsToSync`'s doc comment) applies unchanged here.
+ * duplicated, so re-sending is free and [eventsToSync] needs no push cursor.
  */
 fun buildEventsUrl(baseUrl: String): String = "$baseUrl/rest/v1/events"
 
 /**
  * No pull cursor and no location filter, on purpose — the same choice already made for
- * push (`ServerSync.eventsToSync`'s doc comment: re-sending costs one indexed lookup at
- * this app's volumes). A bbox filter here used to hardcode [com.macci.kaalerto.demo.DemoArea]
+ * push ([eventsToSync]: re-sending is free at this app's volumes). A bbox filter here used to hardcode [com.macci.kaalerto.demo.DemoArea]
  * (removed 18 Sep 2026): that silently dropped every report filed from a real GPS location
  * outside the frozen demo box, since push has no such filter but pull did — push a report
  * from real life and no other device would ever pull it back. Pulling everything and
@@ -41,7 +63,7 @@ fun encodeEvents(events: List<Event>): String = supabaseJson.encodeToString(even
 fun decodeEvents(json: String): List<Event>? =
     runCatching { supabaseJson.decodeFromString(eventListSerializer, json) }.getOrNull()
 
-/** Stamps how this device learned about a pulled event — same convention as `ServerSync.stampServerOrigin`. */
+/** Stamps how this device learned about a pulled event — the counterpart of `origin = "mesh"` for relayed events. */
 fun stampSupabaseOrigin(events: List<Event>): List<Event> = events.map { it.copy(origin = "server") }
 
 /**
