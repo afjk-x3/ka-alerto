@@ -237,16 +237,17 @@ Scope if taken: fetch the roads-only extract (same Overpass API bbox technique `
 - [ ] UI showing "No data connection — sent by SMS" with character count visible (29 chars carrying a rescue request is visceral)
 - **If behind:** Send-only. Show the received SMS in the stock app and explain the parser. 80% impact for 20% work. — **this is roughly where it sits right now**, minus even the send half.
 
-### Day 13: Server + sync + dashboard — server sync DONE and verified; dashboard NOT BUILT
+### Day 13: Sync + dashboard — DONE 19 Sep 2026 (redesigned; the original Node server is gone)
 
-- [x] Express endpoints: `POST /events/batch` (idempotent on event ID), `GET /events?since=<cursor>&bbox=<bbox>` (cursor-based pagination), plus `GET /health` — `server/src/server.js`, `server/src/db.js`
-- [x] Sync on reconnect: flush entire local queue, carry-forward, no per-device cursor — `sync/ServerSyncLoop.kt`. Verified on two emulators; LAN auto-discovery ("Hanapin") root-caused 18 Sep to a broadcast/router client-isolation issue on the tested network, not a code defect — manual address entry works, and a found address now saves immediately instead of needing a separate "I-save" tap.
-- [x] **Went beyond the original plan (18 Sep 2026, user's own call, reopening the 5 Sep Supabase rejection):** Supabase added as a second, always-on sync target needing zero manual server address — `sync/SupabaseSync.kt`, `sync/SupabaseSyncLoop.kt`, `supabase/schema.sql`. Includes photo upload/download over Supabase Storage (photos never traveled over the Node server or mesh, per the architecture guardrail). Two real bugs found and fixed the same night: a PostgREST batch-insert rejection from kotlinx.serialization omitting default-valued fields (`encodeDefaults = true` fix), and a pull query hardcoded to the frozen demo bounding box that silently dropped every report filed from a real GPS location outside it (bbox filter removed, pulls everything like push already did). The Node server stays — it is still the only transport that needs zero internet, just a working LAN.
-- [ ] Dashboard: Next.js + MapLibre GL JS, all events plotted, SOS list, event detail — `dashboard/` is still an empty placeholder, per `CLAUDE.md`'s own open items list; being started 18 Sep 2026 in a separate OpenCode session against the same `server/src/server.js` endpoints
-- [ ] Dashboard read-only by default (acknowledge action is optional cut)
-- [ ] Polish: Filipino strings on every user-facing label, Storm Mode audit, tap-target pass on demo path, honest offline copy everywhere (no spinners, no fake "sent") — partially done (i18n pass noted in `CLAUDE.md`'s known open items, unreviewed by a native speaker; some English strings still found inside Filipino screens)
-- [ ] App icon, splash screen, final seed tuning
-- **If behind:** Cut dashboard's acknowledge action (read-only is fine). Cut polling; refresh button is fine. — **the whole dashboard itself is the piece actually at risk of being cut**, not just its acknowledge action.
+- [x] **Supabase sync** — `sync/SupabaseSync.kt`, `sync/SupabaseSyncLoop.kt`, `supabase/schema.sql`. Push (immediately, then every 30 s) and pull, no cursor and no bbox, photos by hash over Supabase Storage. Proven on real phones 18 Sep; two bugs found and fixed that night (PostgREST rejecting batches with differing key sets; a demo-area bbox dropping every real-GPS report).
+- [x] **Background push** — `sync/SupabaseSyncWorker.kt` (WorkManager, 15 min, network-connected). A report made offline uploads once the phone is online, even if the app was closed or the phone rebooted. Unit-tested only; not yet exercised on a real phone with the app killed.
+- [x] **SOS also syncs over the internet**, redacted first (`sos/SosMeshPolicy.kt`'s `redactSosOnEgress`).
+- [x] **Dashboard** — `dashboard/` (Next.js + MapLibre GL JS, light mode only). Reads Supabase through its own `/api/events` route, which checks one shared demo-only PIN (`DASHBOARD_PIN`) server-side and holds the Supabase key. SOS requests are folded into one row each with a response timeline; flood reports are colour-coded by the app's severity ladder; the map fits to everything, including out-of-area reports. Read-only, refresh button, no polling.
+- [x] **Removed 19 Sep, user's call:** the Node server (`server/`), phone-side server sync, LAN discovery ("Hanapin") and the Profile server-address field. Reasoning and what was lost are in `CLAUDE.md`'s decisions table.
+- [ ] **Not protected:** the PIN guards only the dashboard's door. Phones read and write Supabase with the public anon key, so the data is readable by anyone who extracts it. Real protection needs accounts (Supabase Auth), out of scope.
+- [ ] **Known gap:** reports that never reach any phone with internet stay invisible to the dashboard (inherent to offline-first); a report is also purged from a phone 24 h after it expires, so a phone offline longer than that and then opened loses it before upload.
+- [ ] **Known gap:** the SOS status screen (`sos/SosChannels.kt`) still lists the "Rescue centre" channel as not built, though SOS now syncs over Supabase.
+- [ ] Polish: Filipino strings on every label (unreviewed by a native speaker), app icon, splash, final seed tuning.
 
 ### Day 14: Rehearsal + backup
 
@@ -305,9 +306,9 @@ Cut anything else first.
 | 11a | Family check-in | QR pairing, circle list with status/age | ✅ (two emulators; camera step unproven on hardware) |
 | 11b | Route check | Route check shows flooded segments | ⬜ not built — no code exists; treat as cut, confirm with user before rebuilding |
 | 12 | SMS fallback | Report encoded to 29 chars, sends via SMS | ⬜ receiver stub only, `handleSmsMessage` is a bare TODO |
-| 13a | Server sync (Node) | /events/batch and /events?since= work | ✅ verified on two emulators |
+| 13a | Server sync (Node) | — | removed 19 Sep (replaced by Supabase) |
 | 13b | Supabase sync (added 18 Sep) | Push/pull + photo upload work with zero manual address | ✅ verified against real device, both bugs found and fixed same night |
-| 13c | Dashboard | Dashboard shows events | ⬜ empty placeholder, not started |
+| 13c | Dashboard | Dashboard shows events | ✅ built 19 Sep (Next.js, light mode, PIN-gated, reads Supabase) |
 | 14 | Rehearsal + backup | Full demo rehearsed 10×, backup video recorded | ⬜ not started |
 | 15 | Demo day prep | All devices charged, no new code, ready to ship | ⬜ N/A yet |
 
@@ -353,7 +354,7 @@ Three rules that are easy to break by accident:
 - **Serialization:** `kotlinx.serialization` → JSON (bit-packed encoder for SMS only)
 - **Permissions:** Accompanist Permissions lib
 - **Server:** Node 24 + Express + `node:sqlite` (~150 lines, only Express dependency)
-- **Dashboard:** Next.js + MapLibre GL JS (reopened 18 Sep 2026, user's own call — was "one HTML page, not React," kept dependency-free and zero-setup on purpose; the tradeoff is a real build pipeline this late in the timeline). **Gated by one shared PIN, demo purposes only** (also 18 Sep 2026, also reopened — ground rule 4 said "no auth" for the whole system): a single server-side secret every official uses, not per-official accounts, checked on the `GET /events` endpoint itself so the gate is real rather than just hiding the dashboard's webpage while the same data stays readable by anyone who calls the API directly. Real username/password accounts were considered and rejected for now — the server runs plain HTTP with no TLS, so real passwords would travel unencrypted, worse than no login at all.
+- **Dashboard:** Next.js + MapLibre GL JS, reading Supabase (reopened 18 Sep 2026, user's own call — was "one HTML page, not React," kept dependency-free and zero-setup on purpose; the tradeoff is a real build pipeline this late in the timeline). **Gated by one shared PIN, demo purposes only** (also 18 Sep 2026, also reopened — ground rule 4 said "no auth" for the whole system): a single server-side secret every official uses, not per-official accounts, checked on the `GET /events` endpoint itself so the gate is real rather than just hiding the dashboard's webpage while the same data stays readable by anyone who calls the API directly. Real username/password accounts were considered and rejected for now — the server runs plain HTTP with no TLS, so real passwords would travel unencrypted, worse than no login at all.
 - **Location:** FusedLocationProviderClient
 
 ---

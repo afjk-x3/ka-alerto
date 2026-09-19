@@ -250,13 +250,13 @@ A responsive web console, built last. Authenticated accounts scoped to one LGU w
 
 **Three transports**, offered in order by a transport manager:
 
-1. **Server sync** — batch POST, idempotent on event ID; pull by bounding box and cursor, against either the self-hosted server or Supabase. Only the Supabase path carries photos, by hash, best-effort.
+1. **Cloud sync** — batch upsert to Supabase, idempotent on event ID; pull everything, no cursor and no location filter. Photos travel by hash, best-effort. A background job repeats the upload when the app is closed.
 2. **Device-to-device relay** — Bluetooth and Wi-Fi Direct. Devices exchange event-ID lists and transfer the difference. No server involved.
 3. **SMS** — a bit-packed encoding for the cellular-but-no-data case, which also reaches feature phones.
 
-**Stack.** Kotlin and Jetpack Compose, min SDK 26; MapLibre with pre-downloaded offline tiles; Room over SQLite; Nearby Connections for the relay; `SmsManager` for the SMS path. Server: Node and Express with the built-in `node:sqlite` module — Express is the only dependency. Supabase runs alongside it as a second, always-on remote target, baked into the app with no address to configure — reachable anywhere with signal, unlike the self-hosted server, which needs zero internet but only works on its own local network. Dashboard: one HTML page with MapLibre GL JS. FCM is an optional sync-wake optimisation; every alert fires without it.
+**Stack.** Kotlin and Jetpack Compose, min SDK 26; MapLibre with pre-downloaded offline tiles; Room over SQLite; Nearby Connections for the relay; `SmsManager` for the SMS path. Backend: Supabase (Postgres and Storage), baked into the app with no address to configure — reachable anywhere with signal, needs the internet to be up. No self-hosted server. Dashboard: a light-mode Next.js web console that reads Supabase behind one shared PIN (demo access, not personal accounts). FCM is an optional sync-wake optimisation; every alert fires without it.
 
-**What is lost with no server:** reach beyond relay range, the dashboard, official feed ingestion, SMS gateway bridging. **What survives:** the map, reporting, confirm and dispute, local notifications, and SOS to nearby phones.
+**What is lost with no internet:** reach beyond relay range, cloud sync, the dashboard, official feed ingestion, SMS gateway bridging. **What survives:** the map, reporting, confirm and dispute, local notifications, and SOS to nearby phones.
 
 ---
 

@@ -22,12 +22,12 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 | 3 | Reporting flow (GPS + tap-to-pick, photo hash only) | Done, verified |
 | 4 | Reducer (Rules A–D, Wilson, buckets, SX) + detail sheet | Done, verified; `data/ReducerTest.kt` covers it |
 | 5 | Home geofence notifications, filters, Storm Mode | Done, verified |
-| 6–7 | Nearby Connections mesh | Code complete; **radio hop never proven between two real devices** |
+| 6–7 | Nearby Connections mesh | Done; radio hop proven on real phones 18 Sep (report relayed device to device, no server) |
 | 8 | SOS flow (hold → context → status → rescue card, QR) | Done, verified |
-| 9 | SOS over mesh + acknowledgement | Code complete; radio hop unproven |
+| 9 | SOS over mesh + acknowledgement | Done; full round trip proven on two real phones 18 Sep. Also syncs over Supabase (redacted); acknowledging shows the location on the map |
 | 10 | Official role, second-official gate, evacuation centres | Done, verified |
 | 11a | Family check-in circles (QR pairing) | Done on two emulators; QR camera step not proven on hardware |
-| 13 | Server sync + LAN discovery | Sync verified on two emulators; LAN discovery round trip not proven (emulator networking artifact) |
+| 13 | Supabase sync + background push + LAN dashboard | Supabase sync proven on real phones; WorkManager push added 19 Sep. **The self-hosted Node server, phone-side server sync and LAN discovery were removed 19 Sep.** Dashboard: `dashboard/` (Next.js), reads Supabase behind a shared PIN |
 | — | PRD §9 registration, profile, drawer, EN/FIL toggle, real-hardware fixes (8–9 Sep) | Done |
 
 **Unmerged local work (15 Sep):** branch `feat/gps-integration` holds the passable-v0 back-port (seed fixes, samples never leave the phone, seeds reload each cold start, plain-language labels, system Back, offline gazetteer, surname required) and GPS integration (map opens on an out-of-area home, "Nasaan ako"/"Demo" jumps, "download here" pack, geocode cache). Progress ledgers: `.worktrees/gps-integration/.superpowers/sdd/*/progress.md`.
@@ -35,8 +35,8 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 ### Easy to undo by accident — each one was found the hard way
 
 - **Map/toolchain:** never switch back to `demotiles.maplibre.org` (native crash, maplibre-native#4403); keep `android-sdk-opengl`; do map work on `API34_Test`, not the API 37 AVD (renders black).
-- **Mesh:** Nearby needs `ACCESS_WIFI_STATE`/`CHANGE_WIFI_STATE`; `MeshRadios` checks the Bluetooth adapter and location *services*, not just permissions. Success paths are silent in logcat by design.
-- **SOS:** state transitions are events folded monotonically (`mergeSosState`); unbuilt channels say so — never fake progress; the rescue card raises once per request (`rescueCardRaisedFor`); `sos*` events carry `featureRef = null`; `redactForMesh` strips medical detail and the requester's name at the first hop; `MainActivity` is `singleTop`; SOS routes wait for `snapshotsLoaded`; `SosAlertWatcher` does not skip its first emission.
+- **Mesh:** Nearby runs `setLowPower(true)` (BLE only) — the default `P2P_CLUSTER` mediums made Play Services switch Wi-Fi on every time the app opened; Nearby needs `ACCESS_WIFI_STATE`/`CHANGE_WIFI_STATE`; `MeshRadios` checks the Bluetooth adapter and location *services*, not just permissions. Success paths are silent in logcat by design.
+- **SOS:** state transitions are events folded monotonically (`mergeSosState`); unbuilt channels say so — never fake progress; the rescue card raises once per request (`rescueCardRaisedFor`); `sos*` events carry `featureRef = null`; `redactSosOnEgress` strips medical detail and the requester's name on every egress (mesh and Supabase); `MainActivity` is `singleTop`; SOS routes wait for `snapshotsLoaded`; `SosAlertWatcher` does not skip its first emission.
 - **Reducer/store:** `FeatureStateDao.upsert` stays `REPLACE` (it is the materialized fold, not the append-only log); TTL purge keeps a 24 h grace (`RETENTION_AFTER_EXPIRY_MS`) so stale roads render grey; the crowd fold excludes officials; the second-official gate applies only when lowering against current worse reports.
 - **Roles:** event-sourced flow is parked behind `RoleMode.EVENT_SOURCED = false`; when it flips, delete `ManualRoleScreen` and `setRoleForTesting`. The fold runs in three passes; an official cannot grant official; the roster is seats, not people; role events have a one-year TTL and null-island coordinates. Keep `map/RoleActionStrip.kt`. False-alarm marking only demotes sort order — never hides an alert.
 - **Location:** `fetchCurrentLocation` is bounded (6 s + last-known fallback) for SOS/reports; `fetchAccurateLocation` streams up to 15 s for the home. Do not unify them.
@@ -44,7 +44,7 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 - **Storm Mode:** re-tints the loaded style in memory (offline packs are style-scoped), skips `kaalerto-` layers, reloads per toggle with `styleEpoch`; the camera is placed once (`cameraPlaced`).
 - **Identity:** the full name is stored locally, but only `displayFormOf` ever leaves the device; given name and surname are separate fields; never rewrite old events after a name change (NFR-4).
 - **UI:** a fresh `selectedFeatureRef` must not be auto-cleared (`everHadSelectedSummary`); system bars stay visible with one root `windowInsetsPadding` — do not re-hide them; the evac control stays labelled "Silungan".
-- **Sync:** only `flood_report`/`confirm`/`dispute`/`official_status` sync (the server has no auth); push has no cursor on purpose (carry-forward).
+- **Sync:** only `flood_report`/`confirm`/`dispute`/`official_status` and the redacted `sos*` types go to Supabase (it has no access control); push AND pull have no cursor and no bbox on purpose (carry-forward; a demo-area bbox once silently dropped every real-GPS report); `encodeDefaults = true` is required or PostgREST rejects the batch (`PGRST102`); `SupabaseSyncWorker` repeats the push when the app is closed.
 - **Family:** `circle_invite`/`family_checkin` ride the mesh in the clear — disclosed, not fixable without crypto; "my status" reads only this device's own check-ins (`myLastCheckInMs`).
 - **i18n:** every string through `tr()`; SOS wire values, the rescue-card banner and exception text stay untranslated on purpose; strings built from a bilingual field's `.fil` need a grep, not just a literal sweep.
 - **Process:** run `assembleDebug` (check the APK mtime) before installing to verify; compare devices only after a real uninstall.
@@ -57,7 +57,7 @@ These were settled deliberately. Reopen only if the user asks.
 
 | Decision | Why |
 |---|---|
-| **Node + Express + `node:sqlite`** for the server, **plus Supabase as a second, always-on target** | Supabase was evaluated and rejected on 5 Sep (a hosted service can pause, rate-limit or need a round trip); reopened by the user on 18 Sep specifically to remove the manual server-address problem — the self-hosted server needs someone to run it and be found on the same network, which real-hardware testing showed is unreliable. Supabase is additive, not a replacement: it's reachable anywhere with signal but needs the internet to be up, and a real flood is exactly the condition that isn't true. The self-hosted server stays as the only path that needs zero internet. Node 24 ships SQLite in stdlib, so `better-sqlite3` is not needed; Express is still the only npm dependency on the Node side. See `sync/SupabaseSyncLoop.kt`, `supabase/schema.sql`. |
+| **Supabase is the only server** (the self-hosted Node server was removed 19 Sep) | Supabase was rejected on 5 Sep, reopened by the user on 18 Sep to remove the manual server-address problem, and the self-hosted server was then removed on 19 Sep because mesh worked on real phones and the server needed a saved address plus a shared LAN. What is lost: the zero-internet LAN path (a shelter with Wi-Fi but no internet now relies on mesh alone). What is unprotected: the anon key ships in the APK and the table has no access control, so the LGU dashboard's PIN guards the dashboard's door, not the data. See `sync/SupabaseSyncLoop.kt`, `sync/SupabaseSyncWorker.kt`, `supabase/schema.sql`. |
 | **Roles are event-sourced, and official comes only from a roster seat** | Rebuilt 6 Sep, **parked behind `RoleMode.EVENT_SOURCED = false`** for manual testing. A volunteer applies, an official activates; nobody picks their own role. Without crypto this is a procedure, not a guarantee — the screen says so. See `identity/RoleReducer.kt`. |
 | **Residents register a name + home barangay**, required, at first run | It is *self-declared identification used for attribution* — never call it authentication or verification. Nothing is checked. It exists so a false report has a social cost. |
 | **The name is visible to everyone**, not just responders | User's explicit final choice, made after the RA 10173 exposure was flagged. Display form is first name + last initial with barangay — never a full name or doorstep. |
@@ -71,7 +71,7 @@ These were settled deliberately. Reopen only if the user asks.
 
 ## Architecture in one paragraph
 
-Immutable append-only event store → deterministic reducer → displayed state. Every device holds its own store and computes its own map; **the local DB is a replica, not a cache**. Two devices with the same events must display the same status (NFR-4) — this is the invariant that makes an offline phone trustworthy rather than merely stale. Events reach other devices by three transports offered in order: server sync, SMS (bit-packed, 160 chars), and Bluetooth/Wi-Fi Direct relay via Nearby Connections. Deduplication is by content hash, so re-delivery over multiple transports is harmless. Notifications are evaluated locally on every event insert, so they fire with no push server. Full detail in `docs/03-architecture.md`.
+Immutable append-only event store → deterministic reducer → displayed state. Every device holds its own store and computes its own map; **the local DB is a replica, not a cache**. Two devices with the same events must display the same status (NFR-4) — this is the invariant that makes an offline phone trustworthy rather than merely stale. Events reach other devices by three transports: Supabase sync when there is internet, Bluetooth relay via Nearby Connections (low power, BLE only), and SMS (bit-packed, 160 chars — stub only, not built). Deduplication is by content hash, so re-delivery over multiple transports is harmless. Notifications are evaluated locally on every event insert, so they fire with no push server. Full detail in `docs/03-architecture.md`.
 
 **Three rules that are easy to break by accident:**
 
@@ -90,8 +90,7 @@ docs/          NOT IN GIT — deliberately gitignored. Local working copy only.
 design/        artboards/ (29 .dc.html) · canvas.json · screenshots/ · README.md (screen index)
                To render artboards standalone for screenshots: see "Working with design"
 android/       Gradle project — open THIS folder in Android Studio, not the repo root
-server/        Express + node:sqlite, ~150 lines, two endpoints
-dashboard/     one HTML page + MapLibre GL JS. Not a React app
+dashboard/     LGU web console: Next.js + MapLibre GL JS, light mode only. Reads Supabase through its own /api/events route, which checks a shared PIN (DASHBOARD_PIN) server-side. See dashboard/.env.local.example
 tools/         render-artboards.js · final-prd.js · ideation.js · check.py · osm-extract/ (day-0 OSM extract fetch + README)
 submissions/   one file per gate; doubles as release notes. README has the gate checklist
                Macci-PRD.md (added 5 Sep) is the living, editable twin of docs/02-prd.md —
@@ -219,7 +218,7 @@ Established empirically by building. Full rationale in `android/README.md`.
 - **The repo must be public before 7 September** or every submission link 404s.
 - ~~Rescue-card QR is a drawn placeholder, not scannable.~~ **Closed for the app on build day 8** and re-verified 6 September by decoding it out of a raw device screenshot. The *artboard*'s QR is still decorative — that is a `design/` item, not an app one.
 - All Filipino copy is unreviewed by a native speaker. Separately from that review, the 6 September pass found English strings sitting inside Filipino screens where nothing bilingual was intended: `Impassable` in the filter bar, `Unverified`/`Likely` in the detail sheet, `Seed data`, `18 min ago`, and a confirmation rendering as "Kumpirmasyon · Residente 89A7 · **Resident**" — the role appended in English onto a name that already carries it.
-- **`Dashboard` (LGU web console) and `VolunteerRegister` are the official-side artboards still unbuilt.** `dashboard/` is an empty placeholder scheduled for day 13; `VolunteerRegister` exists only inside the parked event-sourced role flow. `QueueOfficial` is built except for its medical column, which day 9's redaction makes impossible rather than pending.
+- **`Dashboard` (LGU web console) is built (19 Sep)**; `VolunteerRegister` is still unbuilt and exists only inside the parked event-sourced role flow. `QueueOfficial` is built except for its medical column, which day 9's redaction makes impossible rather than pending.
 - `docs/05-routing-matrix.md` routes `Onboarding` straight to the map, which was already wrong against PRD §9 and is now wrong in a second way: as of 7 Sep it is not the entry screen at all but an authoring gate. §8 also lists eight routing gaps. The two role landing screens are closed as of 6 Sep (`map/RoleActionStrip.kt`); no cleared-detail screen and no post-submit confirmation remain.
 - No field measurement of relay range, delivery rate or battery cost. Named honestly in the pitch rather than implied to be done.
 - **The event-sourced role flow is parked** behind `identity/RoleMode.EVENT_SOURCED = false` while roles are being tested by hand; the app ships day 10's self-select toggle until it flips. It also has **no seat-release path** — a claim is one-way, which is what made the flag necessary. Decide whether releasing a seat should exist before going live.
