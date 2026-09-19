@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Item } from '@/lib/items';
+import { LatLon, RouteOption } from '@/lib/routing';
 
 // Demo area centre (DemoArea.kt), used only until there is something to fit to.
 const DEMO_CENTER: [number, number] = [120.6058, 18.1709];
@@ -12,6 +13,10 @@ interface MapProps {
   items: Item[];
   selectedId: string | null;
   onSelect: (item: Item) => void;
+  /** Route alternatives to draw, where the viewer is, and which alternative is highlighted. */
+  routes: RouteOption[];
+  origin: LatLon | null;
+  activeRoute: number;
 }
 
 function markerClass(item: Item): string {
@@ -19,13 +24,20 @@ function markerClass(item: Item): string {
   return `mk sev-${item.event.severity ?? 'none'} ${item.stale ? 'is-stale' : ''}`;
 }
 
-export default function EventMap({ items, selectedId, onSelect }: MapProps) {
+export default function EventMap({ items, selectedId, onSelect, routes, origin, activeRoute }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markers = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLElement }>());
   const fitted = useRef(false);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const selectedRef = useRef(selectedId);
+  selectedRef.current = selectedId;
+  const originMarker = useRef<maplibregl.Marker | null>(null);
+  // The style is ready once the map has fired 'load'. isStyleLoaded() is NOT a substitute: it is
+  // false whenever any tile is in flight, and 'load' fires only once, so waiting on it can hang.
+  const styleReady = useRef(false);
+  const drawRoutes = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,12 +49,26 @@ export default function EventMap({ items, selectedId, onSelect }: MapProps) {
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
+    // The Liberty style names a few icons its sprite lacks (gate, office, ...). Give them a blank
+    // pixel instead of logging an error for each.
+    map.on('styleimagemissing', (e) => {
+      if (!map.hasImage(e.id)) map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
+    });
     mapRef.current = map;
+    map.on('load', () => {
+      styleReady.current = true;
+      drawRoutes.current();
+    });
+    // The sidebar collapsing changes the container's width without a window resize.
+    const observer = new ResizeObserver(() => map.resize());
+    observer.observe(containerRef.current);
     return () => {
+      observer.disconnect();
       map.remove();
       mapRef.current = null;
       markers.current.clear();
       fitted.current = false;
+      styleReady.current = false;
     };
   }, []);
 
@@ -68,6 +94,8 @@ export default function EventMap({ items, selectedId, onSelect }: MapProps) {
       el.setAttribute('aria-label', item.kind === 'sos' ? 'SOS request' : 'Flood report');
       el.innerHTML = '<span class="mk-dot"></span>';
       el.style.zIndex = item.kind === 'sos' ? '2' : '1';
+      // Markers are rebuilt on every poll, so the selected ring must be re-applied here.
+      el.classList.toggle('is-selected', item.id === selectedRef.current);
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
         onSelectRef.current(item);
@@ -81,6 +109,64 @@ export default function EventMap({ items, selectedId, onSelect }: MapProps) {
       fitAll(items);
     }
   }, [items]);
+
+  // Route lines. Redrawn when the alternatives or the highlighted one change.
+  drawRoutes.current = () => {
+    const map = mapRef.current;
+    if (!map || !styleReady.current) return;
+    const features = routes
+      .map((r, i) => ({
+        type: 'Feature' as const,
+        properties: { active: i === activeRoute, safest: r.safest },
+        geometry: { type: 'LineString' as const, coordinates: r.coords },
+      }))
+      .sort((x, y) => Number(x.properties.active) - Number(y.properties.active)); // highlighted on top
+    const data = { type: 'FeatureCollection' as const, features };
+    const src = map.getSource('routes') as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData(data);
+      return;
+    }
+    map.addSource('routes', { type: 'geojson', data });
+    map.addLayer({
+      id: 'routes-casing', type: 'line', source: 'routes',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': ['case', ['get', 'active'], 9, 7] },
+    });
+    map.addLayer({
+      id: 'routes-line', type: 'line', source: 'routes',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: {
+        'line-color': ['case', ['get', 'safest'], '#1f9d55', '#5a6677'],
+        'line-width': ['case', ['get', 'active'], 5, 3.5],
+        'line-opacity': ['case', ['get', 'active'], 1, 0.6],
+      },
+    });
+  };
+  useEffect(() => {
+    drawRoutes.current();
+  }, [routes, activeRoute]);
+
+  // "You are here" marker, and frame the whole trip when new routes arrive.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    originMarker.current?.remove();
+    originMarker.current = null;
+    if (!origin) return;
+    const el = document.createElement('div');
+    el.className = 'origin-dot';
+    el.title = 'Your location';
+    originMarker.current = new maplibregl.Marker({ element: el }).setLngLat([origin.lon, origin.lat]).addTo(map);
+  }, [origin]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || routes.length === 0) return;
+    const bounds = new maplibregl.LngLatBounds();
+    routes.forEach((r) => r.coords.forEach((c) => bounds.extend(c)));
+    map.fitBounds(bounds, { padding: { top: 80, bottom: 80, left: 80, right: 400 }, maxZoom: 16, duration: 700 });
+  }, [routes]);
 
   useEffect(() => {
     markers.current.forEach(({ el }, id) => el.classList.toggle('is-selected', id === selectedId));
