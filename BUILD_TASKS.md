@@ -1,6 +1,6 @@
 # KaAlerto — Implementation Tasks
 
-**Solo developer · 15 build days · Android (Kotlin + Compose) + Node server + web dashboard**
+**Solo developer · 15 build days · Android (Kotlin + Compose) + Supabase + web dashboard**
 
 Focus: code and feature work only. Stage submissions are handled separately in the build plan.
 
@@ -245,7 +245,11 @@ Scope if taken: fetch the roads-only extract (same Overpass API bbox technique `
 - [x] **Dashboard** — `dashboard/` (Next.js + MapLibre GL JS, light mode only). Reads Supabase through its own `/api/events` route, which checks one shared demo-only PIN (`DASHBOARD_PIN`) server-side and holds the Supabase key. SOS requests are folded into one row each with a response timeline; flood reports are colour-coded by the app's severity ladder; the map fits to everything, including out-of-area reports. Read-only, live: it re-reads Supabase every 5 s (skipped while the tab is hidden), shows a Live/Reconnecting indicator and puts the open-SOS count in the tab title. A new open SOS or a current S3 flood report triggers a siren/beep, a system notification and an in-page banner (opt-in via a button, since browsers need a click; the first load never alarms). A report's photo shows in its detail card, fetched through a PIN-checked `/api/photo/[hash]` proxy of the Supabase `photos` bucket. Every report and SOS card has a Directions block: a Google Maps link that starts from the viewer's current location, and "Show safe routes here", which draws up to 3 OSRM (free public demo server) alternatives from the browser's location, ranked by how many current S3/S2/SX reports lie within 75 m of each route. It ranks by reports we hold; a road nobody reported can still be flooded. Sidebar collapses; Log out clears the PIN.
 - [x] **Removed 19 Sep, user's call:** the Node server (`server/`), phone-side server sync, LAN discovery ("Hanapin") and the Profile server-address field. Reasoning and what was lost are in `CLAUDE.md`'s decisions table.
 - [x] **Access control — FINISHED, deliberately left as is (19 Sep, user's call; do not reopen):** the PIN guards only the dashboard's door. Phones read and write Supabase with the public anon key, so the data is readable by anyone who extracts it. Real protection needs accounts (Supabase Auth), out of scope.
-- [ ] **Known gap:** reports that never reach any phone with internet stay invisible to the dashboard (inherent to offline-first); a report is also purged from a phone 24 h after it expires, so a phone offline longer than that and then opened loses it before upload.
+- [x] **Purge guard (19 Sep):** an expired report that has not been uploaded is kept past the 24 h grace until a full push has succeeded (`last_full_push_ok_ms` in `PushState`, `isAwaitingUpload`, no schema change), so a phone offline for days still delivers it.
+- [x] **Sync back-off (19 Sep):** the loop slows from 30 s to 2 min after 3 failed cycles in a row (`nextSyncDelayMs`); new reports still push immediately.
+- [x] **Xiaomi background tip (19 Sep):** `map/BackgroundTip.kt` shows a one-time banner on Xiaomi/Redmi/Poco phones (Autostart + battery "No restrictions"), which otherwise kill the background upload.
+- [x] **Release build + CI (19 Sep):** `android/keystore.properties` (gitignored) signs `assembleRelease`; without it the release build is unsigned rather than failing. `.github/workflows/ci.yml` runs the Android unit tests and builds plus the dashboard type-check and build. Not yet seen running on GitHub.
+- [ ] **Known gap:** reports that never reach any phone with internet stay invisible to the dashboard (inherent to offline-first).
 - [ ] **Known gap:** the SOS status screen (`sos/SosChannels.kt`) still lists the "Rescue centre" channel as not built, though SOS now syncs over Supabase.
 - [ ] Polish: Filipino strings on every label (unreviewed by a native speaker), app icon, splash, final seed tuning.
 
@@ -353,7 +357,7 @@ Three rules that are easy to break by accident:
 - **SMS:** `SmsManager` + `SMS_RECEIVED` BroadcastReceiver
 - **Serialization:** `kotlinx.serialization` → JSON (bit-packed encoder for SMS only)
 - **Permissions:** Accompanist Permissions lib
-- **Server:** Node 24 + Express + `node:sqlite` (~150 lines, only Express dependency)
+- **Server:** none — Supabase is the only backend (the Node server was removed 19 Sep 2026)
 - **Dashboard:** Next.js + MapLibre GL JS, reading Supabase (reopened 18 Sep 2026, user's own call — was "one HTML page, not React," kept dependency-free and zero-setup on purpose; the tradeoff is a real build pipeline this late in the timeline). **Gated by one shared PIN, demo purposes only** (also 18 Sep 2026, also reopened — ground rule 4 said "no auth" for the whole system): a single server-side secret every official uses, not per-official accounts, checked on the `GET /events` endpoint itself so the gate is real rather than just hiding the dashboard's webpage while the same data stays readable by anyone who calls the API directly. Real username/password accounts were considered and rejected for now — the server runs plain HTTP with no TLS, so real passwords would travel unencrypted, worse than no login at all.
 - **Location:** FusedLocationProviderClient
 

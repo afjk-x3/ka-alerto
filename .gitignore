@@ -26,11 +26,6 @@ yarn-error.log*
 .env
 .env.local
 
-# ---------- Server data ----------
-server/*.db
-server/*.sqlite
-server/*.sqlite3
-
 # ---------- Windows / Office ----------
 Thumbs.db
 Desktop.ini

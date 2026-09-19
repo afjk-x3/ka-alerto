@@ -47,6 +47,8 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 - **Sync:** only `flood_report`/`confirm`/`dispute`/`official_status` and the redacted `sos*` types go to Supabase (it has no access control); push AND pull have no cursor and no bbox on purpose (carry-forward; a demo-area bbox once silently dropped every real-GPS report); `encodeDefaults = true` is required or PostgREST rejects the batch (`PGRST102`); `SupabaseSyncWorker` repeats the push when the app is closed.
 - **Family:** `circle_invite`/`family_checkin` ride the mesh in the clear — disclosed, not fixable without crypto; "my status" reads only this device's own check-ins (`myLastCheckInMs`).
 - **i18n:** every string through `tr()`; SOS wire values, the rescue-card banner and exception text stay untranslated on purpose; strings built from a bilingual field's `.fil` need a grep, not just a literal sweep.
+- **Purge/back-off:** `EventRepository.deleteExpired` keeps an expired event that `isAwaitingUpload` (no full push since it expired); do not revert it to a plain time-based delete. The sync loop backs off to 2 min after 3 failures (`nextSyncDelayMs`).
+- **Release signing:** `android/keystore.properties` and `kaalerto-release.jks` are gitignored and exist only on the dev machine; back them up, since a lost key means users must uninstall to update. The v0 GitHub release APK is debug-signed, so a release-key build will not install over it.
 - **Process:** run `assembleDebug` (check the APK mtime) before installing to verify; compare devices only after a real uninstall.
 
 ---
