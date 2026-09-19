@@ -17,7 +17,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      # The runner image already has an SDK; accept licences so AGP can fetch platform 37.
+      - run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+        working-directory: .
       - uses: gradle/actions/setup-gradle@v4
       # No keystore.properties on CI, so release builds unsigned; the signed APK is built locally.
       - run: ./gradlew testDebugUnitTest assembleDebug assembleRelease
