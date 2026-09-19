@@ -12,7 +12,8 @@ export const viewport: Viewport = { colorScheme: 'light', themeColor: '#ffffff' 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      {/* Browser extensions inject attributes into <body> before React loads; that is not our bug. */}
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }
