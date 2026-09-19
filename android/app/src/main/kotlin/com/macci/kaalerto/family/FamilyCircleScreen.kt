@@ -96,8 +96,8 @@ fun FamilyCircleScreen(
                     // "how many people are in this circle," which includes the viewer.
                     Text(
                         tr(
-                            "${statuses.size + 1} tao · nasa phone lang, walang server",
-                            "${statuses.size + 1} people · phone only, no server",
+                            "${statuses.size + 1} tao · nasa mga phone lang, hindi ina-upload",
+                            "${statuses.size + 1} people · on phones only, never uploaded",
                         ),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -28,7 +28,7 @@ fun originText(origin: String, hopCount: Int, language: AppLanguage): OriginText
         hopCount.takeIf { it > 0 }?.let { tr(language, "Dumaan sa $it phone", if (it == 1) "Through 1 phone" else "Through $it phones") },
     )
     "sms" -> OriginText(tr(language, "Galing sa text", "From a text message"), tr(language, "Ipinadala sa SMS", "Sent by SMS"))
-    "server" -> OriginText(tr(language, "Galing sa internet", "From the internet"), tr(language, "Kinuha mula sa server", "Fetched from the server"))
+    "server" -> OriginText(tr(language, "Galing sa internet", "From the internet"), tr(language, "Kinuha online", "Fetched online"))
     else -> OriginText(tr(language, "Hindi alam kung saan galing", "Unknown source"), null)
 }
 
