@@ -47,6 +47,16 @@ Artifacts land in `app/build/outputs/apk/`.
 ./gradlew installDebug
 ```
 
+### Signed release build
+
+Put `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`) in this folder next to a `.jks`; both are gitignored. Then:
+
+```bash
+./gradlew assembleRelease
+```
+
+gives a signed `app/build/outputs/apk/release/app-release.apk`. With no `keystore.properties` (CI, a fresh clone) the same command produces `app-release-unsigned.apk` instead of failing. Back the keystore up: if it is lost, users must uninstall before they can update.
+
 The debug build uses applicationId suffix `.debug`, so it installs alongside a release build rather than replacing it — useful when comparing behaviour on the same handset.
 
 ## Layout
@@ -67,14 +77,14 @@ app/
       MainActivity.kt
       ui/theme/              Color, Type, Theme
       broadcast/SmsReceiver.kt
+      data/ map/ mesh/ sos/ sync/ ...   one package per feature
     res/
 ```
 
 ## What exists so far
 
-A Compose scaffold that launches, and nothing else. Every dependency needed through build day 13 is wired and resolving — MapLibre, Room + KSP, Nearby Connections, FusedLocation, serialization — so no build day is blocked on dependency setup.
+The full app: offline map, event store and reducer, reporting, SOS, Nearby Connections mesh, family circles, roles, and Supabase sync. Day-by-day status is in `../BUILD_TASKS.md`.
 
-See [`../BUILD_TASKS.md`](../BUILD_TASKS.md) for the day-by-day plan. Day 1 is offline map tiles, and it is the project's hard gate.
 
 ## Notes that will bite you later
 
