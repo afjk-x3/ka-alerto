@@ -4,6 +4,7 @@ import android.content.Context
 import android.location.Address
 import android.location.Geocoder
 import android.os.Build
+import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.LanguagePrefs
 import com.macci.kaalerto.i18n.tr
 import java.util.Locale
@@ -22,7 +23,16 @@ import kotlin.coroutines.resume
  * string would have meant re-splitting it at the call site, which is the same guessing
  * the name fields were separated to avoid.
  */
-data class Place(val barangay: String?, val label: String)
+data class Place(
+    val barangay: String?,
+    val label: String,
+    /**
+     * "Mapandan, Pangasinan": the PSGC municipality this point is in, when it could be worked out. Inside the
+     * demo area that is known offline; elsewhere it needs the geocoder's answer (so the network), matched to the
+     * bundled list. Null offline, or when the geocoder's answer is ambiguous.
+     */
+    val municipality: String? = null,
+)
 
 /**
  * A readable name for a coordinate — "Quiapo, Manila" — for the registration screen.
@@ -42,7 +52,9 @@ suspend fun describePlace(context: Context, lat: Double, lon: Double): Place? {
     // Bundled OSM streets and landmarks first: they work offline, and inside the demo area
     // they name the street. barangay stays null on purpose — the demo area's bounding box
     // is not a surveyed barangay boundary, so it must never fill the registration barangay.
-    BundledPlaces.get(context).describe(lat, lon, LanguagePrefs.get(context))?.let { return Place(barangay = null, label = it.oneLine) }
+    BundledPlaces.get(context).describe(lat, lon, LanguagePrefs.get(context))?.let {
+        return Place(barangay = null, label = it.oneLine, municipality = DemoArea.MUNICIPALITY)
+    }
 
     geocode(context, lat, lon)?.let { found ->
         // Remembered, so the same area still has a name the next time there is no signal.
@@ -88,7 +100,16 @@ private suspend fun geocode(context: Context, lat: Double, lon: Double): Place? 
         }
     }
 
-    return address?.let { Place(barangay = barangayOf(it), label = readableName(it) ?: return null) }
+    return address?.let {
+        // The bundled PSGC list turns the geocoder's spelling into the exact municipality, and its barangay
+        // into the list's spelling; either stays as the geocoder said it (barangay) or blank (municipality)
+        // when there is no confident match.
+        val psgc = BundledPsgc.get(context)
+        val municipality = psgc.matchGeocoder(it.locality, it.subAdminArea, it.adminArea)
+        val rawBarangay = barangayOf(it)
+        val barangay = if (municipality != null) psgc.matchBarangay(municipality, rawBarangay) ?: rawBarangay else rawBarangay
+        Place(barangay = barangay, label = readableName(it) ?: return null, municipality = municipality?.label)
+    }
 }
 
 /**
