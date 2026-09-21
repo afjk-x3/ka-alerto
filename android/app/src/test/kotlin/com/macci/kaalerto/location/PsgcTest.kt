@@ -97,5 +97,8 @@ class PsgcTest {
         assertTrue("Brgy. San Juan Bautista" in psgc.barangays(m))
         assertEquals(listOf("Brgy. San Juan Bautista"), psgc.searchBarangays(m, "juan"))
         assertEquals(8, psgc.searchBarangays(m, "").size)
+        assertEquals(8, psgc.searchBarangays(m, "Brgy").size)
+        assertEquals(8, psgc.searchBarangays(m, "barangay").size)
+        assertEquals(listOf("Brgy. San Juan Bautista"), psgc.searchBarangays(m, "Brgy. san juan"))
     }
 }

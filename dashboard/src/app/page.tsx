@@ -3,14 +3,16 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEvents } from '@/hooks/useEvents';
 import { useAlerts } from '@/hooks/useAlerts';
-import { getPin, setPin, clearPin } from '@/lib/api';
+import { getPin, setPin, clearPin, postEvac } from '@/lib/api';
 import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item } from '@/lib/items';
 import { NO_ROUTES, NO_ORIGIN, OriginMode, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon, originOf } from '@/lib/routing';
 import PinGate from '@/components/PinGate';
 import EventMap from '@/components/Map';
 import ItemList from '@/components/EventList';
-import EvacList from '@/components/EvacList';
-import { buildEvacStates } from '@/lib/evac';
+import EvacList, { EvacManage } from '@/components/EvacList';
+import EvacDetail from '@/components/EvacDetail';
+import { buildEvacStates, DEMO_MUNICIPALITY, sameMunicipality } from '@/lib/evac';
+import { makePsgc, Psgc } from '@/lib/psgc';
 import EventDetail, { OriginControl } from '@/components/EventDetail';
 
 type Tab = 'sos' | 'reports' | 'evac';
@@ -22,6 +24,7 @@ const TABS: { key: Tab; label: string }[] = [
 
 const POLL_MS = 5_000;
 const STATION_KEY = 'kaalerto_station';
+const ACTING_KEY = 'kaalerto_acting';
 
 export default function DashboardPage() {
   const [locked, setLocked] = useState(false);
@@ -35,6 +38,11 @@ export default function DashboardPage() {
   const [originState, setOriginState] = useState(NO_ORIGIN);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
+  // Shelters: the municipality the operator acts for, the municipality/barangay list, and a map click for a new shelter.
+  const [acting, setActingState] = useState(DEMO_MUNICIPALITY);
+  const [psgc, setPsgc] = useState<Psgc | null>(null);
+  const [shelterPicking, setShelterPicking] = useState(false);
+  const [shelterPoint, setShelterPoint] = useState<{ lat: number; lon: number } | null>(null);
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ sos: null, reports: null, evac: null });
 
   const clearRoutes = useCallback(() => {
@@ -74,6 +82,40 @@ export default function DashboardPage() {
     }
   }, []);
 
+  // The municipality being acted for survives a reload; the 0.6 MB place list loads only when the tab opens.
+  useEffect(() => {
+    try {
+      // An operator who cleared the box on purpose (an empty saved value) keeps it empty.
+      const saved = localStorage.getItem(ACTING_KEY);
+      if (saved !== null) setActingState(saved);
+    } catch {
+      // Storage can be blocked; the choice is simply not remembered.
+    }
+  }, []);
+  useEffect(() => {
+    if (tab !== 'evac' || psgc) return;
+    void import('@/data/psgc.json').then((m) => setPsgc(makePsgc(m.default as never)));
+  }, [tab, psgc]);
+  const setActing = useCallback((municipality: string) => {
+    setActingState(municipality);
+    try {
+      localStorage.setItem(ACTING_KEY, municipality);
+    } catch {
+      // Not remembered across reloads.
+    }
+  }, []);
+  // Esc stops waiting for a shelter location, and otherwise closes the shelter panel.
+  useEffect(() => {
+    if (!shelterPicking && !selectedCentreId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (shelterPicking) setShelterPicking(false);
+      else setSelectedCentreId(null);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [shelterPicking, selectedCentreId]);
+
   // Escape stops picking a start first, then closes the detail panel.
   useEffect(() => {
     if (!selectedId) return;
@@ -107,7 +149,11 @@ export default function DashboardPage() {
 
   const items = useMemo(() => sortItems(buildItems(events)), [events]);
   const centres = useMemo(() => buildEvacStates(events), [events]);
-  const openCentres = centres.filter((c) => c.status !== 'not_open').length;
+  // The Shelters tab, its badge and its map pins show the municipality being acted for; a municipality with
+  // no shelters yet is simply an empty list. With none chosen, every shelter is shown.
+  const shownCentres = useMemo(() => (acting.trim() ? centres.filter((c) => sameMunicipality(acting, c.centre.municipality)) : centres), [centres, acting]);
+  const selectedCentre = tab === 'evac' ? (shownCentres.find((c) => c.centre.id === selectedCentreId) ?? null) : null;
+  const openCentres = shownCentres.filter((c) => c.status !== 'not_open').length;
   const shown = useMemo(() => applyFilters(items, filters), [items, filters]);
   const sos = shown.filter((i) => i.kind === 'sos');
   const reports = shown.filter((i) => i.kind === 'report');
@@ -123,6 +169,7 @@ export default function DashboardPage() {
 
   const select = useCallback((item: Item) => {
     clearRoutes();
+    setSelectedCentreId(null);
     setOriginState((o) => ({ ...o, picking: false }));
     setSelectedId(item.id);
     setTab(item.kind === 'sos' ? 'sos' : 'reports');
@@ -163,6 +210,24 @@ export default function DashboardPage() {
       clearRoutes();
       setOriginState((o) => ({ ...o, picked: null, picking: true }));
     },
+  };
+
+  const manage: EvacManage = {
+    acting,
+    setActing,
+    psgc,
+    write: async (body) => {
+      try {
+        await postEvac(body);
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AuthError') onAuthFail();
+        throw e;
+      }
+      void refresh({ silent: true });
+    },
+    picking: shelterPicking,
+    onPick: () => setShelterPicking(true),
+    point: shelterPoint,
   };
 
   if (locked) {
@@ -270,8 +335,8 @@ export default function DashboardPage() {
               }}
             >
               {label}{' '}
-              <span className="count" title={key === 'evac' ? `${openCentres} of ${centres.length} shelters open` : undefined}>
-                {key === 'sos' ? sos.length : key === 'reports' ? reports.length : `${openCentres}/${centres.length}`}
+              <span className="count" title={key === 'evac' ? `${openCentres} of ${shownCentres.length} shelters open` : undefined}>
+                {key === 'sos' ? sos.length : key === 'reports' ? reports.length : `${openCentres}/${shownCentres.length}`}
               </span>
             </button>
           ))}
@@ -314,7 +379,17 @@ export default function DashboardPage() {
         )}
 
         {tab === 'evac' ? (
-          <EvacList states={centres} selectedId={selectedCentreId} onSelect={(s) => setSelectedCentreId(s.centre.id)} />
+          <EvacList
+            states={shownCentres}
+            allStates={centres}
+            selectedId={selectedCentreId}
+            onSelect={(s) => {
+              setSelectedCentreId(s.centre.id);
+              setSelectedId(null);
+              clearRoutes();
+            }}
+            manage={manage}
+          />
         ) : (
         <ItemList
           items={list}
@@ -356,7 +431,7 @@ export default function DashboardPage() {
           </button>
         )}
         <EventMap
-          centres={centres}
+          centres={shownCentres}
           selectedCentreId={tab === 'evac' ? selectedCentreId : null}
           items={shown}
           selectedId={selectedId}
@@ -364,12 +439,18 @@ export default function DashboardPage() {
           routes={routing.options}
           origin={origin ?? (selected ? originOf(originState) : null)}
           activeRoute={routing.active}
-          picking={originState.picking && selected !== null}
+          picking={(originState.picking && selected !== null) || shelterPicking}
           onPickOrigin={(at) => {
+            if (shelterPicking) {
+              setShelterPoint(at);
+              setShelterPicking(false);
+              return;
+            }
             clearRoutes();
             setOriginState((o) => ({ ...o, picked: at, picking: false }));
           }}
         />
+        <EvacDetail state={selectedCentre} manage={manage} onClose={() => setSelectedCentreId(null)} />
         <EventDetail
           item={selected}
           onClose={() => {

@@ -227,6 +227,41 @@ a { color: var(--accent); }
 }
 .evac-note { padding: 12px 18px; color: var(--muted); font-size: 12px; }
 
+.evac-manage { display: grid; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+.evac-acting { display: grid; gap: 4px; }
+.evac-acting label, .evac-form label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.evac-acting .hint { margin-top: 0; }
+.evac-form { display: grid; gap: 10px; }
+.evac-form h3 { font-size: 14px; }
+.evac-form select { min-height: 40px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; color: var(--text); }
+.evac-coords { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.evac-form-actions { display: flex; gap: 8px; }
+.evac-field { display: grid; gap: 4px; }
+.evac-field > label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+
+/* ---------- Combobox ---------- */
+.combo { position: relative; }
+.combo .search { width: 100%; padding-right: 32px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+.combo-chevron { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 12px; pointer-events: none; }
+.combo-list {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px); max-height: 280px; overflow-y: auto; list-style: none;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(16, 24, 40, 0.16); padding: 4px;
+}
+.combo-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.combo-opt.is-active { background: #eef3ff; }
+.combo-opt small { flex-shrink: 0; color: var(--muted); font-size: 12px; }
+.combo-opt mark { background: none; color: var(--accent); font-weight: 700; }
+.combo-hint { padding: 8px 10px; color: var(--muted); font-size: 12.5px; }
+.evac-form .search { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.evac-controls { margin-top: 18px; padding-top: 6px; border-top: 1px solid var(--border); display: grid; gap: 10px; }
+.evac-occ-label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+.evac-buttons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.evac-occ { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; color: var(--text); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.status-banner.evac-accepting { background: #1f9d55; }
+.status-banner.evac-nearly_full { background: #d98a00; }
+.status-banner.evac-not_open { background: #7b8494; }
+.evac-remove { justify-self: start; background: none; border: 0; padding: 4px 0; color: var(--danger); font-weight: 600; font-size: 13px; }
+
 /* ---------- Detail ---------- */
 .detail {
   position: absolute; top: 14px; right: 14px; bottom: 14px; z-index: 6; width: 340px; max-width: calc(100% - 28px);

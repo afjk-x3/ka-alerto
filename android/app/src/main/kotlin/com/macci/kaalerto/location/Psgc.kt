@@ -36,6 +36,8 @@ internal fun foldName(text: String?): String =
 internal fun bareName(text: String?): String =
     foldName(text)
         .removePrefix("city of ").removePrefix("municipality of ").removePrefix("brgy ").removePrefix("barangay ")
+        // Someone who has only typed "Brgy" has not named one yet: every barangay is still on offer.
+        .let { if (it == "brgy" || it == "barangay") "" else it }
         .removeSuffix(" city").removeSuffix(" pob").trim()
 
 class Psgc(val municipalities: List<PsgcMunicipality>, private val barangaysByCode: Map<String, List<String>>) {

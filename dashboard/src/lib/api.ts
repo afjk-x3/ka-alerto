@@ -30,3 +30,20 @@ export async function fetchPhoto(hash: string): Promise<string | null> {
   if (!res.ok) return null;
   return URL.createObjectURL(await res.blob());
 }
+
+/** A shelter write (add, open, close, remove) via the dashboard's own PIN-checked /api/evac route. */
+export async function postEvac(body: Record<string, unknown>): Promise<void> {
+  const pin = getPin();
+  let res: Response;
+  try {
+    res = await fetch('/api/evac', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(pin ? { 'X-Dashboard-Pin': pin } : {}) },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new Error("Can't reach the dashboard server.");
+  }
+  if (res.status === 401) throw new AuthError();
+  if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Server error (${res.status})`);
+}
