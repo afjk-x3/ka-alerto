@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -61,6 +63,11 @@ import kotlin.math.roundToInt
 fun EvacScreen(
     states: List<EvacState>,
     isOfficial: Boolean,
+    /** The official's own municipality (their profile): they manage only its shelters. Blank until set. */
+    municipality: String = "",
+    onAddShelter: () -> Unit = {},
+    onRemove: (EvacCentre) -> Unit = {},
+    onOpenProfile: () -> Unit = {},
     onUpdate: (centreId: String, status: EvacStatus, occupancy: Int?) -> Unit,
     onBack: () -> Unit,
     onOpenMenu: () -> Unit,
@@ -80,7 +87,7 @@ fun EvacScreen(
     // still sees every centre, open or not, because "not open" is exactly the state
     // they're here to change (OfficialControls below). Filtering this for officials
     // too would hide the one button that opens a closed centre.
-    val visibleStates = if (isOfficial) states else states.filter { it.status != EvacStatus.NOT_OPEN }
+    val visibleStates = if (isOfficial) states.filter { canManage(municipality, it.centre) } else states.filter { it.status != EvacStatus.NOT_OPEN }
 
     Column(
         modifier = modifier
@@ -120,13 +127,21 @@ fun EvacScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (isOfficial) {
+                OfficialHeader(
+                    municipality = municipality,
+                    count = visibleStates.size,
+                    onAddShelter = onAddShelter,
+                    onOpenProfile = onOpenProfile,
+                )
+            }
             if (states.isEmpty()) {
                 Text(
                     tr("Walang evacuation centre sa fixture.", "No evacuation centres in the fixture."),
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            } else if (visibleStates.isEmpty()) {
+            } else if (visibleStates.isEmpty() && !isOfficial) {
                 // Not the same message as an empty fixture: centres exist, none are
                 // open yet. A blank screen here would read as "nothing to see" when
                 // it actually means "check back" — the failure the NOT_OPEN default
@@ -157,6 +172,7 @@ fun EvacScreen(
                         editing = null
                     },
                     onClick = { onCentreClick(state.centre) },
+                    onRemove = { onRemove(state.centre) },
                 )
             }
         }
@@ -194,6 +210,7 @@ private fun CentreCard(
     onToggleEdit: () -> Unit,
     onUpdate: (EvacStatus, Int?) -> Unit,
     onClick: () -> Unit,
+    onRemove: () -> Unit,
 ) {
     val colors = LocalKaAlertoColors.current
     val open = state.status != EvacStatus.NOT_OPEN
@@ -224,6 +241,12 @@ private fun CentreCard(
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // Where it is, in the words officials typed. A shelter an official added carries
+                // its own municipality and barangay; the bundled four get the demo area's.
+                val where = listOfNotNull(state.centre.barangay, state.centre.municipality).joinToString(", ")
+                if (where.isNotEmpty()) {
+                    Text(where, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             Box(
                 modifier = Modifier
@@ -292,23 +315,69 @@ private fun CentreCard(
         }
 
         if (isOfficial) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 12.dp)
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .border(1.5.dp, colors.borderEmphasis)
-                    .clickable(onClick = onToggleEdit),
-                contentAlignment = Alignment.Center,
+            var confirmRemove by remember { mutableStateOf(false) }
+            Row(
+                modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text(
-                    if (editing) tr("Isara", "Close") else tr("I-update ang status", "Update the status"),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
+                // One tap to open or close; nearly-full and the head count stay under the button beside it.
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .background(if (open) colors.recessedSurface else MaterialTheme.colorScheme.onBackground)
+                        .clickable { onUpdate(if (open) EvacStatus.NOT_OPEN else EvacStatus.ACCEPTING, state.occupancy) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        if (open) tr("Isara", "Close it") else tr("Buksan", "Open it"),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (open) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .border(1.5.dp, colors.borderEmphasis)
+                        .clickable(onClick = onToggleEdit),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        if (editing) tr("Tapos na", "Done") else tr("I-update ang status", "Update the status"),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
             }
             if (editing) OfficialControls(state, onUpdate)
+            if (state.centre.custom) {
+                Text(
+                    tr("Alisin ang silungan", "Remove this shelter"),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colors.criticalFg,
+                    modifier = Modifier.clickable { confirmRemove = true }.padding(top = 10.dp, bottom = 2.dp),
+                )
+            }
+            if (confirmRemove) {
+                AlertDialog(
+                    onDismissRequest = { confirmRemove = false },
+                    title = { Text(tr("Alisin ang silungan?", "Remove this shelter?")) },
+                    text = {
+                        Text(
+                            tr(
+                                "Mawawala ito sa listahan ng lahat. Hindi ito maaalis sa phone ng iba kung hindi pa nila natatanggap ito.",
+                                "It disappears from everyone's list. A phone that has not received this yet keeps showing it until it does.",
+                            ),
+                        )
+                    },
+                    confirmButton = { TextButton(onClick = { confirmRemove = false; onRemove() }) { Text(tr("Alisin", "Remove")) } },
+                    dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text(tr("Kanselahin", "Cancel")) } },
+                )
+            }
         }
     }
 }
@@ -406,4 +475,69 @@ fun formatDistance(meters: Double): String {
     val distance = if (meters < 1_000) "${(meters / 10).roundToInt() * 10} m" else "%.1f km".format(meters / 1_000)
     val minutes = (meters / (4_000.0 / 60)).roundToInt()
     return "$distance · " + tr("$minutes min lakad", "$minutes min walk")
+}
+
+/**
+ * The top of an official's list: whose shelters these are, and how to add one. Without a municipality on
+ * the profile an official manages none, so this points there instead.
+ */
+@Composable
+private fun OfficialHeader(municipality: String, count: Int, onAddShelter: () -> Unit, onOpenProfile: () -> Unit) {
+    val colors = LocalKaAlertoColors.current
+    if (municipality.isBlank()) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(colors.warningBg).padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                tr("Itakda muna ang bayan mo", "Set your municipality first"),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.warningFg,
+            )
+            Text(
+                tr(
+                    "Ang mga silungan sa bayan mo lang ang maaari mong idagdag at baguhin.",
+                    "You can add and change only the shelters in your own municipality.",
+                ),
+                fontSize = 13.sp,
+                color = colors.warningFg,
+            )
+            Box(
+                modifier = Modifier.fillMaxWidth().height(44.dp).border(1.5.dp, colors.warningFg).clickable(onClick = onOpenProfile),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(tr("Buksan ang profile", "Open your profile"), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = colors.warningFg)
+            }
+        }
+        return
+    }
+    Text(
+        tr("Bayan mo: $municipality", "Your municipality: $municipality"),
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (count == 0) {
+        Text(
+            tr("Wala pang silungan sa bayan mo. Magdagdag ng isa.", "There are no shelters in your municipality yet. Add one."),
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .background(MaterialTheme.colorScheme.onBackground)
+            .clickable(onClick = onAddShelter),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            tr("+ Magdagdag ng silungan", "+ Add a shelter"),
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.background,
+        )
+    }
 }

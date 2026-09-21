@@ -53,9 +53,15 @@ fun ProfileScreen(
     /** Optional, unvalidated — see LocalIdentity.KEY_PHONE for why. */
     phone: String,
     onPhoneChange: (String) -> Unit,
+    /** Free text with suggestions; for an official it scopes the shelters they may add and change. */
+    municipality: String,
+    onMunicipalityChange: (String) -> Unit,
+    municipalitySuggestions: List<String>,
+    municipalityFromLocation: Boolean,
     barangay: String,
     onBarangayChange: (String) -> Unit,
     barangayFromLocation: Boolean,
+    barangaySuggestions: List<String>,
     home: Pair<Double, Double>?,
     accuracyMeters: Float?,
     placeName: String?,
@@ -124,10 +130,17 @@ fun ProfileScreen(
                     onLocate = onLocate,
                     onPickOnMap = onPickOnMap,
                 )
+                MunicipalitySection(
+                    municipality = municipality,
+                    onMunicipalityChange = onMunicipalityChange,
+                    suggestions = municipalitySuggestions,
+                    fromLocation = municipalityFromLocation,
+                )
                 BarangaySection(
                     barangay = barangay,
                     onBarangayChange = onBarangayChange,
                     barangayFromLocation = barangayFromLocation,
+                    suggestions = barangaySuggestions,
                 )
                 NameVisibilityDisclosure()
                 Spacer(Modifier.size(8.dp))

@@ -56,6 +56,10 @@ sealed interface Screen {
     data class OfficialStatus(val featureRef: String) : Screen
     data object EvacCentres : Screen
 
+    /** An official adding a shelter in their own municipality; [PickShelter] is its map picker. */
+    data object AddShelter : Screen
+    data object PickShelter : Screen
+
     /** Build day 11a — a household circle joined by QR, plus the one-tap "Ligtas ako". */
     data object FamilyCircle : Screen
 

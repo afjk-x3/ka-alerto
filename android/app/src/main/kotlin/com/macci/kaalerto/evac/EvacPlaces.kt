@@ -1,5 +1,7 @@
 package com.macci.kaalerto.evac
 
+import com.macci.kaalerto.location.Psgc
+
 /**
  * Municipality and barangay are free text, so two officials can spell the same place differently.
  * These helpers make the comparison forgiving (capitals and spacing) and suggest the spellings
@@ -33,9 +35,16 @@ internal fun suggest(query: String, known: List<String>, limit: Int = 6): List<S
         .take(limit)
 }
 
-/** Municipalities already in use: on any shelter, plus the one saved on this phone. */
-fun suggestMunicipalities(centres: List<EvacCentre>, own: String?, query: String): List<String> =
-    suggest(query, knownSpellings(centres.map { it.municipality } + own))
+/**
+ * Municipalities matching what is typed: the bundled PSGC list first (exact spellings, province included),
+ * then any others already in use on a shelter or saved on this phone, for a place the list does not know.
+ */
+fun suggestMunicipalities(centres: List<EvacCentre>, own: String?, query: String, psgc: Psgc? = null): List<String> {
+    val fromList = psgc?.search(query)?.map { it.label }.orEmpty()
+    val seen = fromList.mapTo(HashSet()) { normalizePlace(it) }
+    val inUse = suggest(query, knownSpellings(centres.map { it.municipality } + own)).filter { normalizePlace(it) !in seen }
+    return (fromList + inUse).filter { it != query.trim() }.take(6)
+}
 
 /**
  * Barangays already known for [municipality]: those on its shelters, plus this phone's own barangay
@@ -47,9 +56,14 @@ fun suggestBarangays(
     ownMunicipality: String?,
     ownBarangay: String?,
     query: String,
+    psgc: Psgc? = null,
 ): List<String> {
     if (normalizePlace(municipality).isEmpty()) return emptyList()
+    // The chosen municipality's barangays from the bundled list, when it is one the list knows.
+    val listed = psgc?.find(municipality)?.let { psgc.searchBarangays(it, query) }.orEmpty()
     val fromCentres = centres.filter { sameMunicipality(it.municipality, municipality) }.map { it.barangay }
     val own = if (sameMunicipality(ownMunicipality, municipality)) listOf(ownBarangay) else emptyList()
-    return suggest(query, knownSpellings(fromCentres + own))
+    val seen = listed.mapTo(HashSet()) { normalizePlace(it) }
+    val inUse = suggest(query, knownSpellings(fromCentres + own)).filter { normalizePlace(it) !in seen }
+    return (listed + inUse).filter { it != query.trim() }.take(8)
 }

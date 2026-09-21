@@ -21,6 +21,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.platform.LocalContext
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.geofence.HomeLocationStore
+import com.macci.kaalerto.location.BundledPsgc
+import com.macci.kaalerto.location.Psgc
 import com.macci.kaalerto.location.describePlace
 import com.macci.kaalerto.location.fetchAccurateLocation
 import com.macci.kaalerto.location.fetchCurrentLocation
@@ -28,13 +30,21 @@ import org.maplibre.android.geometry.LatLng
 import com.macci.kaalerto.i18n.AppLanguage
 import com.macci.kaalerto.i18n.LanguagePrefs
 import com.macci.kaalerto.i18n.LocalAppLanguage
+import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.identity.displayFormOf
 import androidx.compose.runtime.rememberCoroutineScope
+import com.macci.kaalerto.evac.AddShelterScreen
 import com.macci.kaalerto.evac.EvacScreen
+import com.macci.kaalerto.evac.ShelterDraft
 import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
+import com.macci.kaalerto.evac.removeEvacCentre
+import com.macci.kaalerto.evac.resolveCentres
+import com.macci.kaalerto.evac.submitEvacCentre
 import com.macci.kaalerto.evac.submitEvacStatus
+import com.macci.kaalerto.evac.suggestBarangays
+import com.macci.kaalerto.evac.suggestMunicipalities
 import com.macci.kaalerto.identity.RoleScreen
 import com.macci.kaalerto.map.ensureHomePack
 import com.macci.kaalerto.map.homeStart
@@ -112,6 +122,17 @@ fun KaAlertoApp(
     }
     var draftAccuracy by remember { mutableStateOf<Float?>(null) }
     var draftPhone by remember { mutableStateOf(LocalIdentity.registeredPhone(appContext)) }
+    // Free text with suggestions. Optional for everyone; an official manages only this municipality's shelters.
+    var draftMunicipality by remember { mutableStateOf(LocalIdentity.homeMunicipality(appContext)) }
+    // Like the barangay: follows the detected location until somebody corrects it, then stops following.
+    var municipalityCorrected by remember { mutableStateOf(LocalIdentity.homeMunicipality(appContext).isNotBlank()) }
+    var municipalityFromLocation by remember { mutableStateOf(false) }
+    // The bundled municipality and barangay list, for suggestions. Empty until it has loaded.
+    var psgc by remember { mutableStateOf<Psgc?>(null) }
+    LaunchedEffect(Unit) { psgc = BundledPsgc.get(appContext) }
+    // The shelter being added lives here so it survives the trip to the map picker.
+    var shelterDraft by remember { mutableStateOf(ShelterDraft()) }
+    var locatingShelter by remember { mutableStateOf(false) }
     // The hamburger drawer, shared by every screen that shows one — see NavDrawer.kt
     // for why this lives here rather than being duplicated per screen.
     var drawerOpen by remember { mutableStateOf(false) }
@@ -207,6 +228,18 @@ fun KaAlertoApp(
             draftBarangay = resolved
             barangayFromLocation = true
         }
+        // The municipality follows the pin the same way, and a barangay filled in for a different one would be wrong.
+        val municipality = place?.municipality
+        if (municipality != null && !municipalityCorrected) {
+            draftMunicipality = municipality
+            municipalityFromLocation = true
+            // The untouched default is the demo barangay. Somewhere else it is simply wrong, so it is cleared
+            // and the field offers that municipality's barangays instead of keeping a barangay of another town.
+            if (resolved == null && !barangayCorrected && municipality != DemoArea.MUNICIPALITY && draftBarangay == DemoArea.BARANGAY_NAME) {
+                draftBarangay = ""
+                barangayFromLocation = false
+            }
+        }
     }
 
     val onIdentityScreen = screen is Screen.Onboarding || screen is Screen.Profile
@@ -269,6 +302,8 @@ fun KaAlertoApp(
         is Screen.Onboarding -> if (LocalIdentity.isRegistered(context)) Screen.Map else null
         is Screen.Profile -> current.resume
         Screen.PickHome -> pickHomeReturn
+        Screen.AddShelter -> Screen.EvacCentres
+        Screen.PickShelter -> Screen.AddShelter
         is Screen.SosAddContext -> Screen.SosStatus(current.sosId)
         is Screen.SosRescueCard -> Screen.SosStatus(current.sosId)
         Screen.QrScanner, Screen.MyCircleQr -> Screen.FamilyCircle
@@ -486,6 +521,15 @@ fun KaAlertoApp(
                 barangayFromLocation = false
             },
             barangayFromLocation = barangayFromLocation,
+            municipality = draftMunicipality,
+            onMunicipalityChange = {
+                draftMunicipality = it
+                municipalityCorrected = true
+                municipalityFromLocation = false
+            },
+            municipalitySuggestions = suggestMunicipalities(emptyList(), null, draftMunicipality, psgc),
+            municipalityFromLocation = municipalityFromLocation,
+            barangaySuggestions = suggestBarangays(draftMunicipality, emptyList(), null, null, draftBarangay, psgc),
             home = draftHome,
             accuracyMeters = draftAccuracy,
             placeName = draftPlaceName,
@@ -505,6 +549,7 @@ fun KaAlertoApp(
             // Resuming, not just dismissing — see `gated`.
             onDone = {
                 LocalIdentity.register(context, draftFirstName, draftLastName, draftPhone, draftBarangay)
+                LocalIdentity.setHomeMunicipality(context, draftMunicipality)
                 // Registering also sets day 5's home radius, so the notification primer
                 // on this very screen is true from the first launch instead of waiting
                 // for somebody to discover the map long-press.
@@ -553,6 +598,8 @@ fun KaAlertoApp(
             // Same reasoning as the Onboarding branch above: PickHome needs to know
             // which of the two screens sent it here.
             pickHomeReturn = current
+            val profileEvents by mapEvents.collectAsStateWithLifecycle()
+            val knownCentres = remember(profileEvents) { resolveCentres(loadEvacCentres(context), profileEvents) }
             ProfileScreen(
                 modifier = modifier,
                 firstName = draftFirstName,
@@ -561,6 +608,17 @@ fun KaAlertoApp(
                 onLastNameChange = { draftLastName = it },
                 phone = draftPhone,
                 onPhoneChange = { draftPhone = it },
+                municipality = draftMunicipality,
+                onMunicipalityChange = {
+                    draftMunicipality = it
+                    municipalityCorrected = true
+                    municipalityFromLocation = false
+                },
+                municipalitySuggestions = suggestMunicipalities(knownCentres, LocalIdentity.homeMunicipality(context), draftMunicipality, psgc),
+                municipalityFromLocation = municipalityFromLocation,
+                barangaySuggestions = suggestBarangays(
+                    draftMunicipality, knownCentres, LocalIdentity.homeMunicipality(context), LocalIdentity.homeBarangay(context), draftBarangay, psgc,
+                ),
                 barangay = draftBarangay,
                 onBarangayChange = {
                     draftBarangay = it
@@ -586,6 +644,7 @@ fun KaAlertoApp(
                 onPickOnMap = { screen = Screen.PickHome },
                 onSave = {
                     LocalIdentity.register(context, draftFirstName, draftLastName, draftPhone, draftBarangay)
+                    LocalIdentity.setHomeMunicipality(context, draftMunicipality)
                     draftHome?.let { (lat, lon) ->
                         HomeLocationStore.set(context, lat, lon, HomeLocationStore.DEFAULT_RADIUS_METERS)
                         // A moved home gets a new pack; see map/HomePackStore.kt.
@@ -640,8 +699,16 @@ fun KaAlertoApp(
                 modifier = modifier,
                 states = states,
                 isOfficial = role == LocalIdentity.ROLE_OFFICIAL,
+                municipality = LocalIdentity.homeMunicipality(context),
+                onAddShelter = {
+                    shelterDraft = ShelterDraft()
+                    screen = Screen.AddShelter
+                },
+                onRemove = { centre -> scope.launch { removeEvacCentre(context, centre) } },
+                onOpenProfile = { screen = Screen.Profile(Screen.EvacCentres) },
                 onUpdate = { centreId, status, occupancy ->
-                    val centre = centres.firstOrNull { it.id == centreId } ?: return@EvacScreen
+                    // Added shelters live in the fold, not in the bundled list.
+                    val centre = states.firstOrNull { it.centre.id == centreId }?.centre ?: return@EvacScreen
                     scope.launch { submitEvacStatus(context, centre, status, occupancy) }
                 },
                 onBack = { screen = Screen.Map },
@@ -652,6 +719,52 @@ fun KaAlertoApp(
                 },
             )
         }
+
+        Screen.AddShelter -> {
+            val shelterEvents by mapEvents.collectAsStateWithLifecycle()
+            val knownCentres = remember(shelterEvents) { resolveCentres(loadEvacCentres(context), shelterEvents) }
+            val ownMunicipality = LocalIdentity.homeMunicipality(context)
+            AddShelterScreen(
+                modifier = modifier,
+                municipality = ownMunicipality,
+                draft = shelterDraft,
+                onDraftChange = { shelterDraft = it },
+                barangaySuggestions = suggestBarangays(ownMunicipality, knownCentres, ownMunicipality, LocalIdentity.homeBarangay(context), shelterDraft.barangay, psgc),
+                locating = locatingShelter,
+                onUseMyLocation = {
+                    scope.launch {
+                        locatingShelter = true
+                        fetchCurrentLocation(context)?.let { shelterDraft = shelterDraft.copy(lat = it.latitude, lon = it.longitude) }
+                        locatingShelter = false
+                    }
+                },
+                onPickOnMap = { screen = Screen.PickShelter },
+                onSave = {
+                    val d = shelterDraft
+                    scope.launch {
+                        val id = submitEvacCentre(context, d.name, d.kind, d.lat ?: return@launch, d.lon ?: return@launch, d.barangay, d.capacity)
+                        if (id != null) {
+                            shelterDraft = ShelterDraft()
+                            screen = Screen.EvacCentres
+                        }
+                    }
+                },
+                onCancel = { screen = Screen.EvacCentres },
+                onOpenMenu = { drawerOpen = true },
+            )
+        }
+
+        Screen.PickShelter -> MapScreen(
+            modifier = modifier,
+            pickMode = true,
+            pickSubtitle = tr("Ituturo ang lokasyon ng silungan", "This sets the shelter's location"),
+            initialCamera = shelterDraft.lat?.let { lat -> shelterDraft.lon?.let { lon -> LatLng(lat, lon) } },
+            onLocationPicked = { latLng ->
+                shelterDraft = shelterDraft.copy(lat = latLng.latitude, lon = latLng.longitude)
+                screen = Screen.AddShelter
+            },
+            onCancelPick = { screen = Screen.AddShelter },
+        )
 
         Screen.FamilyCircle -> {
             val events by mapEvents.collectAsStateWithLifecycle()

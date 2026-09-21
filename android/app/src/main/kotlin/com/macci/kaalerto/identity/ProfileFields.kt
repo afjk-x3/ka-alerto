@@ -378,10 +378,15 @@ internal fun BarangaySection(
     barangay: String,
     onBarangayChange: (String) -> Unit,
     barangayFromLocation: Boolean,
+    /** Barangays already known for the chosen municipality; empty until one is set. */
+    suggestions: List<String> = emptyList(),
 ) {
     val colors = LocalKaAlertoColors.current
     val keyboard = LocalSoftwareKeyboardController.current
-    var editingBarangay by remember { mutableStateOf(false) }
+    // An empty barangay (cleared because the default belonged to another town) opens straight into typing,
+    // with that municipality's barangays listed.
+    var editingBarangay by remember { mutableStateOf(barangay.isBlank()) }
+    androidx.compose.runtime.LaunchedEffect(barangay.isBlank()) { if (barangay.isBlank()) editingBarangay = true }
     val barangayDescription = tr("Barangay mo", "Your barangay")
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -434,6 +439,13 @@ internal fun BarangaySection(
                         .padding(start = 10.dp, top = 8.dp, bottom = 8.dp),
                 )
             }
+        }
+        if (editingBarangay) {
+            SuggestionList(suggestions, onPick = {
+                onBarangayChange(it)
+                editingBarangay = false
+                keyboard?.hide()
+            })
         }
         Text(
             // Says where the value came from, because the two cases deserve different

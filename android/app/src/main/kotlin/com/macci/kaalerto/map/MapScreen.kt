@@ -139,6 +139,8 @@ fun MapScreen(
     focusFeatureRef: String? = null,
     /** True when [pickMode] is placing a home pin rather than a report location. */
     pickingHome: Boolean = false,
+    /** Replaces "This sets the report location" when the pin is for something else, such as a shelter. */
+    pickSubtitle: String? = null,
     /**
      * Where the camera opens. Defaults to the frozen demo area, which is right for the
      * map itself — every fixture lives there — and wrong for pick-mode: somebody
@@ -561,6 +563,7 @@ fun MapScreen(
             pickMode -> PickLocationBanner(
                 onCancel = { onCancelPick?.invoke() },
                 forHome = pickingHome,
+                emptySubtitle = pickSubtitle,
                 pickedLatLng = pickedLatLng,
                 locatingCurrent = locatingPick,
                 onUseCurrentLocation = {
@@ -741,6 +744,7 @@ private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -
 private fun PickLocationBanner(
     onCancel: () -> Unit,
     forHome: Boolean,
+    emptySubtitle: String?,
     pickedLatLng: LatLng?,
     locatingCurrent: Boolean,
     onUseCurrentLocation: () -> Unit,
@@ -768,7 +772,7 @@ private fun PickLocationBanner(
                 Text(
                     when {
                         pickedLatLng == null && forHome -> tr("Ituturo ang bahay mo", "This points to your home")
-                        pickedLatLng == null -> tr("Ituturo ang lokasyon ng ulat", "This sets the report location")
+                        pickedLatLng == null -> emptySubtitle ?: tr("Ituturo ang lokasyon ng ulat", "This sets the report location")
                         else -> tr("Tapikin muli para ilipat ang pin", "Tap again to move the pin")
                     },
                     style = MaterialTheme.typography.bodySmall,

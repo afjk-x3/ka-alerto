@@ -80,10 +80,16 @@ fun OnboardingScreen(
     onFirstNameChange: (String) -> Unit,
     lastName: String,
     onLastNameChange: (String) -> Unit,
+    /** Optional; filled in from the detected location. An official's municipality scopes the shelters they manage. */
+    municipality: String,
+    onMunicipalityChange: (String) -> Unit,
+    municipalitySuggestions: List<String>,
+    municipalityFromLocation: Boolean,
     barangay: String,
     onBarangayChange: (String) -> Unit,
     /** True once the barangay came from the geocoder rather than a default. */
     barangayFromLocation: Boolean,
+    barangaySuggestions: List<String>,
     /** The home pin, found by GPS on entry. Null while looking, or if nothing came. */
     home: Pair<Double, Double>?,
     accuracyMeters: Float?,
@@ -150,10 +156,17 @@ fun OnboardingScreen(
                     onLocate = onLocate,
                     onPickOnMap = onPickOnMap,
                 )
+                MunicipalitySection(
+                    municipality = municipality,
+                    onMunicipalityChange = onMunicipalityChange,
+                    suggestions = municipalitySuggestions,
+                    fromLocation = municipalityFromLocation,
+                )
                 BarangaySection(
                     barangay = barangay,
                     onBarangayChange = onBarangayChange,
                     barangayFromLocation = barangayFromLocation,
+                    suggestions = barangaySuggestions,
                 )
                 NameVisibilityDisclosure()
                 PermissionSection()
