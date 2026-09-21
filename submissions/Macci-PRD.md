@@ -141,13 +141,14 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 - **FR-2.1** Submit a report by selecting a location and a depth on the body or vehicle scale; derive severity from depth automatically.
 - **FR-2.2** Write the report to device storage and display it on the author's own map before attempting any transmission.
 - **FR-2.3** Attach an optional photo captured in the application at the time of reporting; the device photo library is not offered as a source.
-- **FR-2.4** Carry the existence and content hash of a photo in the report event itself, queueing the image separately at the lowest priority, so every device computes the same confidence whether or not the image has arrived. The image itself uploads and downloads by hash through Supabase only, best-effort, when a connection is available; it never travels over the self-hosted server or the device-to-device relay (FR-4.4).
+- **FR-2.4** Carry the existence and content hash of a photo in the report event itself, queueing the image separately at the lowest priority, so every device computes the same confidence whether or not the image has arrived. The image itself uploads and downloads by hash through Supabase only, best-effort, when a connection is available; it never travels over the device-to-device relay (FR-4.4).
 - **FR-2.5** Present a report without a photo as less corroborated rather than as doubtful, and never require a photo to submit.
 - **FR-2.6** Record two independent presence signals with each event: asserted position, and relay attestation — how many nearby devices received it directly over short-range radio.
 - **FR-2.7** Count corroboration only from distinct devices, weighting a confirmation by relay attestation rather than by asserted position.
 - **FR-2.8** Embed the author's display name in the event at creation, so it renders on a receiving device with no lookup. It is excluded from the confidence calculation.
+- **FR-2.9** Let an author withdraw their own say on a spot. A withdrawal is a new event, never a deletion: it cancels that author's earlier reports, confirmations and disputes on that feature, and nobody else's. Every device folds it identically, whatever order events arrive in. A spot with nothing left is removed from the map rather than shown as clear, and the withdrawal itself stays visible in the spot's history. It travels by the same transports as the report it cancels and lives at least as long as the events it cancels.
 
-**AC-2** A submitted report appears on the author's map before transmission, and reaches a second device over the relay with both devices offline.
+**AC-2** A submitted report appears on the author's map before transmission, and reaches a second device over the relay with both devices offline. A withdrawn report disappears from both maps.
 
 ### 7.3 Real-Time Notifications
 
@@ -158,6 +159,7 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 - **FR-3.3** Relay PAGASA and NDRRMC advisories verbatim, presented alongside but visually distinct from community reports.
 - **FR-3.4** Escalate a rescue request in range to a critical alert that overrides silent mode.
 - **FR-3.5** Detect a genuinely slow or failing sync connection from real, observed sync attempts — never an inferred signal-strength estimate — and prompt the resident to enable the device-to-device relay as a backup.
+- **FR-3.6** When a fresh report lands inside a resident's home radius, ask them to confirm it, and open that report's detail on tap. Do not prompt the report's author, or anyone who has already confirmed or disputed that spot. A prompt never adds corroboration by itself: a confirmation still weighs by what the reducer measures when it is made (FR-2.6, FR-2.7).
 
 **AC-3** An alert fires on a device in airplane mode when a matching event arrives over the relay.
 
@@ -199,6 +201,8 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 ### 7.10 LGU Dashboard
 
 A responsive web console, built last. Authenticated accounts scoped to one LGU with an audit log; live area-wide map using the same severity, confidence and staleness encoding; official verification at scale; rescue queue with grouped incidents; evacuation capacity management; post-event export; and an explicit degraded state when the server is unreachable. Nothing in the mobile application depends on it.
+
+**As built for the demo:** a shared-PIN gate (not personal accounts, no audit log); a live area-wide map and two lists, SOS requests and flood reports, refreshed every 5 seconds; sound and browser-notification alerts for SOS requests and S3 reports; report photos; directions to a report or SOS with alternative routes ranked by nearby flood reports; filters by age, severity and SOS state; and CSV export of the filtered list. Not built: LGU-scoped accounts, the audit log, grouped incidents, evacuation capacity management and official verification at scale.
 
 ---
 
