@@ -83,8 +83,14 @@ private data class Resolution(
 object Reducer {
 
     fun summarize(featureRef: String, allEvents: List<Event>, now: Long): FeatureSummary? {
-        val events = allEvents.filter { it.featureRef == featureRef }
-        if (events.isEmpty()) return null
+        val featureEvents = allEvents.filter { it.featureRef == featureRef }
+        if (featureEvents.isEmpty()) return null
+        // A withdrawal cancels its author's earlier events (Withdraw.kt). Everything below
+        // folds only what is still live; the timeline also keeps the withdrawals themselves.
+        val events = liveEvents(featureEvents)
+        // Nothing with a reading is left, so the spot is gone from the map rather than
+        // showing as an S0 nobody reported.
+        if (events.none { it.severity != null }) return null
 
         // docs/03-architecture.md §4.3 step 4: one live position per author, so nobody
         // stacks repeated confirms to fake consensus.
@@ -166,7 +172,7 @@ object Reducer {
             officialAtMs = latestOfficial?.timestampMs,
             pendingSecondOfficial = latestOfficial != null && gated && !officialInForce,
             contradictingCount = contradicting,
-            events = events.sortedByDescending { it.timestampMs },
+            events = (events + featureEvents.filter { it.type == TYPE_FLOOD_WITHDRAW }).sortedByDescending { it.timestampMs },
         )
     }
 

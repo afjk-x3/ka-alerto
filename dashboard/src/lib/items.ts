@@ -105,7 +105,18 @@ function parsePayload(raw: string | null): Payload | null {
 }
 
 /** One item per SOS request (its sos, sos_amend and sos_state events folded together) plus one per report. */
-export function buildItems(events: Event[], now = Date.now()): Item[] {
+export function buildItems(all: Event[], now = Date.now()): Item[] {
+  // A flood_withdraw cancels its author's earlier events on that feature (Withdraw.kt on the phone).
+  const withdrawnAt = new Map<string, number>();
+  for (const e of all) {
+    if (e.type !== 'flood_withdraw') continue;
+    const k = `${e.authorId}|${e.featureRef}`;
+    withdrawnAt.set(k, Math.max(withdrawnAt.get(k) ?? 0, e.timestampMs));
+  }
+  const events = all.filter(
+    (e) => e.type !== 'flood_withdraw' && e.timestampMs > (withdrawnAt.get(`${e.authorId}|${e.featureRef}`) ?? 0),
+  );
+
   const groups = new Map<string, Event[]>();
   const items: Item[] = [];
 

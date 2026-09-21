@@ -5,6 +5,7 @@ import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.data.severityDown
+import com.macci.kaalerto.data.withdrawEvent
 import com.macci.kaalerto.data.severityUp
 import com.macci.kaalerto.data.ttlMinutesFor
 import com.macci.kaalerto.identity.LocalIdentity
@@ -32,6 +33,13 @@ suspend fun submitDispute(context: Context, featureRef: String, currentSeverity:
         DisputeReason.WRONG_LOCATION -> null
     }
     submit(context, featureRef, type = "dispute", severity = severity, disputeReason = reason.name.lowercase())
+}
+
+/** Takes back this device's own say on a feature. No GPS wait: it carries no location. */
+suspend fun submitWithdraw(context: Context, featureRef: String) {
+    val repository = EventRepository(KaAlertoDatabase.getInstance(context).eventDao())
+    val event = withdrawEvent(LocalIdentity.getOrCreate(context), featureRef, repository.all(), System.currentTimeMillis())
+    repository.insert(event)
 }
 
 private suspend fun submit(context: Context, featureRef: String, type: String, severity: String?, disputeReason: String?) {

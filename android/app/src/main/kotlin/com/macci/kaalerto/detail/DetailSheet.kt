@@ -48,6 +48,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.FeatureSummary
+import com.macci.kaalerto.data.TYPE_FLOOD_WITHDRAW
+import com.macci.kaalerto.data.canWithdraw
+import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.data.severityTextFor
 import com.macci.kaalerto.i18n.LocalAppLanguage
 import com.macci.kaalerto.i18n.tr
@@ -105,6 +108,7 @@ fun DetailSheet(
     val scope = rememberCoroutineScope()
     val colors = LocalKaAlertoColors.current
     var showDisputeDialog by remember { mutableStateOf(false) }
+    var showWithdrawDialog by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val language = LocalAppLanguage.current
@@ -257,12 +261,48 @@ fun DetailSheet(
                 )
             }
 
+            if (canWithdraw(summary, remember { LocalIdentity.getOrCreate(context).authorId })) {
+                Spacer(Modifier.height(10.dp))
+                ActionBar(
+                    label = tr("Bawiin ang ulat ko", "Withdraw my report"),
+                    icon = { tint -> XIcon(tint, Modifier.size(18.dp)) },
+                    onClick = { showWithdrawDialog = true },
+                    background = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                    border = BorderStroke(1.5.dp, colors.borderEmphasis),
+                )
+            }
+
             Spacer(Modifier.height(20.dp))
             Text(tr("ULAT (${summary.events.size})", "REPORTS (${summary.events.size})"), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(4.dp))
             summary.events.take(5).forEach { event -> EventHistoryRow(event) }
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (showWithdrawDialog) {
+        AlertDialog(
+            onDismissRequest = { showWithdrawDialog = false },
+            title = { Text(tr("Bawiin ang ulat mo?", "Withdraw your report?")) },
+            text = {
+                Text(
+                    tr(
+                        "Aalisin ang lahat ng sinabi mo tungkol sa lugar na ito, pati ang mga kumpirmasyon mo. Makikita pa rin ng iba na binawi ito.",
+                        "This removes everything you said about this spot, including your confirmations. Others will still see that it was withdrawn.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showWithdrawDialog = false
+                    scope.launch { submitWithdraw(context, summary.featureRef) }
+                }) { Text(tr("Bawiin", "Withdraw")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showWithdrawDialog = false }) { Text(tr("Kanselahin", "Cancel")) }
+            },
+        )
     }
 
     if (showDisputeDialog) {
@@ -594,6 +634,7 @@ private fun EventHistoryRow(event: Event) {
             val label = when (event.type) {
                 "confirm" -> "${tr("Kumpirmasyon", "Confirmation")} · ${sourceLabel(event)}"
                 "dispute" -> "${tr("Dispute", "Dispute")} (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
+                TYPE_FLOOD_WITHDRAW -> "${tr("Binawi ng nag-ulat", "Withdrawn by its author")} · ${sourceLabel(event)}"
                 else -> sourceLabel(event)
             }
             Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
