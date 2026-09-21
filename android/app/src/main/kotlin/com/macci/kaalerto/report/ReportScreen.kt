@@ -551,7 +551,8 @@ private fun LevelChip(
                 Spacer(Modifier.height(6.dp))
             }
             Text(
-                tr(option.fil, option.en),
+                // A break is allowed after the hyphen ("Bukong-" / "bukong"); without it the label split mid-word.
+                tr(option.fil, option.en).replace("-", "-​"),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
