@@ -195,7 +195,7 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 | Feature | Key requirements |
 |---|---|
 | **7.6 Official Verification** | Issue official status from a phone in the field with no connectivity; sign it against the LGU keys in the regional pack so it verifies offline; allow any official to reverse another's, retaining both; require a second official before a clearance lowers a conflicting location's severity |
-| **7.7 Evacuation Centre Directory** | Bundled offline directory with capacity and activation state; capacity updates propagate by every transport; render distance and route warnings from local data |
+| **7.7 Evacuation Centre Directory** | Bundled offline directory with capacity and activation state; officials add, open, close and remove shelters for their own municipality, and every device folds the same events into the same list; changes propagate by every transport; render distance and route warnings from local data |
 | **7.8 Family & Household Check-In** | A household circle joined by local exchange; "I am safe" as a single-tap event that travels the relay; no server, and no message body to congest the network |
 | **7.9 Offline Route Check** | Evaluate a route against local flood state and mark impassable segments; suggest an alternative from the offline graph; state plainly when it cannot find one |
 
@@ -203,7 +203,7 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 
 A responsive web console, built last. Authenticated accounts scoped to one LGU with an audit log; live area-wide map using the same severity, confidence and staleness encoding; official verification at scale; rescue queue with grouped incidents; evacuation capacity management; post-event export; and an explicit degraded state when the server is unreachable. Nothing in the mobile application depends on it.
 
-**As built for the demo:** a shared-PIN gate (not personal accounts, no audit log); a live area-wide map and two lists refreshed every 5 seconds: SOS requests, and flooded spots, each folded from its reports by the same reducer the phones use, so a spot shows the status, confidence and official ruling a phone would show for the same events; sound and browser-notification alerts for SOS requests and for a spot reaching S3, which keep working while the tab is in the background; report photos; directions to a spot or SOS from a start the operator chooses (this computer, a saved station, or a click on the map), with alternative routes ranked by nearby flooded spots; filters by age, severity and SOS state; CSV export of the filtered list; and a read-only shelters tab showing each evacuation centre's status and head count as posted by officials from their phones, with a map pin per centre. Not built: LGU-scoped accounts, the audit log, grouped incidents, posting or changing a centre's status from the dashboard, and official verification at scale.
+**As built for the demo:** a shared-PIN gate (not personal accounts, no audit log); a live area-wide map and two lists refreshed every 5 seconds: SOS requests, and flooded spots, each folded from its reports by the same reducer the phones use, so a spot shows the status, confidence and official ruling a phone would show for the same events; sound and browser-notification alerts for SOS requests and for a spot reaching S3, which keep working while the tab is in the background; report photos; directions to a spot or SOS from a start the operator chooses (this computer, a saved station, or a click on the map), with alternative routes ranked by nearby flooded spots; filters by age, severity and SOS state; CSV export of the filtered list; and a shelters tab for one municipality at a time, chosen by the operator, showing each of its evacuation centres with a map pin and letting the operator add, open, close and remove them and record the head count. Not built: LGU-scoped accounts, the audit log, grouped incidents, and official verification at scale. Shelter changes made here are checked only by the shared PIN, not by an official's seat, and are attributed to "Dashboard".
 
 ---
 
@@ -220,13 +220,15 @@ A responsive web console, built last. Authenticated accounts scoped to one LGU w
 
 ## 9. Privacy & Consent
 
-**Minimum collection.** Residents provide a name and home barangay once, at first run. No email, no password, no address, no contacts. Volunteers additionally provide a mobile number and what they can bring.
+**Minimum collection.** Residents provide a name and home barangay once, at first run, and may add their municipality. When a location fix is available the municipality and barangay are filled in from it and remain the resident's to correct. No email, no password, no address, no contacts. Volunteers additionally provide a mobile number and what they can bring.
 
 **Registration is identification, not authentication.** Nothing entered is verified against anything, because there is nothing offline to verify against. It exists for **attribution** — putting an accountable name on a report so that filing a false one has a social cost. It is never used for access control, permissions, or confidence weighting. If a name could raise confidence, typing one would be a free way to raise it.
 
 **Name visibility.** A report or rescue request displays its author's name to any user who opens it. The displayed form is a first name and last initial with the barangay, never a full legal name or a doorstep.
 
 **Routes are the one place a position leaves the device for a third party.** Requesting a route sends the device's current position and the destination to a public routing service; nothing else in the application does this, since events go only to the project's own backend, with rescue detail redacted. It is sent only when the resident asks, after a one-time disclosure, and carries no name or identifier. Self-hosting the routing service removes the third party.
+
+**Municipality detection uses the device's own geocoder.** To fill in the municipality, the device asks the platform's location service, which is typically a network call to the platform vendor, and matches the answer against a Philippine Standard Geographic Code list bundled in the application. The list itself works offline and sends nothing anywhere; without a connection the fields are left for the resident to fill in.
 
 **Tiered disclosure of rescue requests** is enforced cryptographically, not by interface convention: routing header in cleartext, rescue body to responder and official keys, medical envelope to official keys alone. A volunteer never receives medical context, because a role obtainable by registration should not carry the most sensitive field in the system.
 
