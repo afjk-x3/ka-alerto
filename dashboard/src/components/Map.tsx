@@ -21,6 +21,9 @@ interface MapProps {
   /** Evacuation centres to pin, and the one the list has selected (the map flies to it). */
   centres: EvacState[];
   selectedCentreId: string | null;
+  /** While true the next map click picks a route start (crosshair cursor); it is reported through onPickOrigin. */
+  picking: boolean;
+  onPickOrigin: (at: LatLon) => void;
 }
 
 function markerClass(item: Item): string {
@@ -28,7 +31,7 @@ function markerClass(item: Item): string {
   return `mk sev-${item.stale ? 'none' : item.summary.severity} ${item.stale ? 'is-stale' : ''}`;
 }
 
-export default function EventMap({ items, selectedId, onSelect, routes, origin, activeRoute, centres, selectedCentreId }: MapProps) {
+export default function EventMap({ items, selectedId, onSelect, routes, origin, activeRoute, centres, selectedCentreId, picking, onPickOrigin }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markers = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLElement }>());
@@ -36,6 +39,8 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
   const itemsById = useRef(new Map<string, Item>());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onPickRef = useRef(onPickOrigin);
+  onPickRef.current = onPickOrigin;
   const selectedRef = useRef(selectedId);
   selectedRef.current = selectedId;
   const originMarker = useRef<maplibregl.Marker | null>(null);
@@ -151,6 +156,20 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     if (c && mapRef.current) mapRef.current.flyTo({ center: [c.centre.lon, c.centre.lat], zoom: Math.max(mapRef.current.getZoom(), 15), duration: 700 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCentreId]);
+
+  // Picking a route start: crosshair cursor, and the next click on the map (markers stop their own clicks) is the start.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !picking) return;
+    const canvas = map.getCanvas();
+    canvas.style.cursor = 'crosshair';
+    const onClick = (e: maplibregl.MapMouseEvent) => onPickRef.current({ lat: e.lngLat.lat, lon: e.lngLat.lng });
+    map.once('click', onClick);
+    return () => {
+      canvas.style.cursor = '';
+      map.off('click', onClick);
+    };
+  }, [picking]);
 
   // Route lines. Redrawn when the alternatives or the highlighted one change.
   drawRoutes.current = () => {

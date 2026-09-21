@@ -114,9 +114,28 @@ export function currentPosition(): Promise<LatLon> {
   });
 }
 
-export const googleDirectionsUrl = (to: LatLon) =>
+/** Where a route starts. "me" is this computer (the browser's location); "station" is a saved start; "pick" is a click on the map. */
+export type OriginMode = 'me' | 'station' | 'pick';
+
+export interface OriginState {
+  mode: OriginMode;
+  picked: LatLon | null;
+  station: LatLon | null;
+  /** The next map click sets `picked`. */
+  picking: boolean;
+}
+
+export const NO_ORIGIN: OriginState = { mode: 'me', picked: null, station: null, picking: false };
+
+/** The chosen start, or null for "ask the browser where this computer is". */
+export const originOf = (o: OriginState): LatLon | null => (o.mode === 'station' ? o.station : o.mode === 'pick' ? o.picked : null);
+
+/** True when the mode needs a point that has not been set yet. */
+export const originMissing = (o: OriginState) => o.mode !== 'me' && originOf(o) === null;
+
+export const googleDirectionsUrl = (to: LatLon, from?: LatLon | null) =>
   // No origin given: Google Maps starts from the viewer's current location and lists alternatives.
-  `https://www.google.com/maps/dir/?api=1&destination=${to.lat},${to.lon}&travelmode=driving`;
+  `https://www.google.com/maps/dir/?api=1${from ? `&origin=${from.lat},${from.lon}` : ''}&destination=${to.lat},${to.lon}&travelmode=driving`;
 
 export function describeRoute(r: RouteOption): string {
   const km = (r.distanceM / 1000).toFixed(1);

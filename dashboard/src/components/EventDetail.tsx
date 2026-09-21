@@ -2,13 +2,26 @@
 
 import { useEffect, useState } from 'react';
 import { fetchPhoto } from '@/lib/api';
-import { RoutingState, describeRoute, googleDirectionsUrl } from '@/lib/routing';
+import { RoutingState, OriginMode, OriginState, describeRoute, googleDirectionsUrl, originOf, originMissing } from '@/lib/routing';
 import { Item, SosItem, ReportItem, STATE_LABEL, SEVERITY_LABEL, latestReport, reportCount, statusLine, timeAgo } from '@/lib/items';
 import type { Event } from '@/lib/types';
+
+/** What the Directions section needs to let the operator choose where a route starts. */
+export interface OriginControl {
+  state: OriginState;
+  setMode: (m: OriginMode) => void;
+  saveStation: () => void;
+  /** Throw away the picked start and click a new one. */
+  repick: () => void;
+}
+
+const ORIGIN_LABEL: Record<OriginMode, string> = { me: 'This computer', station: 'Station', pick: 'Pick on map' };
+const at = (p: { lat: number; lon: number }) => `${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}`;
 
 interface DetailProps {
   item: Item | null;
   onClose: () => void;
+  originCtl: OriginControl;
   routing: RoutingState;
   onFindRoutes: () => void;
   onPickRoute: (i: number) => void;
@@ -29,21 +42,53 @@ function Coords({ lat, lon }: { lat: number; lon: number }) {
   return <span className="mono">{lat.toFixed(5)}, {lon.toFixed(5)}</span>;
 }
 
-/** Directions from wherever the viewer is: a Google Maps handoff, plus routes ranked against current flood reports. */
-function Directions({ lat, lon, routing, onFind, onPick }: { lat: number; lon: number; routing: RoutingState; onFind: () => void; onPick: (i: number) => void }) {
+/** Directions from a start the operator chooses: a Google Maps handoff, plus routes ranked against current flood reports. */
+function Directions({ lat, lon, routing, onFind, onPick, originCtl }: { lat: number; lon: number; routing: RoutingState; onFind: () => void; onPick: (i: number) => void; originCtl: OriginControl }) {
   const busy = routing.status === 'locating' || routing.status === 'loading';
+  const { state, setMode, saveStation, repick } = originCtl;
+  const from = originOf(state);
+  const isStation = state.station && from && state.station.lat === from.lat && state.station.lon === from.lon;
   return (
     <section className="directions">
       <h3>Directions</h3>
+      <div className="origin" role="group" aria-label="Start from">
+        <span className="origin-label">Start from</span>
+        <div className="seg">
+          {(['me', 'station', 'pick'] as const).map((m) => (
+            <button key={m} className={state.mode === m ? 'on' : ''} aria-pressed={state.mode === m} onClick={() => setMode(m)}>
+              {ORIGIN_LABEL[m]}
+            </button>
+          ))}
+        </div>
+        {state.mode === 'me' && <p className="hint">Uses this computer&apos;s location. To send a rescue unit, choose Station or Pick on map.</p>}
+        {state.mode === 'station' &&
+          (state.station ? (
+            <p className="hint">Station: <span className="mono">{at(state.station)}</span></p>
+          ) : (
+            <p className="hint">No station saved yet. Choose Pick on map, click its location, then Save as station.</p>
+          ))}
+        {state.mode === 'pick' &&
+          (state.picking ? (
+            <p className="hint">Click the map to set the start. Esc cancels.</p>
+          ) : state.picked ? (
+            <div className="origin-line">
+              <span className="mono">{at(state.picked)}</span>
+              <button className="btn" onClick={repick}>Choose again</button>
+              {!isStation && <button className="btn" onClick={saveStation}>Save as station</button>}
+            </div>
+          ) : (
+            <p className="hint">Click the map to set the start.</p>
+          ))}
+      </div>
       <div className="dir-actions">
-        <a className="btn btn-primary dir-link" href={googleDirectionsUrl({ lat, lon })} target="_blank" rel="noreferrer">
+        <a className="btn btn-primary dir-link" href={googleDirectionsUrl({ lat, lon }, from)} target="_blank" rel="noreferrer">
           Directions in Google Maps
         </a>
-        <button className="btn" onClick={onFind} disabled={busy}>
+        <button className="btn" onClick={onFind} disabled={busy || originMissing(state)}>
           {routing.status === 'locating' ? 'Finding you…' : routing.status === 'loading' ? 'Finding routes…' : 'Show routes ranked by reported floods'}
         </button>
       </div>
-      <p className="hint dir-hint">Google Maps starts from your current location and lists its own alternatives.</p>
+      <p className="hint dir-hint">{from ? 'Google Maps opens with the chosen start and lists its own alternatives.' : 'Google Maps starts from your current location and lists its own alternatives.'}</p>
       {routing.status === 'error' && <div className="banner-error dir-error" role="alert">{routing.error}</div>}
       {routing.status === 'done' && (
         <>
@@ -117,9 +162,9 @@ function Photo({ hash }: { hash: string }) {
 
 const when = (ms: number) => new Date(ms).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 
-type DirProps = Pick<DetailProps, 'routing' | 'onFindRoutes' | 'onPickRoute'>;
+type DirProps = Pick<DetailProps, 'routing' | 'onFindRoutes' | 'onPickRoute' | 'originCtl'>;
 
-function SosDetail({ item, routing, onFindRoutes, onPickRoute }: { item: SosItem } & DirProps) {
+function SosDetail({ item, routing, onFindRoutes, onPickRoute, originCtl }: { item: SosItem } & DirProps) {
   const c = item.context;
   return (
     <>
@@ -138,7 +183,7 @@ function SosDetail({ item, routing, onFindRoutes, onPickRoute }: { item: SosItem
       {!c.people && !c.companions?.length && !c.water && !c.trend && (
         <p className="hint">The requester has not added details yet.</p>
       )}
-      <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} />
+      <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} originCtl={originCtl} />
       <p className="hint">
         Name and medical details are deliberately not sent — they stay on the requester&apos;s phone.
       </p>
@@ -171,7 +216,7 @@ function eventLabel(e: Event): string {
   }
 }
 
-function ReportDetail({ item, routing, onFindRoutes, onPickRoute }: { item: ReportItem } & DirProps) {
+function ReportDetail({ item, routing, onFindRoutes, onPickRoute, originCtl }: { item: ReportItem } & DirProps) {
   const s = item.summary;
   const latest = latestReport(s);
   const n = reportCount(s);
@@ -202,7 +247,7 @@ function ReportDetail({ item, routing, onFindRoutes, onPickRoute }: { item: Repo
         <Field label="Status">{item.stale ? 'Expired — needs a fresh look' : 'Current'}</Field>
         <Field label="Note">{latest?.note || undefined}</Field>
       </dl>
-      <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} />
+      <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} originCtl={originCtl} />
       <h3>History</h3>
       <ol className="timeline">
         {s.events.map((e) => (
@@ -216,7 +261,7 @@ function ReportDetail({ item, routing, onFindRoutes, onPickRoute }: { item: Repo
   );
 }
 
-export default function EventDetail({ item, onClose, routing, onFindRoutes, onPickRoute }: DetailProps) {
+export default function EventDetail({ item, onClose, routing, onFindRoutes, onPickRoute, originCtl }: DetailProps) {
   if (!item) return null;
   return (
     <aside className="detail" aria-label="Details">
@@ -226,9 +271,9 @@ export default function EventDetail({ item, onClose, routing, onFindRoutes, onPi
       </div>
       <div className="detail-body">
         {item.kind === 'sos' ? (
-          <SosDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} />
+          <SosDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} originCtl={originCtl} />
         ) : (
-          <ReportDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} />
+          <ReportDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} originCtl={originCtl} />
         )}
       </div>
     </aside>

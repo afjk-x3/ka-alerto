@@ -5,13 +5,13 @@ import { useEvents } from '@/hooks/useEvents';
 import { useAlerts } from '@/hooks/useAlerts';
 import { getPin, setPin, clearPin } from '@/lib/api';
 import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item } from '@/lib/items';
-import { NO_ROUTES, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon } from '@/lib/routing';
+import { NO_ROUTES, NO_ORIGIN, OriginMode, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon, originOf } from '@/lib/routing';
 import PinGate from '@/components/PinGate';
 import EventMap from '@/components/Map';
 import ItemList from '@/components/EventList';
 import EvacList from '@/components/EvacList';
 import { buildEvacStates } from '@/lib/evac';
-import EventDetail from '@/components/EventDetail';
+import EventDetail, { OriginControl } from '@/components/EventDetail';
 
 type Tab = 'sos' | 'reports' | 'evac';
 const TABS: { key: Tab; label: string }[] = [
@@ -21,6 +21,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 const POLL_MS = 5_000;
+const STATION_KEY = 'kaalerto_station';
 
 export default function DashboardPage() {
   const [locked, setLocked] = useState(false);
@@ -30,6 +31,8 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [routing, setRouting] = useState<RoutingState>(NO_ROUTES);
   const [origin, setOrigin] = useState<LatLon | null>(null);
+  // Where routes start: this computer, a saved station, or a click on the map.
+  const [originState, setOriginState] = useState(NO_ORIGIN);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
   const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ sos: null, reports: null, evac: null });
@@ -61,17 +64,31 @@ export default function DashboardPage() {
     refresh();
   }, [refresh]);
 
-  // Escape closes the detail panel.
+  // The saved station survives a reload; per browser, since the dashboard has no accounts.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STATION_KEY);
+      if (raw) setOriginState((o) => ({ ...o, station: JSON.parse(raw) as LatLon }));
+    } catch {
+      // Storage can be blocked; the station simply is not remembered.
+    }
+  }, []);
+
+  // Escape stops picking a start first, then closes the detail panel.
   useEffect(() => {
     if (!selectedId) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
+      if (originState.picking) {
+        setOriginState((o) => ({ ...o, picking: false }));
+        return;
+      }
       setSelectedId(null);
       clearRoutes();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [selectedId, clearRoutes]);
+  }, [selectedId, clearRoutes, originState.picking]);
 
   // Live updates: poll while unlocked, hidden tab included. The alarm exists for the operator who is
   // looking at something else, so skipping hidden tabs would defeat it. Browsers already throttle a
@@ -106,6 +123,7 @@ export default function DashboardPage() {
 
   const select = useCallback((item: Item) => {
     clearRoutes();
+    setOriginState((o) => ({ ...o, picking: false }));
     setSelectedId(item.id);
     setTab(item.kind === 'sos' ? 'sos' : 'reports');
   }, [clearRoutes]);
@@ -114,7 +132,7 @@ export default function DashboardPage() {
     if (!selected) return;
     setRouting({ status: 'locating', options: [], active: 0 });
     try {
-      const from = await currentPosition();
+      const from = originOf(originState) ?? (await currentPosition());
       setOrigin(from);
       setRouting({ status: 'loading', options: [], active: 0 });
       const options = await fetchRoutes(from, { lat: selected.lat, lon: selected.lon }, floodPoints(items));
@@ -123,7 +141,29 @@ export default function DashboardPage() {
       setOrigin(null);
       setRouting({ status: 'error', error: e instanceof Error ? e.message : 'Something went wrong', options: [], active: 0 });
     }
-  }, [selected, items]);
+  }, [selected, items, originState]);
+
+  const originCtl: OriginControl = {
+    state: originState,
+    setMode: (mode: OriginMode) => {
+      clearRoutes();
+      setOriginState((o) => ({ ...o, mode, picking: mode === 'pick' && o.picked === null }));
+    },
+    saveStation: () => {
+      const p = originState.picked;
+      if (!p) return;
+      setOriginState((o) => ({ ...o, station: p }));
+      try {
+        localStorage.setItem(STATION_KEY, JSON.stringify(p));
+      } catch {
+        // Not remembered across reloads; still used for this session.
+      }
+    },
+    repick: () => {
+      clearRoutes();
+      setOriginState((o) => ({ ...o, picked: null, picking: true }));
+    },
+  };
 
   if (locked) {
     return (
@@ -307,7 +347,21 @@ export default function DashboardPage() {
             » Menu
           </button>
         )}
-        <EventMap centres={centres} selectedCentreId={tab === 'evac' ? selectedCentreId : null} items={shown} selectedId={selectedId} onSelect={select} routes={routing.options} origin={origin} activeRoute={routing.active} />
+        <EventMap
+          centres={centres}
+          selectedCentreId={tab === 'evac' ? selectedCentreId : null}
+          items={shown}
+          selectedId={selectedId}
+          onSelect={select}
+          routes={routing.options}
+          origin={origin ?? (selected ? originOf(originState) : null)}
+          activeRoute={routing.active}
+          picking={originState.picking && selected !== null}
+          onPickOrigin={(at) => {
+            clearRoutes();
+            setOriginState((o) => ({ ...o, picked: at, picking: false }));
+          }}
+        />
         <EventDetail
           item={selected}
           onClose={() => {
@@ -315,6 +369,7 @@ export default function DashboardPage() {
             clearRoutes();
           }}
           routing={routing}
+          originCtl={originCtl}
           onFindRoutes={findRoutes}
           onPickRoute={(i) => setRouting((r) => ({ ...r, active: i }))}
         />
