@@ -76,7 +76,7 @@ fun FilterBar(
             onClick = { if (!showingAll) ALL_SEVERITIES.forEach { if (it !in selectedSeverities) onToggleSeverity(it) } },
         )
         FilterPill(
-            label = tr("Impassable", "Impassable"),
+            label = tr("Hindi madaanan", "Impassable"),
             selected = !showingAll && selectedSeverities == IMPASSABLE_SEVERITIES,
             swatchColor = androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(SeverityColors.S3)),
             onClick = {

@@ -647,7 +647,7 @@ private fun EventHistoryRow(event: Event) {
         Column(modifier = Modifier.weight(1f)) {
             val label = when (event.type) {
                 "confirm" -> "${tr("Kumpirmasyon", "Confirmation")} · ${sourceLabel(event)}"
-                "dispute" -> "${tr("Dispute", "Dispute")} (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
+                "dispute" -> "${tr("Pagtutol", "Dispute")} (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
                 TYPE_FLOOD_WITHDRAW -> "${tr("Binawi ng nag-ulat", "Withdrawn by its author")} · ${sourceLabel(event)}"
                 else -> sourceLabel(event)
             }
