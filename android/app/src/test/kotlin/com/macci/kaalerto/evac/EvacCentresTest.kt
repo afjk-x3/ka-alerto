@@ -191,4 +191,12 @@ class EvacCentresTest {
         assertTrue("Brgy. Home" in suggestBarangays(laoag, emptyList(), ownMunicipality = laoag, ownBarangay = "Brgy. Home", query = ""))
         assertTrue(suggestBarangays(sanNicolas, emptyList(), ownMunicipality = laoag, ownBarangay = "Brgy. Home", query = "").isEmpty())
     }
+
+    @Test
+    fun `a walking time is given only for a distance someone could walk`() {
+        assertEquals(11, walkingMinutes(750.0))
+        assertEquals(75, walkingMinutes(5_000.0))
+        assertNull(walkingMinutes(5_001.0))
+        assertNull(walkingMinutes(238_900.0))
+    }
 }

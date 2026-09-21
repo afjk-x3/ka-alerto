@@ -466,14 +466,21 @@ private fun statusChipBackground(status: EvacStatus, safeBg: Color, warningBg: C
     EvacStatus.NOT_OPEN -> muted
 }
 
+/** Past this a walking time is not a real estimate (a shelter in another province is not "3,584 min lakad"). */
+const val MAX_WALK_ESTIMATE_METERS = 5_000.0
+
+/** The artboard's walking estimate at a deliberately slow 4 km/h, or null when the shelter is too far to walk to. */
+fun walkingMinutes(meters: Double): Int? =
+    if (meters > MAX_WALK_ESTIMATE_METERS) null else (meters / (4_000.0 / 60)).roundToInt()
+
 /**
- * "650 m" / "1.1 km", plus the artboard's walking estimate at a deliberately slow
- * 4 km/h — an evacuation walk is carrying children through water, not a stroll.
+ * "650 m" / "1.1 km", plus [walkingMinutes] at a deliberately slow 4 km/h — an evacuation walk is carrying
+ * children through water, not a stroll. Beyond a walkable distance only the distance is shown.
  */
 @Composable
 fun formatDistance(meters: Double): String {
     val distance = if (meters < 1_000) "${(meters / 10).roundToInt() * 10} m" else "%.1f km".format(meters / 1_000)
-    val minutes = (meters / (4_000.0 / 60)).roundToInt()
+    val minutes = walkingMinutes(meters) ?: return distance
     return "$distance · " + tr("$minutes min lakad", "$minutes min walk")
 }
 
