@@ -273,7 +273,7 @@ private fun CurrentRoleCard(myRole: String, seat: SeatHolder?, grant: RoleGrantR
             ) {
                 Text(
                     roleBadge(myRole),
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.background,
                 )
@@ -380,7 +380,7 @@ private fun InfoCard(title: String, detail: String?) {
 private fun SectionLabel(text: String) {
     Text(
         text,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = 2.dp),
@@ -550,7 +550,7 @@ private fun RoleOption(
         ) {
             Text(
                 badge,
-                fontSize = 10.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.5.sp,
                 color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onSurfaceVariant,

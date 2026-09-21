@@ -1,5 +1,7 @@
 package com.macci.kaalerto.report
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -145,7 +147,7 @@ private fun SortChip(label: String, selected: Boolean, enabled: Boolean = true, 
             .heightIn(min = 40.dp)
             .background(if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background)
             .border(1.dp, if (selected) MaterialTheme.colorScheme.onBackground else colors.border)
-            .clickable(enabled = enabled, onClick = onClick)
+            .selectable(selected = selected, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) {

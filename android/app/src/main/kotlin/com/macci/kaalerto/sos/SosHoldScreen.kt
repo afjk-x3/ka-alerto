@@ -1,5 +1,10 @@
 package com.macci.kaalerto.sos
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
@@ -109,6 +114,10 @@ fun SosHoldScreen(
         }
     }
 
+    // TalkBack cannot hold a finger steady on a ring, so the same trigger is offered as its long-click action.
+    val sosLabel = tr("Humingi ng tulong. Pindutin at hawakan.", "Request rescue. Press and hold.")
+    val sosAction = tr("Ipadala ang SOS", "Send SOS")
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -132,6 +141,17 @@ fun SosHoldScreen(
                 holding = holding,
                 modifier = Modifier
                     .size(248.dp)
+                    .semantics(mergeDescendants = true) {
+                        role = Role.Button
+                        contentDescription = sosLabel
+                        onLongClick(label = sosAction) {
+                            if (completed) return@onLongClick false
+                            completed = true
+                            haptics.confirm()
+                            onHoldComplete()
+                            true
+                        }
+                    }
                     .pointerInput(completed) {
                         if (completed) return@pointerInput
                         detectTapGestures(

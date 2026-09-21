@@ -1,5 +1,8 @@
 package com.macci.kaalerto.nav
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -77,6 +80,7 @@ fun HamburgerButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
     // the outer box's bounds: Compose doesn't clip a Box's children to its own size by
     // default, so the inner box renders — and receives taps — beyond the 24dp the row
     // actually reserves for it. Tap target grows; nothing else in the header shrinks.
+    val menuLabel = tr("Menu", "Menu")
     Box(
         modifier = modifier.size(24.dp),
         contentAlignment = androidx.compose.ui.Alignment.Center,
@@ -84,7 +88,8 @@ fun HamburgerButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clickable(onClick = onClick),
+                .clickable(role = Role.Button, onClick = onClick)
+                .semantics { contentDescription = menuLabel },
             contentAlignment = androidx.compose.ui.Alignment.Center,
         ) {
             HamburgerIcon(
@@ -165,7 +170,7 @@ fun NavDrawer(
             )
             Text(
                 roleBadge(myRole),
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.6.sp,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -207,7 +212,7 @@ fun NavDrawer(
                 "Ang Storm mode at SOS ay nasa mismong screen — hindi kailangang buksan ito.",
                 "Storm mode and SOS both live on the screen itself — no need to open this.",
             ),
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(16.dp),
         )
@@ -221,7 +226,7 @@ private fun LanguageToggleRow(current: AppLanguage, onSet: (AppLanguage) -> Unit
     Column(modifier = Modifier.padding(16.dp)) {
         Text(
             tr("WIKA", "LANGUAGE"),
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.6.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

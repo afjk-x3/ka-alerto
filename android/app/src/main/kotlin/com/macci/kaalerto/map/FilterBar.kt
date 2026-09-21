@@ -1,5 +1,7 @@
 package com.macci.kaalerto.map
 
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -131,7 +133,7 @@ private fun FilterPill(
         modifier = Modifier
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
             .border(androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else colors.border))
-            .clickable(onClick = onClick)
+            .selectable(selected = selected, role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

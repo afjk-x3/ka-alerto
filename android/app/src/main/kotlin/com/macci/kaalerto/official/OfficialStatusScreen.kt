@@ -118,7 +118,7 @@ fun OfficialStatusScreen(
             ) {
                 Text(
                     tr("KAGAWAD", "OFFICIAL"),
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
                     color = MaterialTheme.colorScheme.background,
@@ -190,7 +190,7 @@ fun OfficialStatusScreen(
                 )
                 Text(
                     "${DemoArea.BARANGAY_NAME} · " + tr("makikita ng lahat kung sino ang nag-post", "everyone can see who posted it"),
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = colors.borderEmphasis,
                 )
             }
