@@ -35,6 +35,7 @@ import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.identity.displayFormOf
 import androidx.compose.runtime.rememberCoroutineScope
 import com.macci.kaalerto.evac.AddShelterScreen
+import com.macci.kaalerto.report.ReportsListScreen
 import com.macci.kaalerto.evac.EvacScreen
 import com.macci.kaalerto.evac.ShelterDraft
 import com.macci.kaalerto.evac.evacStates
@@ -324,6 +325,10 @@ fun KaAlertoApp(
         Screen.Map -> {
         val focusCamera = evacFocusCamera
         LaunchedEffect(Unit) { if (focusCamera != null) evacFocusCamera = null }
+        // A spot to open is consumed once: left set, its sheet reopened every time the map came back
+        // (found while adding the reports list, which uses the same path as the flood alert).
+        val reopenRef = reopenFeatureRef
+        LaunchedEffect(Unit) { if (reopenRef != null) reopenFeatureRef = null }
         MapScreen(
             modifier = modifier,
             // A resident whose home is outside the demo area opens on it — the home pack
@@ -348,6 +353,7 @@ fun KaAlertoApp(
             sosActive = activeSos != null,
             role = role,
             onOpenEvac = { screen = Screen.EvacCentres },
+            onOpenReports = { screen = Screen.Reports },
             onOpenOfficialStatus = { featureRef -> screen = Screen.OfficialStatus(featureRef) },
             // The rescue queue's only other way in is an incoming SOS alert, so without
             // this a responder with no live emergency cannot reach the screen their role
@@ -682,6 +688,25 @@ fun KaAlertoApp(
             )
         }
 
+        Screen.Reports -> {
+            val reportSummaries by mapViewModel.featureSummaries.collectAsStateWithLifecycle()
+            // The same origin rule as the shelter list: GPS when there is a fix, the saved home until then.
+            var reportsOrigin by remember { mutableStateOf(HomeLocationStore.get(context)?.let { it.lat to it.lon }) }
+            LaunchedEffect(Unit) { fetchCurrentLocation(context)?.let { reportsOrigin = it.latitude to it.longitude } }
+            ReportsListScreen(
+                modifier = modifier,
+                summaries = reportSummaries,
+                fromLat = reportsOrigin?.first,
+                fromLon = reportsOrigin?.second,
+                onOpen = { summary ->
+                    evacFocusCamera = LatLng(summary.lat, summary.lon)
+                    reopenFeatureRef = summary.featureRef
+                    screen = Screen.Map
+                },
+                onOpenMenu = { drawerOpen = true },
+            )
+        }
+
         Screen.EvacCentres -> {
             val centres = remember { loadEvacCentres(context) }
             val events by mapEvents.collectAsStateWithLifecycle()
@@ -899,6 +924,7 @@ fun KaAlertoApp(
         },
         onOpenFamily = { screen = Screen.FamilyCircle },
         onOpenEvac = { screen = Screen.EvacCentres },
+        onOpenReports = { screen = Screen.Reports },
         currentLanguage = language,
         onSetLanguage = { lang ->
             language = lang

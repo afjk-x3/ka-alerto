@@ -15,6 +15,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -122,6 +126,8 @@ fun MapScreen(
     sosActive: Boolean = false,
     role: String = com.macci.kaalerto.identity.LocalIdentity.ROLE_RESIDENT,
     onOpenEvac: (() -> Unit)? = null,
+    /** Opens the "Mga ulat" list; the "Listahan" chip next to the legend. */
+    onOpenReports: (() -> Unit)? = null,
     onOpenOfficialStatus: ((featureRef: String) -> Unit)? = null,
     /**
      * Day 9's rescue queue. Non-null only for a responder or an official — and without
@@ -454,7 +460,28 @@ fun MapScreen(
             )
 
             if (showChrome) {
-                MapLegend(modifier = Modifier.align(Alignment.BottomStart).padding(12.dp))
+                Row(
+                    modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    MapLegend()
+                    if (onOpenReports != null) {
+                        val listLabel = tr("Listahan ng mga ulat", "List of reports")
+                        Box(
+                            modifier = Modifier
+                                .heightIn(min = 44.dp)
+                                .background(MaterialTheme.colorScheme.background)
+                                .border(1.dp, LocalKaAlertoColors.current.borderEmphasis)
+                                .clickable(onClick = onOpenReports)
+                                .semantics { contentDescription = listLabel }
+                                .padding(horizontal = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(tr("Listahan", "List"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                        }
+                    }
+                }
             }
             if (showChrome) {
                 val noGps = tr("Walang GPS ngayon", "No GPS right now")

@@ -56,6 +56,9 @@ sealed interface Screen {
     data class OfficialStatus(val featureRef: String) : Screen
     data object EvacCentres : Screen
 
+    /** "Mga ulat": every flooded spot as a list; a tap opens that spot's sheet on the map. */
+    data object Reports : Screen
+
     /** An official adding a shelter in their own municipality; [PickShelter] is its map picker. */
     data object AddShelter : Screen
     data object PickShelter : Screen

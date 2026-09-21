@@ -120,6 +120,7 @@ fun NavDrawer(
     onOpenProfile: () -> Unit,
     onOpenFamily: () -> Unit,
     onOpenEvac: () -> Unit,
+    onOpenReports: () -> Unit,
     currentLanguage: AppLanguage,
     onSetLanguage: (AppLanguage) -> Unit,
 ) {
@@ -183,6 +184,7 @@ fun NavDrawer(
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
             DrawerRow(tr("Mapa", "Map"), onClick = { onDismiss(); onOpenMap() })
+            DrawerRow(tr("Mga ulat", "Reports"), onClick = { onDismiss(); onOpenReports() })
             DrawerRow(tr("Papel mo sa barangay", "Your role in the barangay"), onClick = { onDismiss(); onOpenRoles() })
             DrawerRow(tr("Ang profile ko", "My profile"), onClick = { onDismiss(); onOpenProfile() })
             DrawerRow(tr("Aking Pamilya", "My Family"), onClick = { onDismiss(); onOpenFamily() })
