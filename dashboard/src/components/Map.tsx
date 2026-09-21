@@ -108,7 +108,10 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
       const label = item.kind === 'sos' ? (item.closed ? 'SOS request, closed' : 'SOS request, open') : `Flooded spot, ${item.stale ? 'expired' : item.summary.severity}`;
       const existing = markers.current.get(item.id);
       if (existing) {
-        existing.el.className = markerClass(item);
+        // Keep MapLibre's own classes (maplibregl-marker gives it position:absolute); replacing className
+        // outright made every marker fall out of position after the first poll.
+        const own = [...existing.el.classList].filter((c) => c.startsWith('maplibregl-'));
+        existing.el.className = [markerClass(item), ...own].join(' ');
         existing.el.classList.toggle('is-selected', item.id === selectedRef.current);
         existing.el.setAttribute('aria-label', label);
         existing.marker.setLngLat([item.lon, item.lat]);
