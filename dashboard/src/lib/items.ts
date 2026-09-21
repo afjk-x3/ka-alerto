@@ -114,7 +114,7 @@ export function buildItems(all: Event[], now = Date.now()): Item[] {
     withdrawnAt.set(k, Math.max(withdrawnAt.get(k) ?? 0, e.timestampMs));
   }
   const events = all.filter(
-    (e) => e.type !== 'flood_withdraw' && e.timestampMs > (withdrawnAt.get(`${e.authorId}|${e.featureRef}`) ?? 0),
+    (e) => e.type !== 'flood_withdraw' && e.type !== 'evac_status' && e.timestampMs > (withdrawnAt.get(`${e.authorId}|${e.featureRef}`) ?? 0),
   );
 
   const groups = new Map<string, Event[]>();

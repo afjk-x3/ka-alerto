@@ -5,6 +5,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { Item } from '@/lib/items';
 import { LatLon, RouteOption } from '@/lib/routing';
+import { EVAC_LABEL, EvacState } from '@/lib/evac';
 
 // Demo area centre (DemoArea.kt), used only until there is something to fit to.
 const DEMO_CENTER: [number, number] = [120.6058, 18.1709];
@@ -17,6 +18,9 @@ interface MapProps {
   routes: RouteOption[];
   origin: LatLon | null;
   activeRoute: number;
+  /** Evacuation centres to pin, and the one the list has selected (the map flies to it). */
+  centres: EvacState[];
+  selectedCentreId: string | null;
 }
 
 function markerClass(item: Item): string {
@@ -24,7 +28,7 @@ function markerClass(item: Item): string {
   return `mk sev-${item.event.severity ?? 'none'} ${item.stale ? 'is-stale' : ''}`;
 }
 
-export default function EventMap({ items, selectedId, onSelect, routes, origin, activeRoute }: MapProps) {
+export default function EventMap({ items, selectedId, onSelect, routes, origin, activeRoute, centres, selectedCentreId }: MapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markers = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLElement }>());
@@ -109,6 +113,25 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
       fitAll(items);
     }
   }, [items]);
+
+  // Evacuation centres: square pins, coloured by status. Rebuilt on every poll like the report markers.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const pins = centres.map((s) => {
+      const el = document.createElement('div');
+      el.className = `mk-evac st-${s.status}`;
+      el.title = `${s.centre.name}: ${EVAC_LABEL[s.status]}`;
+      return new maplibregl.Marker({ element: el }).setLngLat([s.centre.lon, s.centre.lat]).addTo(map);
+    });
+    return () => pins.forEach((m) => m.remove());
+  }, [centres]);
+
+  useEffect(() => {
+    const c = centres.find((s) => s.centre.id === selectedCentreId);
+    if (c && mapRef.current) mapRef.current.flyTo({ center: [c.centre.lon, c.centre.lat], zoom: Math.max(mapRef.current.getZoom(), 15), duration: 700 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCentreId]);
 
   // Route lines. Redrawn when the alternatives or the highlighted one change.
   drawRoutes.current = () => {

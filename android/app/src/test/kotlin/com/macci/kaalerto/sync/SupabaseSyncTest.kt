@@ -65,6 +65,13 @@ class SupabaseSyncTest {
     }
 
     @Test
+    fun `a centre status and a report withdrawal are synced`() {
+        val events = listOf("evac_status", "flood_withdraw").mapIndexed { i, t -> event("e$i", type = t) }
+
+        assertEquals(setOf("e0", "e1"), eventsToSync(events).map { it.id }.toSet())
+    }
+
+    @Test
     fun `an SOS is redacted before it can reach Supabase`() {
         assertEquals(REDACTED_AUTHOR, eventsToSync(listOf(event("e1", type = "sos"))).single().authorName)
     }

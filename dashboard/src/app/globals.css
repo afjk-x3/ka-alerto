@@ -207,6 +207,19 @@ a { color: var(--accent); }
 @keyframes ring { from { transform: scale(0.7); opacity: 0.9; } to { transform: scale(1.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .mk-sos .mk-dot::after { animation: none; } }
 
+/* ---------- Evacuation centres ---------- */
+.row-icon.evac { font-size: 20px; }
+.st-accepting { --st: #1f9d55; }
+.st-nearly_full { --st: #d98a00; }
+.st-not_open { --st: #7b8494; }
+.row-icon.evac { background: var(--st); }
+.pill-evac { background: #fff; border: 1px solid var(--st); color: var(--st); white-space: nowrap; }
+.mk-evac {
+  width: 18px; height: 18px; border-radius: 4px; background: var(--st); border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.evac-note { padding: 12px 18px; color: var(--muted); font-size: 12px; }
+
 /* ---------- Detail ---------- */
 .detail {
   position: absolute; top: 14px; right: 14px; bottom: 14px; z-index: 6; width: 340px; max-width: calc(100% - 28px);

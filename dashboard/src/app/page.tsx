@@ -9,9 +9,11 @@ import { NO_ROUTES, RoutingState, currentPosition, fetchRoutes, floodPoints, Lat
 import PinGate from '@/components/PinGate';
 import EventMap from '@/components/Map';
 import ItemList from '@/components/EventList';
+import EvacList from '@/components/EvacList';
+import { buildEvacStates } from '@/lib/evac';
 import EventDetail from '@/components/EventDetail';
 
-type Tab = 'sos' | 'reports';
+type Tab = 'sos' | 'reports' | 'evac';
 
 const POLL_MS = 5_000;
 
@@ -24,6 +26,7 @@ export default function DashboardPage() {
   const [routing, setRouting] = useState<RoutingState>(NO_ROUTES);
   const [origin, setOrigin] = useState<LatLon | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
 
   const clearRoutes = useCallback(() => {
     setRouting(NO_ROUTES);
@@ -67,6 +70,7 @@ export default function DashboardPage() {
   }, [locked, refresh]);
 
   const items = useMemo(() => sortItems(buildItems(events)), [events]);
+  const centres = useMemo(() => buildEvacStates(events), [events]);
   const shown = useMemo(() => applyFilters(items, filters), [items, filters]);
   const sos = shown.filter((i) => i.kind === 'sos');
   const reports = shown.filter((i) => i.kind === 'report');
@@ -190,8 +194,12 @@ export default function DashboardPage() {
           <button role="tab" aria-selected={tab === 'reports'} className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}>
             Flood reports <span className="count">{reports.length}</span>
           </button>
+          <button role="tab" aria-selected={tab === 'evac'} className={tab === 'evac' ? 'active' : ''} onClick={() => setTab('evac')}>
+            Shelters <span className="count">{centres.filter((c) => c.status !== 'not_open').length}</span>
+          </button>
         </div>
 
+        {tab !== 'evac' && (
         <div className="filters">
           <select aria-label="Age" value={filters.ageMs} onChange={(e) => setFilters({ ...filters, ageMs: Number(e.target.value) })}>
             <option value={0}>Any age</option>
@@ -216,7 +224,11 @@ export default function DashboardPage() {
           <button className="btn" onClick={exportCsv} disabled={list.length === 0}>CSV</button>
           {isFiltering(filters) && <button className="btn" onClick={() => setFilters(NO_FILTERS)}>Clear</button>}
         </div>
+        )}
 
+        {tab === 'evac' ? (
+          <EvacList states={centres} selectedId={selectedCentreId} onSelect={(s) => setSelectedCentreId(s.centre.id)} />
+        ) : (
         <ItemList
           items={list}
           selectedId={selectedId}
@@ -231,6 +243,7 @@ export default function DashboardPage() {
                 : 'No flood reports yet.'
           }
         />
+        )}
 
         <footer className="sidebar-foot">
           <span>
@@ -254,7 +267,7 @@ export default function DashboardPage() {
             » Menu
           </button>
         )}
-        <EventMap items={shown} selectedId={selectedId} onSelect={select} routes={routing.options} origin={origin} activeRoute={routing.active} />
+        <EventMap centres={centres} selectedCentreId={tab === 'evac' ? selectedCentreId : null} items={shown} selectedId={selectedId} onSelect={select} routes={routing.options} origin={origin} activeRoute={routing.active} />
         <EventDetail
           item={selected}
           onClose={() => {
