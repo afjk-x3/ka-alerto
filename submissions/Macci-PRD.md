@@ -261,7 +261,7 @@ A responsive web console, built last. Authenticated accounts scoped to one LGU w
 
 1. **Cloud sync** — batch upsert to Supabase, idempotent on event ID; pull everything, no cursor and no location filter. Photos travel by hash, best-effort. A background job repeats the upload when the app is closed.
 2. **Device-to-device relay** — Bluetooth and Wi-Fi Direct. Devices exchange event-ID lists and transfer the difference. No server involved.
-3. **SMS** — a bit-packed encoding for the cellular-but-no-data case, which also reaches feature phones.
+3. **SMS** — a bit-packed encoding for the cellular-but-no-data case, which also reaches feature phones. *Status: designed, not built in this submission; sending SMS is charged, so the app carries only a placeholder.*
 
 **Stack.** Kotlin and Jetpack Compose, min SDK 26; MapLibre with pre-downloaded offline tiles; Room over SQLite; Nearby Connections for the relay; `SmsManager` for the SMS path. Backend: Supabase (Postgres and Storage), baked into the app with no address to configure — reachable anywhere with signal, needs the internet to be up. No self-hosted server. Dashboard: a light-mode Next.js web console that reads Supabase behind one shared PIN (demo access, not personal accounts). FCM is an optional sync-wake optimisation; every alert fires without it.
 

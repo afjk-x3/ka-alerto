@@ -18,7 +18,7 @@ The Philippines takes about twenty typhoons a year, and when a severe one lands 
 
 **The phone is the source of truth.** It holds its own copy of the data and computes its own map. The cloud (Supabase) aggregates and accelerates; it never decides what's true. In a normal app the phone asks the server what's happening — here the phone already knows, and the cloud exists to help phones learn about each other.
 
-- **Three transports, tried in order.** Internet sync, then SMS, then phone-to-phone over Bluetooth and Wi-Fi Direct. The relay only has to reach *one* connected phone — someone driving to higher ground carries the whole neighbourhood's data out with them.
+- **Two transports are built.** Internet sync, and phone-to-phone relay over Bluetooth and Wi-Fi Direct. The relay only has to reach *one* connected phone — someone driving to higher ground carries the whole neighbourhood's data out with them. **SMS is designed but not built:** sending SMS costs money on every message, so the app carries only a placeholder (the manifest permissions, a receiver stub, and an "SMS" row on the SOS screen that says it is not built). Nothing is sent or decoded by SMS.
 - **A deterministic reducer.** Two devices holding the same events display the same map. That's what makes an offline phone trustworthy rather than merely stale.
 - **Notifications fire locally.** Every device evaluates its own geofences on every event it receives. No push server, no signal, alerts still fire.
 - **Reporting takes about fifteen seconds and no typing.** Tap a location, tap a depth on a body scale — ankle, knee, waist, chest. Severity is derived, not chosen.
@@ -36,7 +36,7 @@ flowchart LR
     B --> C["Reducer recomputes<br/>→ own map updates"]
     B --> D{"Transport<br/>manager"}
     D -->|has internet| E["Supabase"]
-    D -->|cell but no data| F["SMS · 29 chars"]
+    D -->|cell but no data| F["SMS · designed, not built"]
     D -->|nothing at all| G["Bluetooth /<br/>Wi-Fi Direct"]
     G --> H["Neighbour's phone"]
     H --> I["Their map updates<br/>their alert fires"]
@@ -83,7 +83,7 @@ Once V0 ships, this section becomes:
 ```
 1. Download the APK from the latest release
 2. Sideload it (Settings → allow install from unknown sources)
-3. Grant location, nearby devices, and SMS permissions
+3. Grant location and nearby-devices permissions
 4. Turn on airplane mode, then use it — that's the point
 ```
 

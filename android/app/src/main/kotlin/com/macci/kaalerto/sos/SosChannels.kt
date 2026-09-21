@@ -26,8 +26,8 @@ enum class SosChannel(val fil: String, val en: String) {
 fun SosChannel.label(): String = tr(fil, en)
 
 sealed interface ChannelStatus {
-    /** No code attempts this channel yet. [buildDay] is when it is scheduled. */
-    data class NotBuilt(val buildDay: String) : ChannelStatus
+    /** No code attempts this channel; the reason is shown in each language. */
+    data class NotBuilt(val reasonFil: String, val reasonEn: String) : ChannelStatus
 
     /**
      * Supabase sync is running and this request is queued for it. Deliberately not
@@ -70,7 +70,7 @@ fun sosChannelRows(mesh: MeshStatus, cloudOffline: Boolean = false): List<SosCha
         SosChannel.SERVER,
         if (cloudOffline) ChannelStatus.Unavailable("Walang koneksyon sa internet") else ChannelStatus.Uploading,
     ),
-    SosChannelRow(SosChannel.SMS, ChannelStatus.NotBuilt("build day 12")),
+    SosChannelRow(SosChannel.SMS, ChannelStatus.NotBuilt("may bayad ang SMS", "SMS is charged")),
     SosChannelRow(
         SosChannel.MESH,
         when {
@@ -93,7 +93,7 @@ fun ChannelStatus.shortLabel(): String = when (this) {
 /** The explanatory second line. Says what is true, including when what is true is "nothing yet". */
 @Composable
 fun ChannelStatus.detail(): String = when (this) {
-    is ChannelStatus.NotBuilt -> tr("Wala pang code sa build na ito — $buildDay", "No code for this in this build yet — $buildDay")
+    is ChannelStatus.NotBuilt -> tr("Wala pang code sa build na ito — $reasonFil", "No code for this in this build yet — $reasonEn")
     is ChannelStatus.Uploading -> tr(
         "Ipinapadala kapag may internet — hindi pa kumpirmadong natanggap",
         "Sent whenever there is internet — not confirmed received",
