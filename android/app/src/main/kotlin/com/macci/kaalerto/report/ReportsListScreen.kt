@@ -80,6 +80,13 @@ fun ReportsListScreen(
     LaunchedEffect(Unit) { gazetteer = BundledPlaces.get(context) }
 
     val rows = remember(summaries, fromLat, fromLon, sort) { sortReportRows(reportRows(summaries, fromLat, fromLon), sort) }
+    // Spots on the same street share a name, so those rows also show coordinates to tell them apart.
+    val sharedPlaces = remember(rows, gazetteer, language) {
+        rows.mapNotNull { gazetteer?.describe(it.summary.lat, it.summary.lon, language)?.primary }
+            .groupingBy { it }.eachCount().filterValues { it > 1 }.keys
+    }
+    // The map header counts reports filed today; this list counts spots. Both are shown so the two numbers agree.
+    val today = remember(summaries) { com.macci.kaalerto.map.reportsToday(summaries, System.currentTimeMillis()) }
 
     Column(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(
@@ -112,7 +119,10 @@ fun ReportsListScreen(
                 sort = ReportSort.NEWEST
             }
             Spacer(Modifier.weight(1f))
-            Text(tr("${rows.size} lugar", "${rows.size} spot${if (rows.size == 1) "" else "s"}"), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(horizontalAlignment = Alignment.End) {
+                Text(tr("${rows.size} lugar", "${rows.size} spot${if (rows.size == 1) "" else "s"}"), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(tr("$today ulat ngayong araw", "$today report${if (today == 1) "" else "s"} today"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
 
         if (rows.isEmpty()) {
@@ -131,7 +141,7 @@ fun ReportsListScreen(
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(rows, key = { it.summary.featureRef }) { row ->
                     val place = gazetteer?.describe(row.summary.lat, row.summary.lon, language)?.primary
-                    ReportRowView(row, place, language) { onOpen(row.summary) }
+                    ReportRowView(row, place, language, showCoordinates = place != null && place in sharedPlaces) { onOpen(row.summary) }
                     Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
                 }
             }
@@ -165,7 +175,7 @@ private fun SortChip(label: String, selected: Boolean, enabled: Boolean = true, 
 }
 
 @Composable
-private fun ReportRowView(row: ReportRow, place: String?, language: com.macci.kaalerto.i18n.AppLanguage, onClick: () -> Unit) {
+private fun ReportRowView(row: ReportRow, place: String?, language: com.macci.kaalerto.i18n.AppLanguage, showCoordinates: Boolean, onClick: () -> Unit) {
     val s = row.summary
     val stale = s.isStale
     val conflicted = s.isConflicted
@@ -186,7 +196,9 @@ private fun ReportRowView(row: ReportRow, place: String?, language: com.macci.ka
         if (s.confirmCount > 0) append(" · ").append(tr("${s.confirmCount} kumpirma", "${s.confirmCount} confirmed"))
         if (s.disputeCount > 0) append(" · ").append(tr("${s.disputeCount} tumutol", "${s.disputeCount} disputed"))
     }
-    val where = place ?: "%.4f, %.4f".format(s.lat, s.lon)
+    val coordinates = "%.4f, %.4f".format(s.lat, s.lon)
+    val where = place ?: coordinates
+    val shownWhere = if (showCoordinates) "$where · $coordinates" else where
     val age = ageLabel(System.currentTimeMillis() - s.lastEventMs, language)
     val spoken = "$title. $where. ${row.distanceMeters?.let { shortDistance(it) }.orEmpty()}. $sureness. $counts. $age"
 
@@ -205,7 +217,7 @@ private fun ReportRowView(row: ReportRow, place: String?, language: com.macci.ka
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = if (stale) muted else MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(where, fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(shownWhere, fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Text(
                 if (stale) "$counts · $age" else "$sureness · $counts · $age",
                 fontSize = 12.sp,
