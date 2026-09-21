@@ -6,7 +6,7 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 
 ---
 
-## Current state (condensed 15 Sep 2026)
+## Current state (condensed 21 Sep 2026)
 
 **The day-by-day build history — what was built, how it was verified, what was found and why — is in `BUILD_LOG.md`.** Read the relevant entry there before changing a feature; it records the reasoning behind many non-obvious choices. This section is only the summary and the things that are easy to undo by accident.
 
@@ -29,6 +29,7 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 | 11a | Family check-in circles (QR pairing) | Done on two emulators; QR camera step not proven on hardware |
 | 13 | Supabase sync + background push + LAN dashboard | Supabase sync proven on real phones; WorkManager push added 19 Sep. **The self-hosted Node server, phone-side server sync and LAN discovery were removed 19 Sep.** Dashboard: `dashboard/` (Next.js), reads Supabase behind a shared PIN |
 | — | PRD §9 registration, profile, drawer, EN/FIL toggle, real-hardware fixes (8–9 Sep) | Done |
+| — | **21 Sep upgrades:** dashboard filters (age, severity, SOS state) + CSV export; home-radius "still flooded? confirm" prompt that opens the report; withdraw your own report (`flood_withdraw`); in-app routes to a report or SOS (OSRM); shelter status synced + read-only Shelters tab on the dashboard | Done; each checked on the Xiaomi (`711c291c`) or the live dashboard. Not proven on hardware: an official's status uploading from a phone, multi-route alternatives on the phone, the SOS-banner route |
 
 **Unmerged local work (15 Sep):** branch `feat/gps-integration` holds the passable-v0 back-port (seed fixes, samples never leave the phone, seeds reload each cold start, plain-language labels, system Back, offline gazetteer, surname required) and GPS integration (map opens on an out-of-area home, "Nasaan ako"/"Demo" jumps, "download here" pack, geocode cache). Progress ledgers: `.worktrees/gps-integration/.superpowers/sdd/*/progress.md`.
 
@@ -44,11 +45,16 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 - **Storm Mode:** re-tints the loaded style in memory (offline packs are style-scoped), skips `kaalerto-` layers, reloads per toggle with `styleEpoch`; the camera is placed once (`cameraPlaced`).
 - **Identity:** the full name is stored locally, but only `displayFormOf` ever leaves the device; given name and surname are separate fields; never rewrite old events after a name change (NFR-4).
 - **UI:** a fresh `selectedFeatureRef` must not be auto-cleared (`everHadSelectedSummary`); system bars stay visible with one root `windowInsetsPadding` — do not re-hide them; the evac control stays labelled "Silungan".
-- **Sync:** only `flood_report`/`confirm`/`dispute`/`official_status` and the redacted `sos*` types go to Supabase (it has no access control); push AND pull have no cursor and no bbox on purpose (carry-forward; a demo-area bbox once silently dropped every real-GPS report); `encodeDefaults = true` is required or PostgREST rejects the batch (`PGRST102`); `SupabaseSyncWorker` repeats the push when the app is closed.
+- **Sync:** only `flood_report`/`confirm`/`dispute`/`official_status`/`flood_withdraw`/`evac_status` and the redacted `sos*` types go to Supabase (it has no access control); push AND pull have no cursor and no bbox on purpose (carry-forward; a demo-area bbox once silently dropped every real-GPS report); `encodeDefaults = true` is required or PostgREST rejects the batch (`PGRST102`); `SupabaseSyncWorker` repeats the push when the app is closed.
 - **Family:** `circle_invite`/`family_checkin` ride the mesh in the clear — disclosed, not fixable without crypto; "my status" reads only this device's own check-ins (`myLastCheckInMs`).
 - **i18n:** every string through `tr()`; SOS wire values, the rescue-card banner and exception text stay untranslated on purpose; strings built from a bilingual field's `.fil` need a grep, not just a literal sweep.
 - **Purge/back-off:** `EventRepository.deleteExpired` keeps an expired event that `isAwaitingUpload` (no full push since it expired); do not revert it to a plain time-based delete. The sync loop backs off to 2 min after 3 failures (`nextSyncDelayMs`).
 - **Release signing:** `android/keystore.properties` and `kaalerto-release.jks` are gitignored and exist only on the dev machine; back them up, since a lost key means users must uninstall to update. The v0 GitHub release APK is debug-signed, so a release-key build will not install over it.
+- **Withdrawal:** `flood_withdraw` (`data/Withdraw.kt`) is an event, never a deletion. `Reducer.summarize` folds only `liveEvents` (each author's events newer than their own latest withdrawal); a feature with no live event that carries a severity returns null so it leaves the map instead of showing S0. The withdrawal's `expiresAt` is at least that of the events it cancels, or a late-arriving pair could bring the report back. The dashboard's `buildItems` mirrors the rule; keep the two in step.
+- **Confirm prompt:** `shouldPromptConfirm` (`geofence/GeofenceNotifier.kt`) skips your own report and any feature you already have an event on. There is deliberately **no confirm button on the notification**: a confirmation's weight comes from where the phone is when it is tapped (proximity in the reducer), so it must go through the detail sheet. Home radius only, no live-location polling.
+- **Routes:** `route/Routing.kt` sends the phone's position and the destination to OSRM's **public demo server**, the only place position leaves the device for a third party — keep the first-use disclosure (`RoutePrefs`, `RouteDisclosureDialog`) and PRD §9's paragraph. That server returns **403 for Android's default `Dalvik/...` User-Agent**, so the custom `KaAlerto/1.0` agent must stay. Ranking is "fewest reported floods", never labelled safe. No connection means a plain message plus the `geo:` handoff, never a fake route.
+- **Shelters:** the dashboard tab is read-only on purpose — it has a shared PIN, not a roster seat, so it must not be able to open a shelter. Its fold ignores an update past its own `expiresAt` (Supabase never purges). `dashboard/src/data/evacuation_centres.json` is a **copy** of the phone's `assets/evacuation_centres.json`; keep them in step. Centres default to "not open yet", never "accepting".
+- **Testing against the live Supabase table:** a phone re-pushes every event it holds, so deleting a test row while any phone still has it locally is undone within seconds. Run `adb -s 711c291c shell pm clear com.macci.kaalerto.debug` first, then delete, then watch a minute. `ls` hides dotfiles (`dashboard/.env.local` exists; read it with `set -a; . ./.env.local`).
 - **Process:** run `assembleDebug` (check the APK mtime) before installing to verify; compare devices only after a real uninstall.
 
 ---
@@ -66,6 +72,8 @@ These were settled deliberately. Reopen only if the user asks.
 | A name may **never** raise a report's confidence | If it could, typing one would be a free way to raise confidence. Corroboration weight comes from relay attestation alone. |
 | **SOS is reachable from the registration screen** | So someone installing mid-flood is not blocked by a form. |
 | **Additional features 6–9 are gated**, not scheduled | They start only when all five core features pass on real hardware in airplane mode, including the demo script running clean start to finish. See PRD §7.6. |
+| **Shelter status is posted from officials' phones only; the dashboard shows it read-only** | Approved 21 Sep. The dashboard's PIN identifies nobody, and an official comes only from a roster seat; a dashboard write path would let anyone with the PIN open a shelter. |
+| **In-app routes use OSRM's public server, with a disclosure** | Approved 21 Sep. The alternative was only a `geo:` handoff to another maps app, which cannot rank by floods. The cost is that position leaves the device for a third party; self-hosting OSRM removes that. |
 | **No forecasting, ever** | Permanent scope boundary, not a hackathon deferral. Contribution to early warning is distribution, not prediction. |
 | **`docs/02-prd.md` (10 pages) is canonical** | The older 234-requirement, 40-page PRD is superseded. It is not in this repo. |
 
@@ -92,7 +100,7 @@ docs/          NOT IN GIT — deliberately gitignored. Local working copy only.
 design/        artboards/ (29 .dc.html) · canvas.json · screenshots/ · README.md (screen index)
                To render artboards standalone for screenshots: see "Working with design"
 android/       Gradle project — open THIS folder in Android Studio, not the repo root
-dashboard/     LGU web console: Next.js + MapLibre GL JS, light mode only. Reads Supabase through its own /api/events route, which checks a shared PIN (DASHBOARD_PIN) server-side. See dashboard/.env.local.example
+dashboard/     LGU web console: Next.js + MapLibre GL JS, light mode only. Tabs: SOS, Flood reports (age/severity/SOS-state filters, CSV export), Shelters (read-only). Reads Supabase through its own /api/events route, which checks a shared PIN (DASHBOARD_PIN) server-side. See dashboard/.env.local.example
 tools/         render-artboards.js · final-prd.js · ideation.js · check.py · osm-extract/ (day-0 OSM extract fetch + README)
 submissions/   one file per gate; doubles as release notes. README has the gate checklist
                Macci-PRD.md (added 5 Sep) is the living, editable twin of docs/02-prd.md —
