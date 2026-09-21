@@ -5,6 +5,7 @@ import { fetchPhoto } from '@/lib/api';
 import { RoutingState, OriginMode, OriginState, describeRoute, googleDirectionsUrl, originOf, originMissing } from '@/lib/routing';
 import { Item, SosItem, ReportItem, STATE_LABEL, SEVERITY_LABEL, latestReport, reportCount, statusLine, timeAgo } from '@/lib/items';
 import type { Event } from '@/lib/types';
+import { describePlace, placeLine } from '@/lib/gazetteer';
 
 /** What the Directions section needs to let the operator choose where a route starts. */
 export interface OriginControl {
@@ -38,8 +39,15 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
+/** The place name when the demo-area gazetteer knows it, and always the coordinates. */
 function Coords({ lat, lon }: { lat: number; lon: number }) {
-  return <span className="mono">{lat.toFixed(5)}, {lon.toFixed(5)}</span>;
+  const place = describePlace(lat, lon);
+  return (
+    <>
+      {place && <span className="place">{placeLine(place)}<br /></span>}
+      <span className="mono">{lat.toFixed(5)}, {lon.toFixed(5)}</span>
+    </>
+  );
 }
 
 /** Directions from a start the operator chooses: a Google Maps handoff, plus routes ranked against current flood reports. */

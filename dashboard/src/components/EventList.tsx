@@ -1,6 +1,7 @@
 'use client';
 
 import { Item, STATE_LABEL, SEVERITY_LABEL, reportCount, statusLine, timeAgo } from '@/lib/items';
+import { whereShort } from '@/lib/gazetteer';
 
 interface ItemListProps {
   items: Item[];
@@ -31,6 +32,7 @@ export default function ItemList({ items, selectedId, onSelect, emptyText }: Ite
                   <span className="row-title">
                     {STATE_LABEL[item.state] ?? item.state}
                   </span>
+                  <span className="row-where">{whereShort(item.lat, item.lon)}</span>
                   <span className="row-sub">
                     {item.context.people ? `${item.context.people} people · ` : ''}
                     {item.context.water ? `${item.context.water} · ` : ''}
@@ -56,6 +58,7 @@ export default function ItemList({ items, selectedId, onSelect, emptyText }: Ite
               </span>
               <span className="row-main">
                 <span className="row-title">{item.stale ? 'Expired — needs a fresh look' : SEVERITY_LABEL[s.severity] ?? s.severity}</span>
+                <span className="row-where">{whereShort(item.lat, item.lon)}</span>
                 <span className="row-sub">
                   {item.stale ? 'Last reports' : statusLine(s)} · {n} report{n === 1 ? '' : 's'}
                   {s.confirmCount > 0 ? ` · ${s.confirmCount} confirmed` : ''}

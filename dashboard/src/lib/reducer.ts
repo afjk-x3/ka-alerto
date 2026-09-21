@@ -50,7 +50,7 @@ const ttlMinutesFor = (s: string | null) => (s === 'S1' ? 120 : s === 'S2' ? 240
 
 const TYPE_FLOOD_WITHDRAW = 'flood_withdraw';
 
-function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const rad = (d: number) => (d * Math.PI) / 180;
   const dLat = rad(lat2 - lat1);
   const dLon = rad(lon2 - lon1);

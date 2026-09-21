@@ -1,5 +1,6 @@
 import { Event } from './types';
 import { summarizeAll, FeatureSummary } from './reducer';
+import { describePlace, placeLine } from './gazetteer';
 
 // Severity ladder and colours mirror android/.../ui/theme/SeverityColors.kt.
 export const SEVERITY_LABEL: Record<string, string> = {
@@ -215,15 +216,43 @@ export interface Filters {
   severity: string;
   /** SOS requests only. */
   sosState: 'all' | 'open' | 'closed';
+  /** Free text: every word must appear somewhere in the item (see [searchText]). */
+  query: string;
 }
 
-export const NO_FILTERS: Filters = { ageMs: 0, severity: '', sosState: 'all' };
+export const NO_FILTERS: Filters = { ageMs: 0, severity: '', sosState: 'all', query: '' };
 
-export const isFiltering = (f: Filters) => f.ageMs > 0 || f.severity !== '' || f.sosState !== 'all';
+export const isFiltering = (f: Filters) => f.ageMs > 0 || f.severity !== '' || f.sosState !== 'all' || f.query.trim() !== '';
+
+/** Everything a search can match, lower-cased: place, coordinates, status, people and words. */
+export function searchText(i: Item): string {
+  const place = describePlace(i.lat, i.lon);
+  const where = [place ? placeLine(place) : '', i.lat.toFixed(5), i.lon.toFixed(5)];
+  if (i.kind === 'sos') {
+    const c = i.context;
+    return [
+      'sos', i.state, STATE_LABEL[i.state], i.closed ? 'closed' : 'open', ...where,
+      c.people, c.water, c.trend, ...(c.companions ?? []), ...i.history.map((h) => `${h.by} ${h.role}`),
+    ].join(' ').toLowerCase();
+  }
+  const s = i.summary;
+  return [
+    s.severity, SEVERITY_LABEL[s.severity], statusLine(s), i.stale ? 'expired' : 'current', ...where,
+    ...s.events.flatMap((e) => [e.authorName, e.authorRole, e.waterLevel, e.note]),
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+const matchesQuery = (i: Item, query: string) => {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const hay = searchText(i);
+  return words.every((w) => hay.includes(w));
+};
 
 /** Each filter only touches the kind it names; age applies to both. */
 export function applyFilters(items: Item[], f: Filters, now = Date.now()): Item[] {
   return items.filter((i) => {
+    if (!matchesQuery(i, f.query)) return false;
     if (f.ageMs > 0 && now - i.updatedAtMs > f.ageMs) return false;
     if (i.kind === 'sos') return f.sosState === 'all' || (f.sosState === 'closed') === i.closed;
     return !f.severity || i.summary.severity === f.severity;

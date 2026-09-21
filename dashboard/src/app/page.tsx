@@ -280,6 +280,14 @@ export default function DashboardPage() {
         <div role="tabpanel" id="tabpanel" aria-labelledby={`tab-${tab}`} className="tabpanel">
         {tab !== 'evac' && (
         <div className="filters">
+          <input
+            type="search"
+            className="search"
+            aria-label="Search"
+            placeholder="Search place, name, status…"
+            value={filters.query}
+            onChange={(e) => setFilters({ ...filters, query: e.target.value })}
+          />
           <select aria-label="Age" value={filters.ageMs} onChange={(e) => setFilters({ ...filters, ageMs: Number(e.target.value) })}>
             <option value={0}>Any age</option>
             <option value={3_600_000}>Last hour</option>
