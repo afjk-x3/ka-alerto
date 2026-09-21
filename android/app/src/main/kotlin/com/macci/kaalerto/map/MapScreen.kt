@@ -1,5 +1,11 @@
 package com.macci.kaalerto.map
 
+import com.macci.kaalerto.identity.shouldShowPrimer
+import com.macci.kaalerto.identity.missingPrimerPerms
+import com.macci.kaalerto.identity.PermissionPrefs
+import com.macci.kaalerto.identity.Perm
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -266,21 +272,56 @@ fun MapScreen(
         meshPermitted = MeshPermissions.allGranted(context)
     }
 
+    // What is still missing, explained once before the system asks. It used to fire every outstanding system
+    // dialog at the moment the map first appeared, one after another with no reason given, and again on later
+    // visits. Now, and only if something is missing, one dialog says what and why: "Magpatuloy" asks the system
+    // for exactly that set (mesh permissions included, since asking for them mid-flood would be too late to help),
+    // and "Mamaya" leaves it for the profile screen. Either answer is remembered, so the map never asks by itself again.
+    var primerFor by remember { mutableStateOf<List<Perm>>(emptyList()) }
     LaunchedEffect(Unit) {
-        // One prompt for everything still outstanding — location, notifications, and
-        // day 6-7's Bluetooth/Wi-Fi set for the mesh. Asking for the mesh permissions
-        // separately, later, would mean interrupting someone mid-flood to enable a
-        // transport that only helps if it was already running.
-        val wanted = buildList {
-            addAll(LOCATION_PERMISSIONS)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
-            addAll(MeshPermissions.required())
-        }
-        val missing = wanted.distinct().filter {
-            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missing.isNotEmpty()) permissionLauncher.launch(missing.toTypedArray())
+        val missing = missingPrimerPerms(context)
+        if (shouldShowPrimer(missing, PermissionPrefs.primerAnswered(context))) primerFor = missing
         pack.ensureDownloaded()
+    }
+    if (primerFor.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = {
+                PermissionPrefs.markPrimerAnswered(context)
+                primerFor = emptyList()
+            },
+            title = { Text(tr("May mga pahintulot pang kailangan", "A few permissions are still needed")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    primerFor.forEach { perm ->
+                        Column {
+                            Text(perm.title(), fontWeight = FontWeight.SemiBold)
+                            Text(perm.reason(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Text(
+                        tr(
+                            "Gumagana pa rin ang app kung hindi mo ito papayagan. Mababago mo ito sa profile mo.",
+                            "The app still works if you decline. You can change this later in your profile.",
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val ask = primerFor.flatMap { it.permissions().toList() }.distinct().toTypedArray()
+                    PermissionPrefs.markPrimerAnswered(context)
+                    primerFor = emptyList()
+                    if (ask.isNotEmpty()) permissionLauncher.launch(ask)
+                }) { Text(tr("Magpatuloy", "Continue")) }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    PermissionPrefs.markPrimerAnswered(context)
+                    primerFor = emptyList()
+                }) { Text(tr("Mamaya", "Later")) }
+            },
+        )
     }
 
     // The mesh runs for as long as the app does — it is a foreground service precisely
