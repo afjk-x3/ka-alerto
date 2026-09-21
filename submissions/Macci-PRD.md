@@ -131,8 +131,9 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 - **FR-1.3** Display a confidence indicator derived from a **weighted corroboration score**, not a raw count. Relay attestation is the strong signal, because a report that reached nearby devices over short-range radio proves the author was within range of them; device-asserted position is weak, because a device can assert any position.
 - **FR-1.4** Render contradictory reports as an explicit conflicting state, never as an average or a winner.
 - **FR-1.5** State on the map that guidance is assembled from resident reports, may be incomplete or out of date, and that the user remains responsible for judging conditions in front of them.
+- **FR-1.6** On request, and only with a connection, show routes from the resident's position to a reported spot or a rescue request, drawn on the map and ranked by how many current reported floods each passes. State that the ranking reflects reports only: a road with no report is not known to be safe. With no connection, say so and hand the destination to another navigation application; never draw an unverified route.
 
-**AC-1** The map opens, pans and renders every severity state with the device in airplane mode.
+**AC-1** The map opens, pans and renders every severity state with the device in airplane mode. A route request in airplane mode says routes need the internet and draws nothing.
 
 ### 7.2 Crowdsourced Flood Reporting
 
@@ -225,6 +226,8 @@ A responsive web console, built last. Authenticated accounts scoped to one LGU w
 
 **Name visibility.** A report or rescue request displays its author's name to any user who opens it. The displayed form is a first name and last initial with the barangay, never a full legal name or a doorstep.
 
+**Routes are the one place a position leaves the device for a third party.** Requesting a route sends the device's current position and the destination to a public routing service; nothing else in the application does this, since events go only to the project's own backend, with rescue detail redacted. It is sent only when the resident asks, after a one-time disclosure, and carries no name or identifier. Self-hosting the routing service removes the third party.
+
 **Tiered disclosure of rescue requests** is enforced cryptographically, not by interface convention: routing header in cleartext, rescue body to responder and official keys, medical envelope to official keys alone. A volunteer never receives medical context, because a role obtainable by registration should not carry the most sensitive field in the system.
 
 **Consent is revocable within the limits of a replicated store.** A withdrawal is itself an event and removes the item wherever it reaches. **Copies already carried to other devices cannot be recalled**, because there is no authority that can reach into a stranger's phone — and that same property is what makes the product work without a network. This limit is disclosed at the point of collection rather than in a policy, so no one is told their data was erased when it was withdrawn.
@@ -260,7 +263,7 @@ A responsive web console, built last. Authenticated accounts scoped to one LGU w
 
 **Stack.** Kotlin and Jetpack Compose, min SDK 26; MapLibre with pre-downloaded offline tiles; Room over SQLite; Nearby Connections for the relay; `SmsManager` for the SMS path. Backend: Supabase (Postgres and Storage), baked into the app with no address to configure — reachable anywhere with signal, needs the internet to be up. No self-hosted server. Dashboard: a light-mode Next.js web console that reads Supabase behind one shared PIN (demo access, not personal accounts). FCM is an optional sync-wake optimisation; every alert fires without it.
 
-**What is lost with no internet:** reach beyond relay range, cloud sync, the dashboard, official feed ingestion, SMS gateway bridging. **What survives:** the map, reporting, confirm and dispute, local notifications, and SOS to nearby phones.
+**What is lost with no internet:** reach beyond relay range, cloud sync, the dashboard, official feed ingestion, SMS gateway bridging, in-app routes. **What survives:** the map, reporting, confirm and dispute, local notifications, and SOS to nearby phones.
 
 ---
 
