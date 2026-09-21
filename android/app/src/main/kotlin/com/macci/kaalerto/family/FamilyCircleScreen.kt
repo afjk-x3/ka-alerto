@@ -68,7 +68,6 @@ fun FamilyCircleScreen(
     myLastCheckInMs: Long?,
     statuses: List<CircleMemberStatus>,
     onCheckIn: () -> Unit,
-    onBack: () -> Unit,
     onOpenMenu: () -> Unit,
     onOpenScanner: () -> Unit,
     onShowMyQr: () -> Unit,
@@ -104,9 +103,6 @@ fun FamilyCircleScreen(
                         modifier = Modifier.padding(top = 3.dp),
                     )
                 }
-            }
-            Box(Modifier.clickable(onClick = onBack).padding(8.dp)) {
-                Text(tr("Isara", "Close"), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
             }
         }
 

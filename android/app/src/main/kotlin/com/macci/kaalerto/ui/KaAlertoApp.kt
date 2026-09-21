@@ -809,7 +809,6 @@ fun KaAlertoApp(
                 },
                 statuses = statuses,
                 onCheckIn = { scope.launch { submitCheckIn(context, lat = null, lon = null) } },
-                onBack = { screen = Screen.Map },
                 onOpenMenu = { drawerOpen = true },
                 onOpenScanner = { screen = Screen.QrScanner },
                 onShowMyQr = { screen = Screen.MyCircleQr },

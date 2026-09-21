@@ -100,7 +100,7 @@ fun ProfileScreen(
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
-                        tr("Pangalan, numero, at bahay mo.", "Your name, number, and home."),
+                        tr("Pangalan at bahay mo.", "Your name and home."),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -121,7 +121,8 @@ fun ProfileScreen(
                     onTypedFirstName = { showError = false },
                     onTypedLastName = { showError = false },
                 )
-                PhoneField(phone = phone, onPhoneChange = onPhoneChange)
+                // No phone-number field until SMS exists: it was asked for a feature that is not built. The saved
+                // number, if any, is kept and written back unchanged (`phone` still flows through onSave).
                 HomeSection(
                     home = home,
                     accuracyMeters = accuracyMeters,
