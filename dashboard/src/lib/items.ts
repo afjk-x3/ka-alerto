@@ -188,3 +188,42 @@ export function timeAgo(ms: number, now = Date.now()): string {
   if (h < 24) return `${h} h ago`;
   return `${Math.floor(h / 24)} d ago`;
 }
+
+export interface Filters {
+  /** Max age of last activity in ms; 0 = any. */
+  ageMs: number;
+  /** A flood-report severity (S0..SX), or '' for all. Reports only. */
+  severity: string;
+  /** SOS requests only. */
+  sosState: 'all' | 'open' | 'closed';
+}
+
+export const NO_FILTERS: Filters = { ageMs: 0, severity: '', sosState: 'all' };
+
+export const isFiltering = (f: Filters) => f.ageMs > 0 || f.severity !== '' || f.sosState !== 'all';
+
+/** Each filter only touches the kind it names; age applies to both. */
+export function applyFilters(items: Item[], f: Filters, now = Date.now()): Item[] {
+  return items.filter((i) => {
+    if (f.ageMs > 0 && now - i.updatedAtMs > f.ageMs) return false;
+    if (i.kind === 'sos') return f.sosState === 'all' || (f.sosState === 'closed') === i.closed;
+    return !f.severity || i.event.severity === f.severity;
+  });
+}
+
+const CSV_COLS = ['kind', 'id', 'status', 'lat', 'lon', 'reported_by', 'first_seen', 'last_update', 'people', 'water', 'note'];
+
+/** Spreadsheet-safe: quotes every field and defuses leading = + - @ (names and notes are user-typed). */
+const csvCell = (v: unknown) => {
+  const s = v == null ? '' : String(v);
+  return `"${(/^[=+\-@\t\r]/.test(s) ? `'${s}` : s).replace(/"/g, '""')}"`;
+};
+
+export function toCsv(items: Item[]): string {
+  const rows = items.map((i) =>
+    i.kind === 'sos'
+      ? ['sos', i.id, i.state, i.lat, i.lon, '', new Date(i.startedAtMs).toISOString(), new Date(i.updatedAtMs).toISOString(), i.context.people, i.context.water, '']
+      : ['report', i.id, i.event.severity ?? i.event.type, i.lat, i.lon, i.event.authorName, new Date(i.event.timestampMs).toISOString(), new Date(i.updatedAtMs).toISOString(), '', i.event.waterLevel, i.event.note],
+  );
+  return [CSV_COLS, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
+}

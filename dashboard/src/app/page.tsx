@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useEvents } from '@/hooks/useEvents';
 import { useAlerts } from '@/hooks/useAlerts';
 import { getPin, setPin, clearPin } from '@/lib/api';
-import { buildItems, sortItems, Item } from '@/lib/items';
+import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item } from '@/lib/items';
 import { NO_ROUTES, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon } from '@/lib/routing';
 import PinGate from '@/components/PinGate';
 import EventMap from '@/components/Map';
@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const [collapsed, setCollapsed] = useState(false);
   const [routing, setRouting] = useState<RoutingState>(NO_ROUTES);
   const [origin, setOrigin] = useState<LatLon | null>(null);
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
 
   const clearRoutes = useCallback(() => {
     setRouting(NO_ROUTES);
@@ -66,9 +67,11 @@ export default function DashboardPage() {
   }, [locked, refresh]);
 
   const items = useMemo(() => sortItems(buildItems(events)), [events]);
-  const sos = items.filter((i) => i.kind === 'sos');
-  const reports = items.filter((i) => i.kind === 'report');
-  const openSos = sos.filter((i) => i.kind === 'sos' && !i.closed).length;
+  const shown = useMemo(() => applyFilters(items, filters), [items, filters]);
+  const sos = shown.filter((i) => i.kind === 'sos');
+  const reports = shown.filter((i) => i.kind === 'report');
+  const openSos = items.filter((i) => i.kind === 'sos' && !i.closed).length;
+  const totalReports = items.filter((i) => i.kind === 'report').length;
   const selected = items.find((i) => i.id === selectedId) ?? null;
   const alerts = useAlerts(items, updatedAt !== null);
 
@@ -112,6 +115,15 @@ export default function DashboardPage() {
   }
 
   const list = tab === 'sos' ? sos : reports;
+
+  const exportCsv = () => {
+    const url = URL.createObjectURL(new Blob(['﻿', toCsv(list)], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kaalerto-${tab}-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="app">
@@ -164,7 +176,7 @@ export default function DashboardPage() {
             <span>open SOS</span>
           </div>
           <div className="stat">
-            <b>{reports.length}</b>
+            <b>{totalReports}</b>
             <span>reports</span>
           </div>
         </div>
@@ -180,6 +192,31 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        <div className="filters">
+          <select aria-label="Age" value={filters.ageMs} onChange={(e) => setFilters({ ...filters, ageMs: Number(e.target.value) })}>
+            <option value={0}>Any age</option>
+            <option value={3_600_000}>Last hour</option>
+            <option value={6 * 3_600_000}>Last 6 hours</option>
+            <option value={24 * 3_600_000}>Last 24 hours</option>
+          </select>
+          {tab === 'reports' ? (
+            <select aria-label="Severity" value={filters.severity} onChange={(e) => setFilters({ ...filters, severity: e.target.value })}>
+              <option value="">All severities</option>
+              {Object.entries(SEVERITY_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>{k} · {v}</option>
+              ))}
+            </select>
+          ) : (
+            <select aria-label="SOS state" value={filters.sosState} onChange={(e) => setFilters({ ...filters, sosState: e.target.value as Filters['sosState'] })}>
+              <option value="all">Open and closed</option>
+              <option value="open">Open only</option>
+              <option value="closed">Closed only</option>
+            </select>
+          )}
+          <button className="btn" onClick={exportCsv} disabled={list.length === 0}>CSV</button>
+          {isFiltering(filters) && <button className="btn" onClick={() => setFilters(NO_FILTERS)}>Clear</button>}
+        </div>
+
         <ItemList
           items={list}
           selectedId={selectedId}
@@ -187,7 +224,9 @@ export default function DashboardPage() {
           emptyText={
             loading
               ? 'Loading…'
-              : tab === 'sos'
+              : isFiltering(filters)
+                ? 'Nothing matches these filters.'
+                : tab === 'sos'
                 ? 'No SOS requests. New ones appear here automatically.'
                 : 'No flood reports yet.'
           }
@@ -215,7 +254,7 @@ export default function DashboardPage() {
             » Menu
           </button>
         )}
-        <EventMap items={items} selectedId={selectedId} onSelect={select} routes={routing.options} origin={origin} activeRoute={routing.active} />
+        <EventMap items={shown} selectedId={selectedId} onSelect={select} routes={routing.options} origin={origin} activeRoute={routing.active} />
         <EventDetail
           item={selected}
           onClose={() => {
