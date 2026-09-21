@@ -65,11 +65,18 @@ import com.macci.kaalerto.mesh.MeshPermissions
 import com.macci.kaalerto.mesh.MeshService
 import com.macci.kaalerto.mesh.MeshState
 import com.macci.kaalerto.net.rememberIsOnline
+import com.macci.kaalerto.route.LatLon
+import com.macci.kaalerto.route.RouteOption
+import com.macci.kaalerto.route.RoutesResult
+import com.macci.kaalerto.route.fetchRoutes
+import com.macci.kaalerto.route.floodPoints
 import com.macci.kaalerto.sos.SosColors
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.location.LocationComponentActivationOptions
 import org.maplibre.android.location.modes.CameraMode
 import org.maplibre.android.location.modes.RenderMode
@@ -160,6 +167,37 @@ fun MapScreen(
     val pack = remember { OfflineMapPack(context) }
     val packState by pack.state.collectAsStateWithLifecycle()
     val featureSummaries by viewModel.featureSummaries.collectAsStateWithLifecycle()
+
+    // In-app routes to a report or an SOS (route/Routing.kt). Null = no panel.
+    var routeUi by remember { mutableStateOf<RouteUi?>(null) }
+    var routeDisclosureFor by remember { mutableStateOf<LatLon?>(null) }
+    var routeJob by remember { mutableStateOf<Job?>(null) }
+    fun runRoutes(target: LatLon) {
+        routeJob?.cancel()
+        routeJob = scope.launch {
+            routeUi = RouteUi(target, RouteUi.Status.LOCATING)
+            val here = fetchCurrentLocation(context)
+            if (here == null) {
+                routeUi = RouteUi(target, RouteUi.Status.NO_LOCATION)
+                return@launch
+            }
+            val from = LatLon(here.latitude, here.longitude)
+            routeUi = RouteUi(target, RouteUi.Status.LOADING, origin = from)
+            routeUi = when (val result = fetchRoutes(from, target, floodPoints(featureSummaries))) {
+                is RoutesResult.Ok -> RouteUi(target, RouteUi.Status.DONE, result.options, 0, from)
+                RoutesResult.NoConnection -> RouteUi(target, RouteUi.Status.NO_CONNECTION, origin = from)
+                RoutesResult.NoRoute -> RouteUi(target, RouteUi.Status.NO_ROUTE, origin = from)
+                is RoutesResult.ServiceError -> RouteUi(target, RouteUi.Status.SERVICE_ERROR, origin = from)
+            }
+        }
+    }
+    fun requestRoutes(target: LatLon) {
+        if (RoutePrefs.accepted(context)) runRoutes(target) else routeDisclosureFor = target
+    }
+    fun openInMaps(target: LatLon) {
+        val uri = Uri.parse("geo:${target.lat},${target.lon}?q=${target.lat},${target.lon}")
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+    }
     var locatingReport by remember { mutableStateOf(false) }
     // Pick-mode's draft pin: a tap moves this, nothing is committed to onLocationPicked
     // until the confirm bar's "I-save" is tapped. See PickLocationBanner below.
@@ -407,6 +445,9 @@ fun MapScreen(
                 cameraRequest = cameraRequest,
                 onCameraIdle = { lat, lon -> cameraCentre = lat to lon },
                 sosFocus = sosFocus,
+                routes = routeUi?.takeIf { it.status == RouteUi.Status.DONE }?.options.orEmpty(),
+                activeRoute = routeUi?.active ?: 0,
+                routeOrigin = routeUi?.takeIf { it.status == RouteUi.Status.DONE }?.origin,
                 modifier = Modifier.fillMaxSize(),
             )
 
@@ -488,7 +529,31 @@ fun MapScreen(
             SosFocusBanner(
                 latLng = sosFocus,
                 onDismiss = { onDismissSosFocus?.invoke() },
+                onRoutes = { requestRoutes(LatLon(sosFocus.latitude, sosFocus.longitude)) },
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        routeUi?.let { ui ->
+            RoutePanel(
+                ui = ui,
+                onPick = { i -> routeUi = ui.copy(active = i) },
+                onOpenInMaps = { openInMaps(ui.target) },
+                onClose = {
+                    routeJob?.cancel()
+                    routeUi = null
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        routeDisclosureFor?.let { target ->
+            RouteDisclosureDialog(
+                onAccept = {
+                    RoutePrefs.accept(context)
+                    routeDisclosureFor = null
+                    runRoutes(target)
+                },
+                onDismiss = { routeDisclosureFor = null },
             )
         }
 
@@ -578,6 +643,10 @@ fun MapScreen(
                 selectedFeatureRef = null
                 onStartReportAt?.invoke(lat, lon)
             },
+            onRoutes = {
+                selectedFeatureRef = null
+                requestRoutes(LatLon(selectedSummary.lat, selectedSummary.lon))
+            },
             // Day 10: only an official sees this, and it opens the ruling screen for
             // the feature the sheet is already about.
             onOfficialStatus = if (role == com.macci.kaalerto.identity.LocalIdentity.ROLE_OFFICIAL) {
@@ -609,7 +678,7 @@ fun MapScreen(
  * only once there is a connection to fetch a route with.
  */
 @Composable
-private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     Row(
         modifier = modifier
@@ -630,6 +699,13 @@ private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, modifier: Modi
                 color = MaterialTheme.colorScheme.inverseOnSurface,
             )
         }
+        Text(
+            tr("Mga ruta", "Routes"),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            modifier = Modifier.clickable(onClick = onRoutes).padding(horizontal = 8.dp, vertical = 4.dp),
+        )
         Text(
             tr("Buksan sa Maps", "Open in Maps"),
             style = MaterialTheme.typography.labelLarge,
@@ -931,6 +1007,10 @@ private fun MapLibreMapView(
     onCameraIdle: ((lat: Double, lon: Double) -> Unit)? = null,
     /** Where a responder just acknowledged an SOS; drawn by [updateSosFocusMarker]. */
     sosFocus: LatLng? = null,
+    /** Route alternatives to draw, which one is highlighted, and where the viewer is. */
+    routes: List<RouteOption> = emptyList(),
+    activeRoute: Int = 0,
+    routeOrigin: LatLon? = null,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -1015,6 +1095,20 @@ private fun MapLibreMapView(
     LaunchedEffect(maplibreMap, styleEpoch, sosFocus) {
         if (styleEpoch == 0) return@LaunchedEffect
         maplibreMap?.style?.let { updateSosFocusMarker(it, sosFocus) }
+    }
+
+    LaunchedEffect(maplibreMap, styleEpoch, routes, activeRoute, routeOrigin) {
+        if (styleEpoch == 0) return@LaunchedEffect
+        maplibreMap?.style?.let { updateRouteLayers(it, routes, activeRoute, routeOrigin) }
+    }
+
+    // Frame the whole trip when new routes arrive (not when the highlight moves).
+    LaunchedEffect(maplibreMap, routes) {
+        val map = maplibreMap ?: return@LaunchedEffect
+        if (routes.isEmpty()) return@LaunchedEffect
+        val bounds = LatLngBounds.Builder()
+        routes.forEach { r -> r.coords.forEach { bounds.include(LatLng(it.second, it.first)) } }
+        map.easeCamera(CameraUpdateFactory.newLatLngBounds(bounds.build(), 80), 700)
     }
 
     // Pick-mode (setting a report location) and marker selection are mutually

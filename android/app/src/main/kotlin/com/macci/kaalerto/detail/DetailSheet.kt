@@ -94,6 +94,8 @@ fun DetailSheet(
     summary: FeatureSummary,
     onDismiss: () -> Unit,
     onCheckInPerson: (lat: Double, lon: Double) -> Unit,
+    /** Non-null on the map: closes the sheet and shows routes to this spot. */
+    onRoutes: (() -> Unit)? = null,
     /** Non-null only for a barangay official — day 10's ruling screen for this feature. */
     onOfficialStatus: (() -> Unit)? = null,
     /**
@@ -258,6 +260,18 @@ fun DetailSheet(
                     background = MaterialTheme.colorScheme.background,
                     contentColor = MaterialTheme.colorScheme.onBackground,
                     border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.onBackground),
+                )
+            }
+
+            if (onRoutes != null) {
+                Spacer(Modifier.height(10.dp))
+                ActionBar(
+                    label = tr("Mga ruta papunta rito", "Routes to here"),
+                    icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
+                    onClick = onRoutes,
+                    background = MaterialTheme.colorScheme.background,
+                    contentColor = MaterialTheme.colorScheme.onBackground,
+                    border = BorderStroke(1.5.dp, colors.borderEmphasis),
                 )
             }
 
