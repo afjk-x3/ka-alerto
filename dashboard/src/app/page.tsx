@@ -201,7 +201,7 @@ export default function DashboardPage() {
           </div>
           <div className="stat">
             <b>{totalReports}</b>
-            <span>reports</span>
+            <span>flooded spots</span>
           </div>
         </div>
 

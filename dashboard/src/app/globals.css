@@ -242,6 +242,8 @@ a { color: var(--accent); }
 dl { display: grid; gap: 12px; }
 .field dt { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-bottom: 2px; }
 .field dd { word-break: break-word; }
+.official-note { margin-bottom: 14px; padding: 10px 12px; border-radius: 8px; font-size: 13px; background: #eaf7ef; color: #1f5f3a; border: 1px solid #b7e2c6; }
+.official-note.pending { background: #fff4e5; color: #7a4a00; border-color: #f2c27a; }
 .hint { margin-top: 14px; padding: 10px 12px; border-radius: 8px; background: var(--bg); color: var(--muted); font-size: 12.5px; }
 .timeline { list-style: none; border-left: 2px solid var(--border); margin-left: 6px; }
 .timeline li { position: relative; padding: 0 0 14px 16px; display: flex; flex-direction: column; }

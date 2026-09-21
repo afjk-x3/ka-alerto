@@ -25,7 +25,7 @@ interface MapProps {
 
 function markerClass(item: Item): string {
   if (item.kind === 'sos') return `mk mk-sos ${item.closed ? 'is-closed' : ''}`;
-  return `mk sev-${item.event.severity ?? 'none'} ${item.stale ? 'is-stale' : ''}`;
+  return `mk sev-${item.stale ? 'none' : item.summary.severity} ${item.stale ? 'is-stale' : ''}`;
 }
 
 export default function EventMap({ items, selectedId, onSelect, routes, origin, activeRoute, centres, selectedCentreId }: MapProps) {
@@ -99,7 +99,7 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     });
 
     for (const item of items) {
-      const label = item.kind === 'sos' ? (item.closed ? 'SOS request, closed' : 'SOS request, open') : `Flood report, ${item.event.severity ?? 'no severity'}`;
+      const label = item.kind === 'sos' ? (item.closed ? 'SOS request, closed' : 'SOS request, open') : `Flooded spot, ${item.stale ? 'expired' : item.summary.severity}`;
       const existing = markers.current.get(item.id);
       if (existing) {
         existing.el.className = markerClass(item);

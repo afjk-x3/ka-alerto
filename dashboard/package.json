@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
+    "check": "node --experimental-strip-types checks/reducer.check.mts",
     "start": "next start --port 3001"
   },
   "dependencies": {

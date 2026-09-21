@@ -1,4 +1,5 @@
 import { Event } from './types';
+import { summarizeAll, FeatureSummary } from './reducer';
 
 // Severity ladder and colours mirror android/.../ui/theme/SeverityColors.kt.
 export const SEVERITY_LABEL: Record<string, string> = {
@@ -78,7 +79,8 @@ export interface ReportItem {
   id: string;
   lat: number;
   lon: number;
-  event: Event;
+  /** The spot's folded state (lib/reducer.ts), the same one a phone computes from the same events. */
+  summary: FeatureSummary;
   stale: boolean;
   updatedAtMs: number;
   /** SHA-256 of the attached photo, if any (see ReportPhotoPayload on the phone). */
@@ -104,19 +106,22 @@ function parsePayload(raw: string | null): Payload | null {
   }
 }
 
-/** One item per SOS request (its sos, sos_amend and sos_state events folded together) plus one per report. */
-export function buildItems(all: Event[], now = Date.now()): Item[] {
-  // A flood_withdraw cancels its author's earlier events on that feature (Withdraw.kt on the phone).
-  const withdrawnAt = new Map<string, number>();
-  for (const e of all) {
-    if (e.type !== 'flood_withdraw') continue;
-    const k = `${e.authorId}|${e.featureRef}`;
-    withdrawnAt.set(k, Math.max(withdrawnAt.get(k) ?? 0, e.timestampMs));
-  }
-  const events = all.filter(
-    (e) => e.type !== 'flood_withdraw' && e.type !== 'evac_status' && e.timestampMs > (withdrawnAt.get(`${e.authorId}|${e.featureRef}`) ?? 0),
-  );
+export const BUCKET_LABEL: Record<string, string> = {
+  confirmed: 'Confirmed',
+  likely: 'Likely',
+  unverified: 'Unverified',
+  official: 'Official ruling',
+};
 
+/** How sure we are, in words: a conflict is its own state, never a confidence. */
+export const statusLine = (s: FeatureSummary) => (s.isConflicted ? 'Conflicting reports' : (BUCKET_LABEL[s.bucket] ?? s.bucket));
+
+export const latestReport = (s: FeatureSummary) => s.events.find((e) => e.type === 'flood_report');
+
+export const reportCount = (s: FeatureSummary) => s.events.filter((e) => e.type === 'flood_report').length;
+
+/** One item per SOS request (its sos, sos_amend and sos_state events folded together) plus one per flooded spot. */
+export function buildItems(events: Event[], now = Date.now()): Item[] {
   const groups = new Map<string, Event[]>();
   const items: Item[] = [];
 
@@ -127,18 +132,21 @@ export function buildItems(all: Event[], now = Date.now()): Item[] {
       const g = groups.get(sosId);
       if (g) g.push(e);
       else groups.set(sosId, [e]);
-    } else {
-      items.push({
-        kind: 'report',
-        id: e.id,
-        lat: e.lat,
-        lon: e.lon,
-        event: e,
-        stale: e.expiresAt > 0 && e.expiresAt < now,
-        updatedAtMs: e.timestampMs,
-        photoHash: parsePayload(e.payload)?.photoHash,
-      });
     }
+  }
+
+  // Flood spots come from the phone's own fold (lib/reducer.ts), so a spot reads here as it does there.
+  for (const s of summarizeAll(events, now)) {
+    items.push({
+      kind: 'report',
+      id: s.featureRef,
+      lat: s.lat,
+      lon: s.lon,
+      summary: s,
+      stale: s.isStale,
+      updatedAtMs: s.lastEventMs,
+      photoHash: s.events.map((e) => (e.type === 'flood_report' ? parsePayload(e.payload)?.photoHash : undefined)).find(Boolean),
+    });
   }
 
   for (const [sosId, group] of groups) {
@@ -218,11 +226,11 @@ export function applyFilters(items: Item[], f: Filters, now = Date.now()): Item[
   return items.filter((i) => {
     if (f.ageMs > 0 && now - i.updatedAtMs > f.ageMs) return false;
     if (i.kind === 'sos') return f.sosState === 'all' || (f.sosState === 'closed') === i.closed;
-    return !f.severity || i.event.severity === f.severity;
+    return !f.severity || i.summary.severity === f.severity;
   });
 }
 
-const CSV_COLS = ['kind', 'id', 'status', 'lat', 'lon', 'reported_by', 'first_seen', 'last_update', 'people', 'water', 'note'];
+const CSV_COLS = ['kind', 'id', 'status', 'lat', 'lon', 'reported_by', 'first_seen', 'last_update', 'people', 'water', 'note', 'how_sure', 'confidence_pct', 'reports', 'confirmations', 'disputes'];
 
 /** Spreadsheet-safe: quotes every field and defuses leading = + - @ (names and notes are user-typed). */
 const csvCell = (v: unknown) => {
@@ -230,11 +238,22 @@ const csvCell = (v: unknown) => {
   return `"${(/^[=+\-@\t\r]/.test(s) ? `'${s}` : s).replace(/"/g, '""')}"`;
 };
 
+/** One row per flooded spot: its folded state, plus the newest report's author, water level and note. */
+function spotRow(i: ReportItem) {
+  const s = i.summary;
+  const latest = latestReport(s);
+  const first = Math.min(...s.events.filter((e) => e.type !== 'flood_withdraw').map((e) => e.timestampMs));
+  return [
+    'report', i.id, s.severity, s.lat, s.lon, latest?.authorName, new Date(first).toISOString(), new Date(s.lastEventMs).toISOString(),
+    '', latest?.waterLevel, latest?.note, statusLine(s), s.isConflicted || s.bucket === 'official' ? '' : Math.round(s.confidence * 100), reportCount(s), s.confirmCount, s.disputeCount,
+  ];
+}
+
 export function toCsv(items: Item[]): string {
   const rows = items.map((i) =>
     i.kind === 'sos'
-      ? ['sos', i.id, i.state, i.lat, i.lon, '', new Date(i.startedAtMs).toISOString(), new Date(i.updatedAtMs).toISOString(), i.context.people, i.context.water, '']
-      : ['report', i.id, i.event.severity ?? i.event.type, i.lat, i.lon, i.event.authorName, new Date(i.event.timestampMs).toISOString(), new Date(i.updatedAtMs).toISOString(), '', i.event.waterLevel, i.event.note],
+      ? ['sos', i.id, i.state, i.lat, i.lon, '', new Date(i.startedAtMs).toISOString(), new Date(i.updatedAtMs).toISOString(), i.context.people, i.context.water, '', '', '', '', '', '']
+      : spotRow(i),
   );
   return [CSV_COLS, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n');
 }

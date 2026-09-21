@@ -1,6 +1,6 @@
 'use client';
 
-import { Item, STATE_LABEL, SEVERITY_LABEL, reportLabel, timeAgo } from '@/lib/items';
+import { Item, STATE_LABEL, SEVERITY_LABEL, reportCount, statusLine, timeAgo } from '@/lib/items';
 
 interface ItemListProps {
   items: Item[];
@@ -42,7 +42,8 @@ export default function ItemList({ items, selectedId, onSelect, emptyText }: Ite
             </li>
           );
         }
-        const e = item.event;
+        const s = item.summary;
+        const n = reportCount(s);
         return (
           <li key={item.id}>
             <button
@@ -50,18 +51,15 @@ export default function ItemList({ items, selectedId, onSelect, emptyText }: Ite
               onClick={() => onSelect(item)}
               aria-pressed={selected}
             >
-              <span className={`row-icon sev-${e.severity ?? 'none'}`} aria-hidden="true">
-                {e.severity ?? '·'}
+              <span className={`row-icon sev-${item.stale ? 'none' : s.severity}`} aria-hidden="true">
+                {item.stale ? '⏱' : s.severity}
               </span>
               <span className="row-main">
-                <span className="row-title">
-                  {e.type === 'flood_report' && e.severity
-                    ? SEVERITY_LABEL[e.severity] ?? reportLabel(e.type)
-                    : reportLabel(e.type)}
-                </span>
+                <span className="row-title">{item.stale ? 'Expired — needs a fresh look' : SEVERITY_LABEL[s.severity] ?? s.severity}</span>
                 <span className="row-sub">
-                  {e.authorName} · {timeAgo(e.timestampMs)}
-                  {item.stale ? ' · expired' : ''}
+                  {item.stale ? 'Last reports' : statusLine(s)} · {n} report{n === 1 ? '' : 's'}
+                  {s.confirmCount > 0 ? ` · ${s.confirmCount} confirmed` : ''}
+                  {s.disputeCount > 0 ? ` · ${s.disputeCount} disputed` : ''} · {timeAgo(s.lastEventMs)}
                 </span>
               </span>
             </button>

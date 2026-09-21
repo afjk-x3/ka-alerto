@@ -32,8 +32,8 @@ export interface RouteOption {
 export function floodPoints(items: Item[]): FloodPoint[] {
   const out: FloodPoint[] = [];
   for (const i of items) {
-    if (i.kind !== 'report' || i.stale || i.event.type !== 'flood_report') continue;
-    const sev = i.event.severity;
+    if (i.kind !== 'report' || i.stale) continue;
+    const sev = i.summary.severity;
     if (sev === 'S3' || sev === 'S2' || sev === 'SX') out.push({ lat: i.lat, lon: i.lon, sev });
   }
   return out;

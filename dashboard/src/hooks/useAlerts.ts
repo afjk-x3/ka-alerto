@@ -15,8 +15,11 @@ export interface AlertBanner {
 /** What deserves an alarm: an SOS still open, or a current flood report at S3. Nothing else. */
 function alarmKind(i: Item): 'sos' | 's3' | null {
   if (i.kind === 'sos') return i.closed ? null : 'sos';
-  return i.event.type === 'flood_report' && i.event.severity === 'S3' && !i.stale ? 's3' : null;
+  return i.summary.severity === 'S3' && !i.stale ? 's3' : null;
 }
+
+/** An alarm is a spot or request entering an alarming state, so one already at S3 that only gains a confirm stays quiet. */
+const alarmKey = (i: Item) => `${i.id}:${alarmKind(i) ?? 'none'}`;
 
 /**
  * Alarms on items that are new since the last check. The first load only sets the baseline
@@ -43,11 +46,11 @@ export function useAlerts(items: Item[], loaded: boolean) {
       return;
     }
     if (seen.current === null) {
-      seen.current = new Set(items.map((i) => i.id));
+      seen.current = new Set(items.map(alarmKey));
       return;
     }
-    const fresh = items.filter((i) => !seen.current!.has(i.id));
-    fresh.forEach((i) => seen.current!.add(i.id));
+    const fresh = items.filter((i) => !seen.current!.has(alarmKey(i)));
+    fresh.forEach((i) => seen.current!.add(alarmKey(i)));
 
     const sos = fresh.filter((i) => alarmKind(i) === 'sos');
     const s3 = fresh.filter((i) => alarmKind(i) === 's3');
@@ -58,7 +61,7 @@ export function useAlerts(items: Item[], loaded: boolean) {
       sos.length > 0
         ? `New SOS request${sos.length > 1 ? `s (${sos.length})` : ''}`
         : s3[0].kind === 'report'
-          ? `New ${s3[0].event.severity} report: ${SEVERITY_LABEL[s3[0].event.severity ?? ''] ?? ''}${s3.length > 1 ? ` (+${s3.length - 1} more)` : ''}`
+          ? `${s3[0].summary.severity} spot: ${SEVERITY_LABEL[s3[0].summary.severity] ?? ''}${s3.length > 1 ? ` (+${s3.length - 1} more)` : ''}`
           : '';
     setBanner({ text, kind, at: Date.now() });
     if (enabled) {

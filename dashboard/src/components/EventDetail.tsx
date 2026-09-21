@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { fetchPhoto } from '@/lib/api';
 import { RoutingState, describeRoute, googleDirectionsUrl } from '@/lib/routing';
-import { Item, SosItem, ReportItem, STATE_LABEL, SEVERITY_LABEL, reportLabel, timeAgo } from '@/lib/items';
+import { Item, SosItem, ReportItem, STATE_LABEL, SEVERITY_LABEL, latestReport, reportCount, statusLine, timeAgo } from '@/lib/items';
+import type { Event } from '@/lib/types';
 
 interface DetailProps {
   item: Item | null;
@@ -158,26 +159,59 @@ function SosDetail({ item, routing, onFindRoutes, onPickRoute }: { item: SosItem
   );
 }
 
+/** One line of a spot's history. */
+function eventLabel(e: Event): string {
+  switch (e.type) {
+    case 'flood_report': return `Report${e.severity ? ` · ${e.severity}` : ''}${e.waterLevel ? ` · ${e.waterLevel}` : ''}`;
+    case 'confirm': return 'Confirmation';
+    case 'dispute': return `Dispute${e.disputeReason ? ` (${e.disputeReason.replace(/_/g, ' ')})` : ''}`;
+    case 'official_status': return `Official ruling${e.severity ? ` · ${e.severity}` : ''}`;
+    case 'flood_withdraw': return 'Withdrawn by its author';
+    default: return e.type.replace(/_/g, ' ');
+  }
+}
+
 function ReportDetail({ item, routing, onFindRoutes, onPickRoute }: { item: ReportItem } & DirProps) {
-  const e = item.event;
+  const s = item.summary;
+  const latest = latestReport(s);
+  const n = reportCount(s);
+  const official = s.officialSeverity ? `${s.officialSeverity} by ${s.officialAuthorName ?? 'an official'}${s.officialAtMs ? `, ${timeAgo(s.officialAtMs)}` : ''}` : null;
   return (
     <>
-      {e.severity && (
-        <div className={`status-banner sev-${e.severity}`}>
-          {e.severity} · {SEVERITY_LABEL[e.severity] ?? e.severity}
+      <div className={`status-banner ${item.stale ? '' : `sev-${s.severity}`}`}>
+        {item.stale ? 'Expired · needs a fresh look' : `${s.severity} · ${SEVERITY_LABEL[s.severity] ?? s.severity}`}
+      </div>
+      {official && (
+        <div className={`official-note ${s.pendingSecondOfficial ? 'pending' : ''}`}>
+          {s.pendingSecondOfficial ? `Official ruling ${official} is waiting for a second official to agree.` : `Official ruling: ${official}.`}
+          {s.contradictingCount > 0 ? ` ${s.contradictingCount} resident${s.contradictingCount === 1 ? '' : 's'} report worse.` : ''}
         </div>
       )}
       {item.photoHash && <Photo hash={item.photoHash} />}
       <dl>
-        <Field label="Water level">{e.waterLevel}</Field>
-        <Field label="Location"><Coords lat={e.lat} lon={e.lon} /></Field>
-        <Field label="Reported by">{e.authorName} ({e.authorRole})</Field>
-        <Field label="Reported">{when(e.timestampMs)} ({timeAgo(e.timestampMs)})</Field>
+        {!item.stale && (
+          <Field label="How sure">
+            {statusLine(s)}
+            {s.isConflicted || s.bucket === 'official' ? '' : ` · ${Math.round(s.confidence * 100)}%`}
+          </Field>
+        )}
+        <Field label="Water level">{latest?.waterLevel}</Field>
+        <Field label="Location"><Coords lat={s.lat} lon={s.lon} /></Field>
+        <Field label="Reports">{n} · {s.confirmCount} confirmed · {s.disputeCount} disputed</Field>
+        <Field label="Last update">{when(s.lastEventMs)} ({timeAgo(s.lastEventMs)})</Field>
         <Field label="Status">{item.stale ? 'Expired — needs a fresh look' : 'Current'}</Field>
-        <Field label="Note">{e.note || undefined}</Field>
-        {e.disputeReason && <Field label="Dispute reason">{e.disputeReason}</Field>}
+        <Field label="Note">{latest?.note || undefined}</Field>
       </dl>
       <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} />
+      <h3>History</h3>
+      <ol className="timeline">
+        {s.events.map((e) => (
+          <li key={e.id}>
+            <strong>{eventLabel(e)}</strong>
+            <span>{e.authorName}{e.authorRole !== 'resident' ? ` (${e.authorRole})` : ''} · {when(e.timestampMs)}</span>
+          </li>
+        ))}
+      </ol>
     </>
   );
 }
@@ -187,7 +221,7 @@ export default function EventDetail({ item, onClose, routing, onFindRoutes, onPi
   return (
     <aside className="detail" aria-label="Details">
       <div className="detail-head">
-        <h2>{item.kind === 'sos' ? 'SOS request' : reportLabel(item.event.type)}</h2>
+        <h2>{item.kind === 'sos' ? 'SOS request' : 'Flooded spot'}</h2>
         <button className="icon-btn" onClick={onClose} aria-label="Close details">×</button>
       </div>
       <div className="detail-body">
