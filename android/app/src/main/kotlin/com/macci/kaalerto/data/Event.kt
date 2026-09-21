@@ -51,6 +51,7 @@ data class Event(
      *   (`identity/RoleEvents.kt`).
      * - `circle_invite` — `CircleInvitePayload` (`family/CircleEvents.kt`).
      * - `evac_status` — `EvacPayload` (`evac/EvacCentre.kt`): centre, status, occupancy.
+     * - `evac_centre` — `EvacCentrePayload` (`evac/EvacCentre.kt`): a shelter an official added or removed.
      * - `flood_report` — `ReportPhotoPayload` (`report/ReportPhoto.kt`), only when a photo
      *   is attached, and only its hash: the image itself never travels.
      *

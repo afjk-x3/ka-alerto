@@ -44,6 +44,8 @@ object LocalIdentity {
     private const val KEY_FIRST_NAME = "first_name"
     private const val KEY_LAST_NAME = "last_name"
     private const val KEY_HOME_BARANGAY = "home_barangay"
+    /** Free text, e.g. "San Nicolas, Ilocos Norte". Scopes which shelters an official may add and change. */
+    private const val KEY_HOME_MUNICIPALITY = "home_municipality"
     /**
      * Optional, unvalidated, and read by nothing today. Day 12's SMS fallback is the
      * eventual reader — it needs a number to send from and receive on — but that build
@@ -107,6 +109,13 @@ object LocalIdentity {
 
     fun homeBarangay(context: Context): String =
         prefs(context).getString(KEY_HOME_BARANGAY, null).orEmpty()
+
+    fun homeMunicipality(context: Context): String =
+        prefs(context).getString(KEY_HOME_MUNICIPALITY, null).orEmpty()
+
+    fun setHomeMunicipality(context: Context, municipality: String) {
+        prefs(context).edit().putString(KEY_HOME_MUNICIPALITY, municipality.trim()).apply()
+    }
 
     fun registeredPhone(context: Context): String =
         prefs(context).getString(KEY_PHONE, null).orEmpty()

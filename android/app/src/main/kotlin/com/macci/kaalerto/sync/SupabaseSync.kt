@@ -2,6 +2,7 @@ package com.macci.kaalerto.sync
 
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.TYPE_FLOOD_WITHDRAW
+import com.macci.kaalerto.evac.TYPE_EVAC_CENTRE
 import com.macci.kaalerto.evac.TYPE_EVAC_STATUS
 import com.macci.kaalerto.sos.TYPE_SOS
 import com.macci.kaalerto.sos.TYPE_SOS_AMEND
@@ -18,7 +19,7 @@ import kotlinx.serialization.json.Json
  * anything posted is readable by anyone who extracts it. SOS is included, but always
  * redacted first — see [eventsToSync].
  */
-val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE)
+val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_EVAC_CENTRE, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE)
 
 /**
  * Every locally-held event worth pushing — mesh-received ones included, not just

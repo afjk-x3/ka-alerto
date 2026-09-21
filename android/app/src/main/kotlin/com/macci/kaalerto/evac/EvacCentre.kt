@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.haversineMeters
+import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.tr
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -27,6 +28,11 @@ data class EvacCentre(
     val kind: String,
     val capacityEstimate: Int? = null,
     val capacityEstimateSource: String? = null,
+    /** "San Nicolas, Ilocos Norte". Absent in the bundled JSON; [loadEvacCentres] fills in the demo area's. */
+    val municipality: String? = null,
+    val barangay: String? = null,
+    /** True for a shelter an official added (an `evac_centre` event), false for one bundled with the app. */
+    val custom: Boolean = false,
 )
 
 @Serializable
@@ -55,7 +61,39 @@ data class EvacPayload(
     @SerialName("status") val status: String,
     /** Head count now inside. Null when the official only changed the status. */
     @SerialName("occupancy") val occupancy: Int? = null,
+    /**
+     * The updating official's municipality. [evacStates] ignores an update whose municipality
+     * differs from the shelter's; null (older events) is accepted. Without signatures this is a
+     * procedure, not a guarantee, like every other role check here.
+     */
+    @SerialName("municipality") val municipality: String? = null,
 )
+
+/** Shelter kinds an official can pick when adding one. */
+val EVAC_KINDS = listOf("school", "gym", "barangay_hall", "church", "other")
+
+/**
+ * An official adding, or removing, a shelter — the `evac_centre` event. Later events for the same
+ * [centreId] replace earlier ones, but only when they come from the municipality that created it.
+ */
+@Serializable
+data class EvacCentrePayload(
+    @SerialName("centreId") val centreId: String,
+    @SerialName("name") val name: String,
+    @SerialName("kind") val kind: String = "other",
+    @SerialName("lat") val lat: Double,
+    @SerialName("lon") val lon: Double,
+    @SerialName("municipality") val municipality: String,
+    @SerialName("barangay") val barangay: String? = null,
+    @SerialName("capacityEstimate") val capacityEstimate: Int? = null,
+    /** A removed shelter is hidden. Only shelters an official added can be removed, never the bundled ones. */
+    @SerialName("removed") val removed: Boolean = false,
+)
+
+fun EvacCentrePayload.encode(): String = evacJson.encodeToString(EvacCentrePayload.serializer(), this)
+
+fun decodeEvacCentrePayload(raw: String?): EvacCentrePayload? =
+    raw?.let { runCatching { evacJson.decodeFromString(EvacCentrePayload.serializer(), it) }.getOrNull() }
 
 fun EvacPayload.encode(): String = evacJson.encodeToString(EvacPayload.serializer(), this)
 
@@ -64,8 +102,47 @@ fun decodeEvacPayload(raw: String?): EvacPayload? =
 
 fun loadEvacCentres(context: Context): List<EvacCentre> = runCatching {
     val raw = context.assets.open(EVAC_ASSET).bufferedReader().use { it.readText() }
-    evacJson.decodeFromString(EvacFile.serializer(), raw).centres
+    evacJson.decodeFromString(EvacFile.serializer(), raw).centres.map {
+        it.copy(municipality = it.municipality ?: DemoArea.MUNICIPALITY, barangay = it.barangay ?: DemoArea.BARANGAY_NAME)
+    }
 }.getOrElse { emptyList() }
+
+/**
+ * The bundled centres plus the shelters officials added: the latest `evac_centre` event per id wins,
+ * ordered by time and then event id so two devices with the same events agree (NFR-4). A centre's
+ * municipality is its creator's; a later event from another municipality is ignored, so one
+ * municipality's officials cannot rewrite or remove another's shelter. A removed shelter disappears.
+ * Events reusing a bundled id are ignored: the bundled four can be closed but not removed.
+ */
+fun resolveCentres(bundled: List<EvacCentre>, events: List<Event>): List<EvacCentre> {
+    val bundledIds = bundled.mapTo(HashSet()) { it.id }
+    val added = events.asSequence()
+        .filter { it.type == TYPE_EVAC_CENTRE }
+        .mapNotNull { event -> decodeEvacCentrePayload(event.payload)?.let { Triple(event.timestampMs, event.id, it) } }
+        .filter { (_, _, p) -> p.centreId !in bundledIds && p.name.isNotBlank() && p.municipality.isNotBlank() }
+        .sortedWith(compareBy({ it.first }, { it.second }))
+        .groupBy { it.third.centreId }
+        .mapNotNull { (id, history) ->
+            val owner = history.first().third.municipality
+            val live = history.last { (_, _, p) -> sameMunicipality(p.municipality, owner) }.third
+            if (live.removed) {
+                null
+            } else {
+                EvacCentre(
+                    id = id,
+                    name = live.name.trim(),
+                    lat = live.lat,
+                    lon = live.lon,
+                    kind = live.kind,
+                    capacityEstimate = live.capacityEstimate,
+                    municipality = owner.trim(),
+                    barangay = live.barangay?.trim()?.ifBlank { null },
+                    custom = true,
+                )
+            }
+        }
+    return bundled + added
+}
 
 /**
  * A centre plus whatever an official has most recently said about it.
@@ -98,16 +175,24 @@ data class EvacState(
  * extra plumbing to show up.
  */
 fun evacStates(
-    centres: List<EvacCentre>,
+    bundled: List<EvacCentre>,
     events: List<Event>,
     fromLat: Double?,
     fromLon: Double?,
 ): List<EvacState> {
+    val centres = resolveCentres(bundled, events)
+    val municipalityOf = centres.associate { it.id to it.municipality }
     val latestByCentre = events
         .asSequence()
         .filter { it.type == TYPE_EVAC_STATUS }
         .mapNotNull { event -> decodeEvacPayload(event.payload)?.let { event to it } }
-        .sortedBy { (event, _) -> event.timestampMs }
+        // A status counts only for a shelter that exists and, when the update says which municipality
+        // it is from, only if that is the shelter's own.
+        .filter { (_, payload) ->
+            payload.centreId in municipalityOf &&
+                (payload.municipality == null || sameMunicipality(payload.municipality, municipalityOf[payload.centreId]))
+        }
+        .sortedWith(compareBy({ it.first.timestampMs }, { it.first.id }))
         .associateBy { (_, payload) -> payload.centreId }
 
     return centres
@@ -133,3 +218,6 @@ fun evacStates(
 
 /** Event type for an official's centre update. */
 const val TYPE_EVAC_STATUS = "evac_status"
+
+/** Event type for an official adding (or removing) a shelter. */
+const val TYPE_EVAC_CENTRE = "evac_centre"

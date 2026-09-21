@@ -65,10 +65,10 @@ class SupabaseSyncTest {
     }
 
     @Test
-    fun `a centre status and a report withdrawal are synced`() {
-        val events = listOf("evac_status", "flood_withdraw").mapIndexed { i, t -> event("e$i", type = t) }
+    fun `a centre status, an added shelter and a report withdrawal are synced`() {
+        val events = listOf("evac_status", "flood_withdraw", "evac_centre").mapIndexed { i, t -> event("e$i", type = t) }
 
-        assertEquals(setOf("e0", "e1"), eventsToSync(events).map { it.id }.toSet())
+        assertEquals(setOf("e0", "e1", "e2"), eventsToSync(events).map { it.id }.toSet())
     }
 
     @Test
