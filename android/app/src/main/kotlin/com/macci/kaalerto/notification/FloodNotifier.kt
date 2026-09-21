@@ -19,6 +19,9 @@ import com.macci.kaalerto.i18n.tr
  * fire with no push server", since the check and the notify both happen entirely on
  * this device (geofence/GeofenceNotifier.kt decides *whether* to call this).
  */
+/** Carries the reported feature's ref so the tap lands on its detail sheet, where confirming happens. */
+const val EXTRA_FEATURE_REF = "com.macci.kaalerto.extra.FEATURE_REF"
+
 object FloodNotifier {
     fun notify(context: Context, event: Event, distanceMeters: Double) {
         val severity = event.severity ?: return
@@ -35,19 +38,25 @@ object FloodNotifier {
         val priority = if (severity == "S3") NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
 
         val openApp = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            // SINGLE_TOP: the tap arrives as onNewIntent when the app is already open.
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra(EXTRA_FEATURE_REF, event.featureRef)
         }
         val contentIntent = android.app.PendingIntent.getActivity(
             context,
-            0,
+            event.id.hashCode(),
             openApp,
-            android.app.PendingIntent.FLAG_IMMUTABLE,
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("$severity — $severityLabel")
-            .setContentText(tr(language, "${distanceMeters.toInt()} m mula sa bahay mo", "${distanceMeters.toInt()} m from your home"))
+            .setContentText(tr(
+                    language,
+                    "${distanceMeters.toInt()} m mula sa bahay mo · Baha pa ba rito? I-tap para kumpirmahin",
+                    "${distanceMeters.toInt()} m from your home · Still flooded? Tap to confirm",
+                ))
             .setPriority(priority)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)

@@ -1,9 +1,11 @@
 package com.macci.kaalerto.geofence
 
 import android.content.Context
+import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.data.haversineMeters
+import com.macci.kaalerto.identity.LocalIdentity
 import com.macci.kaalerto.notification.FloodNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -34,6 +36,16 @@ import kotlinx.coroutines.launch
  * reducer's own `isStale` logic; this is a notification-fatigue fix only, not a display
  * one, and it applies equally to mesh-relayed backlogs, not just server sync.
  */
+/**
+ * Whether a fresh report deserves a "still flooded? confirm" prompt: not for a feature this
+ * device already has a say in (its own report, or its own confirm/dispute of it). Prompting
+ * the author to confirm their own report would only invite a self-corroboration tap.
+ */
+fun shouldPromptConfirm(event: Event, allEvents: List<Event>, myAuthorId: String): Boolean =
+    event.featureRef != null &&
+        event.authorId != myAuthorId &&
+        allEvents.none { it.authorId == myAuthorId && it.featureRef == event.featureRef }
+
 class GeofenceNotifier(private val context: Context) {
     fun start(scope: CoroutineScope) {
         val repository = EventRepository(KaAlertoDatabase.getInstance(context).eventDao())
@@ -46,13 +58,15 @@ class GeofenceNotifier(private val context: Context) {
                     val home = HomeLocationStore.get(context)
                     if (home != null) {
                         val now = System.currentTimeMillis()
+                        val myAuthorId = LocalIdentity.getOrCreate(context).authorId
                         events
                             .asSequence()
                             .filter {
                                 it.id !in previous &&
                                     it.type == "flood_report" &&
                                     it.origin != "seed" &&
-                                    it.expiresAt > now
+                                    it.expiresAt > now &&
+                                    shouldPromptConfirm(it, events, myAuthorId)
                             }
                             .forEach { event ->
                                 val distance = haversineMeters(home.lat, home.lon, event.lat, event.lon)

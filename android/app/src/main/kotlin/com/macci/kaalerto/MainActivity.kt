@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
+import com.macci.kaalerto.notification.EXTRA_FEATURE_REF
 import com.macci.kaalerto.sos.EXTRA_SOS_ID
 import com.macci.kaalerto.ui.KaAlertoApp
 import com.macci.kaalerto.ui.theme.KaAlertoTheme
@@ -26,15 +27,20 @@ class MainActivity : ComponentActivity() {
      */
     private var openSosId by mutableStateOf<String?>(null)
 
+    /** Same idea for the home-radius flood alert: the feature whose detail sheet to open. */
+    private var openFeatureRef by mutableStateOf<String?>(null)
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         openSosId = intent.getStringExtra(EXTRA_SOS_ID)
+        openFeatureRef = intent.getStringExtra(EXTRA_FEATURE_REF)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         openSosId = intent?.getStringExtra(EXTRA_SOS_ID)
+        openFeatureRef = intent?.getStringExtra(EXTRA_FEATURE_REF)
         // Edge-to-edge (status/nav bars stay visible, drawn translucent over the app) is
         // enforced by the platform on API 35+ regardless of this call — targetSdk here is
         // 37. Content itself must not sit under the bars, though: that's handled once, at
@@ -56,6 +62,7 @@ class MainActivity : ComponentActivity() {
                         stormMode = stormMode,
                         onToggleStormMode = { stormMode = !stormMode },
                         openSosId = openSosId,
+                        openFeatureRef = openFeatureRef,
                     )
                 }
             }

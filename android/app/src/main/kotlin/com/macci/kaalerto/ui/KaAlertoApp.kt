@@ -82,6 +82,8 @@ fun KaAlertoApp(
     onToggleStormMode: (() -> Unit)? = null,
     /** Set when the activity was opened by tapping day 9's nearby-SOS alert. */
     openSosId: String? = null,
+    /** Set when it was opened by tapping the home-radius flood alert. */
+    openFeatureRef: String? = null,
 ) {
     val appContext = LocalContext.current
     // PRD §9 is literal: registration is required at first run, so an unregistered
@@ -222,6 +224,12 @@ fun KaAlertoApp(
 
     // The feature whose sheet the registration gate interrupted, reopened on return.
     var reopenFeatureRef by remember { mutableStateOf<String?>(null) }
+    // Same for the flood alert: land on that report's sheet, where Confirm lives.
+    LaunchedEffect(openFeatureRef) {
+        val ref = openFeatureRef ?: return@LaunchedEffect
+        reopenFeatureRef = ref
+        screen = Screen.Map
+    }
 
     // One clock for every SOS screen's elapsed counter, rather than a ticker per screen.
     var nowMs by remember { mutableLongStateOf(System.currentTimeMillis()) }
