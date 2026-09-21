@@ -1,5 +1,7 @@
 package com.macci.kaalerto.identity
 
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -104,6 +106,10 @@ fun OnboardingScreen(
 ) {
     var showError by remember { mutableStateOf(false) }
     val usable = isCompleteName(firstName, lastName)
+    // The name errors sit at the top of a scrolling form, so a failed "Magsimula" from further down would look like
+    // nothing happened; it scrolls back up to them.
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -114,7 +120,7 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
         ) {
             Column(modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 8.dp)) {
                 Text(
@@ -181,7 +187,12 @@ fun OnboardingScreen(
                     .height(56.dp)
                     .background(MaterialTheme.colorScheme.primary)
                     .clickable {
-                        if (!usable) showError = true else onDone()
+                        if (!usable) {
+                            showError = true
+                            scope.launch { scrollState.animateScrollTo(0) }
+                        } else {
+                            onDone()
+                        }
                     },
                 contentAlignment = Alignment.Center,
             ) {
