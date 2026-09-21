@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEvents } from '@/hooks/useEvents';
 import { useAlerts } from '@/hooks/useAlerts';
 import { getPin, setPin, clearPin } from '@/lib/api';
@@ -14,6 +14,11 @@ import { buildEvacStates } from '@/lib/evac';
 import EventDetail from '@/components/EventDetail';
 
 type Tab = 'sos' | 'reports' | 'evac';
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'sos', label: 'SOS requests' },
+  { key: 'reports', label: 'Flood reports' },
+  { key: 'evac', label: 'Shelters' },
+];
 
 const POLL_MS = 5_000;
 
@@ -27,6 +32,7 @@ export default function DashboardPage() {
   const [origin, setOrigin] = useState<LatLon | null>(null);
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [selectedCentreId, setSelectedCentreId] = useState<string | null>(null);
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ sos: null, reports: null, evac: null });
 
   const clearRoutes = useCallback(() => {
     setRouting(NO_ROUTES);
@@ -55,12 +61,25 @@ export default function DashboardPage() {
     refresh();
   }, [refresh]);
 
-  // Live updates: poll while unlocked, skip while the tab is hidden, catch up when it returns.
+  // Escape closes the detail panel.
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setSelectedId(null);
+      clearRoutes();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [selectedId, clearRoutes]);
+
+  // Live updates: poll while unlocked, hidden tab included. The alarm exists for the operator who is
+  // looking at something else, so skipping hidden tabs would defeat it. Browsers already throttle a
+  // background tab's timer (about once a minute), so an alert there is late, never lost. Coming back
+  // to the tab refreshes at once.
   useEffect(() => {
     if (locked) return;
-    const tick = () => {
-      if (!document.hidden) refresh({ silent: true });
-    };
+    const tick = () => refresh({ silent: true });
     const id = setInterval(tick, POLL_MS);
     document.addEventListener('visibilitychange', tick);
     return () => {
@@ -71,6 +90,7 @@ export default function DashboardPage() {
 
   const items = useMemo(() => sortItems(buildItems(events)), [events]);
   const centres = useMemo(() => buildEvacStates(events), [events]);
+  const openCentres = centres.filter((c) => c.status !== 'not_open').length;
   const shown = useMemo(() => applyFilters(items, filters), [items, filters]);
   const sos = shown.filter((i) => i.kind === 'sos');
   const reports = shown.filter((i) => i.kind === 'report');
@@ -187,18 +207,37 @@ export default function DashboardPage() {
 
         {error && <div className="banner-error" role="alert">{error}</div>}
 
-        <div className="tabs" role="tablist">
-          <button role="tab" aria-selected={tab === 'sos'} className={tab === 'sos' ? 'active' : ''} onClick={() => setTab('sos')}>
-            SOS requests <span className="count">{sos.length}</span>
-          </button>
-          <button role="tab" aria-selected={tab === 'reports'} className={tab === 'reports' ? 'active' : ''} onClick={() => setTab('reports')}>
-            Flood reports <span className="count">{reports.length}</span>
-          </button>
-          <button role="tab" aria-selected={tab === 'evac'} className={tab === 'evac' ? 'active' : ''} onClick={() => setTab('evac')}>
-            Shelters <span className="count">{centres.filter((c) => c.status !== 'not_open').length}</span>
-          </button>
+        <div className="tabs" role="tablist" aria-label="Lists">
+          {TABS.map(({ key, label }) => (
+            <button
+              key={key}
+              ref={(el) => { tabRefs.current[key] = el; }}
+              id={`tab-${key}`}
+              role="tab"
+              aria-selected={tab === key}
+              aria-controls="tabpanel"
+              tabIndex={tab === key ? 0 : -1}
+              className={tab === key ? 'active' : ''}
+              onClick={() => setTab(key)}
+              onKeyDown={(e) => {
+                const i = TABS.findIndex((t) => t.key === key);
+                const next = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : null;
+                if (next === null) return;
+                e.preventDefault();
+                const target = TABS[(next + TABS.length) % TABS.length].key;
+                setTab(target);
+                tabRefs.current[target]?.focus();
+              }}
+            >
+              {label}{' '}
+              <span className="count" title={key === 'evac' ? `${openCentres} of ${centres.length} shelters open` : undefined}>
+                {key === 'sos' ? sos.length : key === 'reports' ? reports.length : `${openCentres}/${centres.length}`}
+              </span>
+            </button>
+          ))}
         </div>
 
+        <div role="tabpanel" id="tabpanel" aria-labelledby={`tab-${tab}`} className="tabpanel">
         {tab !== 'evac' && (
         <div className="filters">
           <select aria-label="Age" value={filters.ageMs} onChange={(e) => setFilters({ ...filters, ageMs: Number(e.target.value) })}>
@@ -216,7 +255,7 @@ export default function DashboardPage() {
             </select>
           ) : (
             <select aria-label="SOS state" value={filters.sosState} onChange={(e) => setFilters({ ...filters, sosState: e.target.value as Filters['sosState'] })}>
-              <option value="all">Open and closed</option>
+              <option value="all">Any state</option>
               <option value="open">Open only</option>
               <option value="closed">Closed only</option>
             </select>
@@ -244,6 +283,7 @@ export default function DashboardPage() {
           }
         />
         )}
+        </div>
 
         <footer className="sidebar-foot">
           <span>

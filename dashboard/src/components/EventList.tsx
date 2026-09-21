@@ -26,7 +26,7 @@ export default function ItemList({ items, selectedId, onSelect, emptyText }: Ite
                 onClick={() => onSelect(item)}
                 aria-pressed={selected}
               >
-                <span className="row-icon sos" aria-hidden="true">SOS</span>
+                <span className={`row-icon sos ${item.closed ? 'closed' : ''}`} aria-hidden="true">{item.closed ? '✓' : 'SOS'}</span>
                 <span className="row-main">
                   <span className="row-title">
                     {STATE_LABEL[item.state] ?? item.state}

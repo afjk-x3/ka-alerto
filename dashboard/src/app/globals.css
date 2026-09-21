@@ -41,7 +41,7 @@ a { color: var(--accent); }
 
 /* ---------- Buttons ---------- */
 .btn {
-  min-height: 36px;
+  min-height: 40px;
   padding: 0 14px;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -56,7 +56,7 @@ a { color: var(--accent); }
 .btn-map { box-shadow: 0 1px 4px rgba(16, 24, 40, 0.18); }
 .btn-map:hover:not(:disabled) { background: #f1f4f9; }
 .icon-btn {
-  width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent;
+  width: 40px; height: 40px; border: 0; border-radius: 8px; background: transparent;
   font-size: 22px; line-height: 1; color: var(--muted);
 }
 .icon-btn:hover { background: var(--bg); color: var(--text); }
@@ -136,14 +136,15 @@ a { color: var(--accent); }
 .tabs button.active .count { background: #e6edff; color: var(--accent); }
 
 .filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 18px; border-bottom: 1px solid var(--border); }
-.filters select { flex: 1; min-width: 0; min-height: 34px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; color: var(--text); }
-.filters .btn { min-height: 34px; padding: 0 12px; }
+.filters select { flex: 1; min-width: 0; min-height: 40px; padding: 0 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); font: inherit; color: var(--text); }
+.filters .btn { min-height: 40px; padding: 0 12px; }
+.tabpanel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
 .sidebar-foot {
   padding: 10px 18px 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12px;
   display: flex; flex-direction: column; gap: 10px;
 }
-.sidebar-foot .btn-block { min-height: 38px; }
+.sidebar-foot .btn-block { min-height: 40px; }
 
 /* ---------- List ---------- */
 .list { list-style: none; flex: 1; overflow-y: auto; }
@@ -160,6 +161,7 @@ a { color: var(--accent); }
   border-radius: 9px; font-size: 12px; font-weight: 800; color: #fff; background: var(--none);
 }
 .row-icon.sos { background: var(--danger); font-size: 11px; letter-spacing: 0.02em; }
+.row-icon.sos.closed { background: #4a7c59; font-size: 18px; letter-spacing: 0; }
 .row-icon.sev-S0 { background: var(--s0); }
 .row-icon.sev-S1 { background: var(--s1); color: #3a2600; }
 .row-icon.sev-S2 { background: var(--s2); }
@@ -188,7 +190,7 @@ a { color: var(--accent); }
 .lg.sev-S3 { background: var(--s3); } .lg.sev-SX { background: var(--sx); } .lg-sos { background: var(--danger); }
 
 /* Markers: the root element is positioned by MapLibre, so all styling lives on the inner dot. */
-.mk { width: 26px; height: 26px; padding: 0; border: 0; background: none; display: grid; place-items: center; }
+.mk { width: 32px; height: 32px; padding: 0; border: 0; background: none; display: grid; place-items: center; }
 .mk-dot {
   width: 14px; height: 14px; border-radius: 50%; background: var(--none);
   border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4); transition: transform 0.12s;
@@ -199,6 +201,7 @@ a { color: var(--accent); }
 .mk.sev-SX .mk-dot { background: var(--sx); }
 .mk.is-stale .mk-dot, .mk.is-closed .mk-dot { opacity: 0.5; }
 .mk-sos .mk-dot { width: 20px; height: 20px; background: var(--danger); position: relative; }
+.mk-sos.is-closed .mk-dot { background: #4a7c59; }
 .mk-sos:not(.is-closed) .mk-dot::after {
   content: ''; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--danger);
   animation: ring 1.8s ease-out infinite;
@@ -262,7 +265,7 @@ dl { display: grid; gap: 12px; }
 
 /* ---------- Alerts ---------- */
 .alerts-row { display: flex; gap: 8px; padding: 0 18px 12px; }
-.alerts-btn { flex: 1; min-height: 38px; }
+.alerts-btn { flex: 1; min-height: 40px; }
 .alerts-btn.off { background: #fff4e5; border-color: #f2c27a; color: #7a4a00; }
 .alerts-btn.on { background: #eaf7ef; border-color: #b7e2c6; color: #1f7a45; }
 .alert-banner {

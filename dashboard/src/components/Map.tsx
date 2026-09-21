@@ -33,6 +33,7 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markers = useRef(new Map<string, { marker: maplibregl.Marker; el: HTMLElement }>());
   const fitted = useRef(false);
+  const itemsById = useRef(new Map<string, Item>());
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const selectedRef = useRef(selectedId);
@@ -88,23 +89,39 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     const map = mapRef.current;
     if (!map) return;
 
-    markers.current.forEach(({ marker }) => marker.remove());
-    markers.current.clear();
+    // Diff against the markers already on the map: a poll that changes nothing touches nothing.
+    itemsById.current = new Map(items.map((i) => [i.id, i]));
+    markers.current.forEach(({ marker }, id) => {
+      if (!itemsById.current.has(id)) {
+        marker.remove();
+        markers.current.delete(id);
+      }
+    });
 
     for (const item of items) {
+      const label = item.kind === 'sos' ? (item.closed ? 'SOS request, closed' : 'SOS request, open') : `Flood report, ${item.event.severity ?? 'no severity'}`;
+      const existing = markers.current.get(item.id);
+      if (existing) {
+        existing.el.className = markerClass(item);
+        existing.el.classList.toggle('is-selected', item.id === selectedRef.current);
+        existing.el.setAttribute('aria-label', label);
+        existing.marker.setLngLat([item.lon, item.lat]);
+        continue;
+      }
       const el = document.createElement('button');
       el.type = 'button';
       el.className = markerClass(item);
-      el.setAttribute('aria-label', item.kind === 'sos' ? 'SOS request' : 'Flood report');
       el.innerHTML = '<span class="mk-dot"></span>';
       el.style.zIndex = item.kind === 'sos' ? '2' : '1';
-      // Markers are rebuilt on every poll, so the selected ring must be re-applied here.
       el.classList.toggle('is-selected', item.id === selectedRef.current);
       el.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        onSelectRef.current(item);
+        const latest = itemsById.current.get(item.id);
+        if (latest) onSelectRef.current(latest);
       });
       const marker = new maplibregl.Marker({ element: el }).setLngLat([item.lon, item.lat]).addTo(map);
+      // MapLibre stamps its own generic "Map marker" label when the marker is added, so ours goes after.
+      el.setAttribute('aria-label', label);
       markers.current.set(item.id, { marker, el });
     }
 
@@ -122,7 +139,9 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
       const el = document.createElement('div');
       el.className = `mk-evac st-${s.status}`;
       el.title = `${s.centre.name}: ${EVAC_LABEL[s.status]}`;
-      return new maplibregl.Marker({ element: el }).setLngLat([s.centre.lon, s.centre.lat]).addTo(map);
+      const pin = new maplibregl.Marker({ element: el }).setLngLat([s.centre.lon, s.centre.lat]).addTo(map);
+      el.setAttribute('aria-label', `Shelter: ${s.centre.name}, ${EVAC_LABEL[s.status]}`);
+      return pin;
     });
     return () => pins.forEach((m) => m.remove());
   }, [centres]);
@@ -202,7 +221,7 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
 
   return (
     <div className="map-wrap">
-      <div ref={containerRef} className="map" />
+      <div ref={containerRef} className="map" role="region" aria-label="Map of SOS requests, flood reports and shelters" />
       <button className="btn btn-map fit-btn" onClick={() => fitAll(items)} disabled={items.length === 0}>
         Show all
       </button>

@@ -13,11 +13,13 @@ interface DetailProps {
   onPickRoute: (i: number) => void;
 }
 
+/** A field nobody filled in is left out rather than shown as a dash. */
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  if (children == null || children === '') return null;
   return (
     <div className="field">
       <dt>{label}</dt>
-      <dd>{children ?? '—'}</dd>
+      <dd>{children}</dd>
     </div>
   );
 }
@@ -37,7 +39,7 @@ function Directions({ lat, lon, routing, onFind, onPick }: { lat: number; lon: n
           Directions in Google Maps
         </a>
         <button className="btn" onClick={onFind} disabled={busy}>
-          {routing.status === 'locating' ? 'Finding you…' : routing.status === 'loading' ? 'Finding routes…' : 'Show safe routes here'}
+          {routing.status === 'locating' ? 'Finding you…' : routing.status === 'loading' ? 'Finding routes…' : 'Show routes ranked by reported floods'}
         </button>
       </div>
       <p className="hint dir-hint">Google Maps starts from your current location and lists its own alternatives.</p>
@@ -131,8 +133,10 @@ function SosDetail({ item, routing, onFindRoutes, onPickRoute }: { item: SosItem
         <Field label="With them">{c.companions?.length ? c.companions.join(', ') : undefined}</Field>
         <Field label="Water level">{c.water}</Field>
         <Field label="Water trend">{c.trend}</Field>
-        <Field label="Reached us via">{item.origin}{item.hopCount > 0 ? ` · ${item.hopCount} hop${item.hopCount > 1 ? 's' : ''}` : ''}</Field>
       </dl>
+      {!c.people && !c.companions?.length && !c.water && !c.trend && (
+        <p className="hint">The requester has not added details yet.</p>
+      )}
       <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} />
       <p className="hint">
         Name and medical details are deliberately not sent — they stay on the requester&apos;s phone.
@@ -172,7 +176,6 @@ function ReportDetail({ item, routing, onFindRoutes, onPickRoute }: { item: Repo
         <Field label="Status">{item.stale ? 'Expired — needs a fresh look' : 'Current'}</Field>
         <Field label="Note">{e.note || undefined}</Field>
         {e.disputeReason && <Field label="Dispute reason">{e.disputeReason}</Field>}
-        <Field label="Reached us via">{e.origin}{e.hopCount > 0 ? ` · ${e.hopCount} hop${e.hopCount > 1 ? 's' : ''}` : ''}</Field>
       </dl>
       <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} />
     </>
