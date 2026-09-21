@@ -54,12 +54,12 @@ fun RoleActionStrip(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp)
+                .height(44.dp)
                 .background(if (urgent) SosColors.Critical else MaterialTheme.colorScheme.background)
                 .border(1.5.dp, if (urgent) SosColors.Critical else colors.borderEmphasis)
                 .clickable(onClick = onOpenQueue)
@@ -98,15 +98,18 @@ fun RoleActionStrip(
         // from the shelter button. One line rather than two more buttons — the header
         // was already crowded enough that day 10 moved the evac entry off it.
         if (role == LocalIdentity.ROLE_OFFICIAL) {
-            Spacer(Modifier.size(6.dp))
+            Spacer(Modifier.size(3.dp))
+            // One line, about the marker only. It used to be two and pointed at "the roof icon" for shelters, a
+            // control that has been labelled "Silungan" since 7 September and needs no signpost.
             Text(
                 tr(
-                    "Kagawad: pindutin ang isang marker para mag-post ng opisyal na status, " +
-                        "o ang bahay-bubong para sa mga evacuation centre.",
-                    "Official: tap a marker to post an official status, or the roof icon for evacuation centres.",
+                    "Kagawad: pindutin ang isang marker para mag-post ng opisyal na status",
+                    "Official: tap a marker to post an official status",
                 ),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
     }

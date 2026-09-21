@@ -3,16 +3,23 @@ package com.macci.kaalerto.map
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,43 +61,57 @@ fun MapCameraControls(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (showDemoJump) {
-            // Same in both languages: it names a place, and "Demo" is what the sample
-            // reports are called everywhere else in this build.
-            MapControlButton(label = "Demo: San Nicolas", onClick = onJumpToDemo)
+            // Same in both languages: it names a place, and "Demo" is what the sample reports are
+            // called everywhere else in this build. A small chip now, with the place in its
+            // description, since it only matters to someone who has panned away from the demo area.
+            val demoDescription = "Demo: San Nicolas"
+            Box(
+                modifier = Modifier
+                    .heightIn(min = 40.dp)
+                    .background(MaterialTheme.colorScheme.background)
+                    .border(1.dp, LocalKaAlertoColors.current.borderEmphasis)
+                    .clickable(onClick = onJumpToDemo)
+                    .semantics { contentDescription = demoDescription }
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("Demo", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+            }
         }
-        MapControlButton(
-            label = if (locating) tr("Hinahanap…", "Locating…") else tr("Nasaan ako", "My location"),
-            onClick = onLocateMe,
-            showPin = true,
-        )
+        // Icon-only: the crosshair is what every map uses for "where am I", it has a description for
+        // screen readers, and the label was costing a wide button for a control people know on sight.
+        val locateDescription = if (locating) tr("Hinahanap ang lokasyon…", "Locating…") else tr("Nasaan ako", "My location")
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .border(1.dp, LocalKaAlertoColors.current.borderEmphasis)
+                .clickable(onClick = onLocateMe)
+                .semantics { contentDescription = locateDescription },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (locating) {
+                CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onBackground)
+            } else {
+                LocateIcon(MaterialTheme.colorScheme.onBackground)
+            }
+        }
     }
 }
 
+/** A crosshair: a ring, a dot, and four ticks. Drawn here because the icon set in the build has no such glyph. */
 @Composable
-private fun MapControlButton(label: String, onClick: () -> Unit, showPin: Boolean = false) {
-    Row(
-        modifier = Modifier
-            .height(48.dp)
-            .background(MaterialTheme.colorScheme.background)
-            .border(1.dp, LocalKaAlertoColors.current.borderEmphasis)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (showPin) {
-            Icon(
-                Icons.Filled.LocationOn,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(Modifier.size(6.dp))
-        }
-        Text(
-            label,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+private fun LocateIcon(color: androidx.compose.ui.graphics.Color) {
+    Canvas(Modifier.size(24.dp)) {
+        val c = Offset(size.width / 2, size.height / 2)
+        val ring = size.width * 0.28f
+        val tick = size.width * 0.16f
+        drawCircle(color, radius = ring, center = c, style = Stroke(width = 2.2f * density / 2f))
+        drawCircle(color, radius = size.width * 0.08f, center = c)
+        val w = 2.2f * density / 2f
+        drawLine(color, Offset(c.x, 0f), Offset(c.x, tick), strokeWidth = w)
+        drawLine(color, Offset(c.x, size.height - tick), Offset(c.x, size.height), strokeWidth = w)
+        drawLine(color, Offset(0f, c.y), Offset(tick, c.y), strokeWidth = w)
+        drawLine(color, Offset(size.width - tick, c.y), Offset(size.width, c.y), strokeWidth = w)
     }
 }

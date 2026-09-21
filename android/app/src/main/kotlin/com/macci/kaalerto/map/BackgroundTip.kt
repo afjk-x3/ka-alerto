@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -49,42 +50,45 @@ object BackgroundTip {
 @Composable
 fun BackgroundTipBanner(onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    Column(
+    // One row instead of a paragraph over a row of buttons: the message on the left, the two actions
+    // stacked on the right. It is still shown once and dismissed for good by "Tapos na".
+    Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+            .padding(start = 12.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             tr(
-                "Para tuloy ang pag-upload ng ulat kahit sarado ang app: buksan ang Autostart at itakda ang Battery sa \"No restrictions\".",
-                "To keep uploading reports when the app is closed: turn on Autostart and set Battery to \"No restrictions\".",
+                "Para tuloy ang pag-upload kahit sarado ang app: buksan ang Autostart at itakda ang Battery sa \"No restrictions\".",
+                "To keep uploading with the app closed: turn on Autostart and set Battery to \"No restrictions\".",
             ),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f).padding(vertical = 8.dp),
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(horizontalAlignment = Alignment.End) {
             Text(
-                tr("Buksan ang settings", "Open settings"),
+                tr("Settings", "Settings"),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
+                    .heightIn(min = 40.dp)
                     .clickable {
                         val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
                         runCatching { context.startActivity(intent) }
                     }
-                    .padding(horizontal = 8.dp, vertical = 14.dp),
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
             )
             Text(
                 tr("Tapos na", "Done"),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
-                    .heightIn(min = 48.dp)
+                    .heightIn(min = 40.dp)
                     .clickable(onClick = onDismiss)
-                    .padding(horizontal = 8.dp, vertical = 14.dp),
+                    .padding(horizontal = 10.dp, vertical = 10.dp),
             )
         }
     }

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
@@ -24,21 +25,22 @@ fun MapDisclaimer(modifier: Modifier = Modifier) {
         modifier = modifier
             .fillMaxWidth()
             .background(colors.recessedSurface)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             Icons.Filled.Info,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(end = 8.dp),
+            modifier = Modifier.padding(end = 8.dp).size(16.dp),
         )
         Text(
             tr(
                 "Galing sa ulat ng residente. Maaaring may kulang o luma. Tingnan pa rin ang nasa harap mo.",
                 "From resident reports. May be incomplete or outdated. Still check what's in front of you.",
             ),
-            style = MaterialTheme.typography.bodySmall,
+            // Same words, smaller: PRD FR-1.5 requires this statement on the map, so it is compacted, not shortened.
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
