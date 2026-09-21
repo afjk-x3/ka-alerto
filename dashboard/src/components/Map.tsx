@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { Item } from '@/lib/items';
 import { LatLon, RouteOption } from '@/lib/routing';
 import { EVAC_LABEL, EvacState } from '@/lib/evac';
+import { initialFocus } from '@/lib/focus';
 
 // Demo area centre (DemoArea.kt), used only until there is something to fit to.
 const DEMO_CENTER: [number, number] = [120.6058, 18.1709];
@@ -82,12 +83,12 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     };
   }, []);
 
-  const fitAll = (list: Item[]) => {
+  const fitAll = (list: Item[], duration = 600) => {
     const map = mapRef.current;
     if (!map || list.length === 0) return;
     const bounds = new maplibregl.LngLatBounds();
     list.forEach((i) => bounds.extend([i.lon, i.lat]));
-    map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 600 });
+    map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration });
   };
 
   useEffect(() => {
@@ -132,7 +133,7 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
 
     if (!fitted.current && items.length > 0) {
       fitted.current = true;
-      fitAll(items);
+      fitAll(initialFocus(items), 0); // no fly-in on first load; "Show all" still frames everything, animated
     }
   }, [items]);
 
