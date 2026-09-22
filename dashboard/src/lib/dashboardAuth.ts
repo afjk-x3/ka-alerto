@@ -39,7 +39,7 @@ function constantTimeEqual(a: string, b: string): boolean {
  * 403 when a write route requires `DASHBOARD_PIN` and none is set, 429 while locked out,
  * 401 for a wrong or missing PIN. A correct PIN resets that IP's count.
  */
-export function checkDashboardPin(request: Request, opts: { requirePin?: boolean } = {}): Response | null {
+export function checkDashboardPin(request: Request, opts: { requirePin?: boolean; now?: number } = {}): Response | null {
   const pin = process.env.DASHBOARD_PIN;
   if (!pin) {
     return opts.requirePin
@@ -48,7 +48,7 @@ export function checkDashboardPin(request: Request, opts: { requirePin?: boolean
   }
 
   const ip = clientIp(request);
-  const now = Date.now();
+  const now = opts.now ?? Date.now();
   const entry = attempts.get(ip);
   if (entry && entry.lockedUntil > now) {
     const waitSec = Math.ceil((entry.lockedUntil - now) / 1000);
