@@ -14,6 +14,11 @@ export function useEvents(onAuthFail: () => void) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [truncated, setTruncated] = useState(false);
+  // True until the very first refresh settles, success or not — the page renders nothing but
+  // the logo while this is true, so a locked dashboard never flashes its own (empty) shell
+  // before the PIN gate appears (found 21 Sep). Every later refresh leaves it alone.
+  const [checking, setChecking] = useState(true);
   const inFlight = useRef(false);
 
   const refresh = useCallback(
@@ -25,7 +30,9 @@ export function useEvents(onAuthFail: () => void) {
         setError(null);
       }
       try {
-        setEvents(await fetchEvents());
+        const result = await fetchEvents();
+        setEvents(result.events);
+        setTruncated(result.truncated);
         setUpdatedAt(Date.now());
         setError(null);
       } catch (e) {
@@ -34,6 +41,7 @@ export function useEvents(onAuthFail: () => void) {
       } finally {
         inFlight.current = false;
         if (!opts?.silent) setLoading(false);
+        setChecking(false);
       }
     },
     [onAuthFail],
@@ -44,7 +52,8 @@ export function useEvents(onAuthFail: () => void) {
     setEvents([]);
     setError(null);
     setUpdatedAt(null);
+    setTruncated(false);
   }, []);
 
-  return { events, loading, error, updatedAt, refresh, reset };
+  return { events, loading, error, updatedAt, truncated, checking, refresh, reset };
 }

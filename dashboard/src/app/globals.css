@@ -121,6 +121,11 @@ a { color: var(--accent); }
   margin: 0 18px 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px;
   background: var(--danger-bg); color: #8f1f1f; border: 1px solid #f3c2c2;
 }
+/* A fact, not a problem — same box as .banner-error, without the alarm colour. */
+.banner-note {
+  margin: 0 18px 12px; padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+}
 
 .tabs { display: flex; padding: 0 18px; border-bottom: 1px solid var(--border); gap: 4px; }
 .tabs button {

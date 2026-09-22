@@ -7,8 +7,9 @@ export const getPin = (): string | null =>
 export const setPin = (pin: string) => sessionStorage.setItem(PIN_KEY, pin);
 export const clearPin = () => sessionStorage.removeItem(PIN_KEY);
 
-/** Every event, via the dashboard's own /api/events route (which holds the PIN check and the Supabase key). */
-export async function fetchEvents(): Promise<Event[]> {
+/** Every event, via the dashboard's own /api/events route (which holds the PIN check and the Supabase key).
+ * `truncated` is true only past 20,000 events on the server — see that route's own comment. */
+export async function fetchEvents(): Promise<{ events: Event[]; truncated: boolean }> {
   const pin = getPin();
   let res: Response;
   try {
@@ -19,7 +20,7 @@ export async function fetchEvents(): Promise<Event[]> {
   if (res.status === 401) throw new AuthError();
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.error ?? `Server error (${res.status})`);
-  return body.events;
+  return { events: body.events, truncated: body.truncated === true };
 }
 
 /** A report's photo as an object URL, or null if it hasn't been uploaded (only the phone that took it has it until then). */

@@ -7,6 +7,7 @@ import { getPin, setPin, clearPin, postEvac } from '@/lib/api';
 import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item } from '@/lib/items';
 import { NO_ROUTES, NO_ORIGIN, OriginMode, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon, originOf } from '@/lib/routing';
 import PinGate from '@/components/PinGate';
+import Logo from '@/components/Logo';
 import EventMap from '@/components/Map';
 import ItemList from '@/components/EventList';
 import EvacList, { EvacManage } from '@/components/EvacList';
@@ -56,7 +57,7 @@ export default function DashboardPage() {
     setLocked(true);
   }, []);
 
-  const { events, loading, error, updatedAt, refresh, reset } = useEvents(onAuthFail);
+  const { events, loading, error, updatedAt, truncated, checking, refresh, reset } = useEvents(onAuthFail);
 
   const logout = useCallback(() => {
     clearPin();
@@ -230,6 +231,16 @@ export default function DashboardPage() {
     point: shelterPoint,
   };
 
+  // Nothing renders until the very first refresh settles — otherwise a locked dashboard's own
+  // empty shell (sidebar, "Loading…", zero counts) flashes for a frame before the PIN gate.
+  if (checking) {
+    return (
+      <div className="gate">
+        <Logo size={56} />
+      </div>
+    );
+  }
+
   if (locked) {
     return (
       <PinGate
@@ -311,6 +322,11 @@ export default function DashboardPage() {
         </div>
 
         {error && <div className="banner-error" role="alert">{error}</div>}
+        {truncated && (
+          <div className="banner-note" role="status">
+            Showing the newest 20,000 events only — older ones are hidden.
+          </div>
+        )}
 
         <div className="tabs" role="tablist" aria-label="Lists">
           {TABS.map(({ key, label }) => (
