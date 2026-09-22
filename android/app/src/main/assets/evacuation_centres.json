@@ -1,7 +1,7 @@
 {
   "_meta": {
     "demo": true,
-    "area": "Barangay San Juan Bautista, San Nicolas, Ilocos Norte",
+    "area": "Mapandan, Pangasinan (curated) plus Barangay San Juan Bautista, San Nicolas, Ilocos Norte (retained, no longer the curated area — see CLAUDE.md, 22 Sep 2026)",
     "description": "Names and coordinates are real (OSM-confirmed). Capacity figures are illustrative placeholders only — see capacityEstimateSource on each entry."
   },
   "centres": [
@@ -11,6 +11,8 @@
       "lat": 18.168849,
       "lon": 120.6058789,
       "kind": "school",
+      "municipality": "San Nicolas, Ilocos Norte",
+      "barangay": "Brgy. San Juan Bautista",
       "capacityEstimate": 180,
       "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure",
       "osmSource": "OSM node, amenity=school, fetched 2026-09-03"
@@ -21,6 +23,8 @@
       "lat": 18.171008,
       "lon": 120.602663,
       "kind": "school",
+      "municipality": "San Nicolas, Ilocos Norte",
+      "barangay": "Brgy. San Juan Bautista",
       "capacityEstimate": 150,
       "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure",
       "osmSource": "OSM node, amenity=school, fetched 2026-09-03"
@@ -31,6 +35,8 @@
       "lat": 18.1703573,
       "lon": 120.6108466,
       "kind": "school",
+      "municipality": "San Nicolas, Ilocos Norte",
+      "barangay": "Brgy. San Juan Bautista",
       "capacityEstimate": 400,
       "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure. A national high school is plausibly the largest real shelter near this centroid.",
       "osmSource": "OSM node, amenity=school, fetched 2026-09-03"
@@ -41,9 +47,23 @@
       "lat": 18.1675761,
       "lon": 120.6097222,
       "kind": "clinic",
+      "municipality": "San Nicolas, Ilocos Norte",
+      "barangay": "Brgy. San Juan Bautista",
       "capacityEstimate": 20,
       "capacityEstimateSource": "PLACEHOLDER. A small clinic, not a shelter — included as a medical aid point, not primary evacuation capacity. Verify its real function before relying on it.",
       "osmSource": "OSM node, amenity=hospital, fetched 2026-09-03"
+    },
+    {
+      "id": "evac-mapandan-catholic-school",
+      "name": "Mapandan Catholic School",
+      "lat": 16.0256546,
+      "lon": 120.4544745,
+      "kind": "school",
+      "municipality": "Mapandan, Pangasinan",
+      "barangay": "Brgy. Poblacion",
+      "capacityEstimate": 200,
+      "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure",
+      "osmSource": "OSM node 12368141806, amenity=school, fetched 2026-09-22 via overpass.kumi.systems"
     }
   ]
 }

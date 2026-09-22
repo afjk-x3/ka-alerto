@@ -26,6 +26,13 @@ const val HOME_REGION_NAME = "kaalerto-home-area"
 const val HERE_REGION_NAME = "kaalerto-here-area"
 
 /**
+ * Metadata name for the whole-of-Pangasinan real coverage pack (added 22 Sep 2026) —
+ * see [com.macci.kaalerto.demo.DemoArea.pangasinanBounds]. Downloaded the same way as the
+ * curated-area pack, over a much larger bbox but at the same [com.macci.kaalerto.demo.DemoArea.MIN_ZOOM]-[com.macci.kaalerto.demo.DemoArea.MAX_ZOOM] range.
+ */
+const val PANGASINAN_REGION_NAME = "kaalerto-pangasinan-coverage"
+
+/**
  * Half-width of the home pack, in metres. ~1.5 km each way covers the walk a flood
  * actually changes — the routes somebody takes to a shop, a school, higher ground —
  * without turning a registration screen into a several-minute download on a phone that

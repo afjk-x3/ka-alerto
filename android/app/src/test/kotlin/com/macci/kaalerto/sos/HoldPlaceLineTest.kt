@@ -7,29 +7,29 @@ import org.junit.Test
 
 class HoldPlaceLineTest {
 
-    private val sottoStreet = 18.1709 to 120.6058
+    private val pandanAvenue = 16.0277229 to 120.4544234 // inside the curated area (Mapandan, Pangasinan)
     private val quiapo = 14.5995 to 120.9842
 
     @Test
-    fun `a place label is shown alone, never with the demo barangay appended`() {
+    fun `a place label is shown alone, never with the curated barangay appended`() {
         // The gazetteer label already names the barangay; appending it again read
-        // "..., Brgy. San Juan Bautista, ... · Brgy. San Juan Bautista".
-        val label = "Sotto Street, Brgy. San Juan Bautista, San Nicolas, Ilocos Norte"
-        assertEquals(label, holdPlaceLine(label, sottoStreet.first, sottoStreet.second))
+        // "..., Brgy. Poblacion, ... · Brgy. Poblacion".
+        val label = "Pandan Avenue, Brgy. Poblacion, Mapandan, Pangasinan"
+        assertEquals(label, holdPlaceLine(label, pandanAvenue.first, pandanAvenue.second))
     }
 
     @Test
-    fun `an out-of-area label is not paired with the demo barangay`() {
+    fun `an out-of-area label is not paired with the curated barangay`() {
         assertEquals("Malapit sa Quiapo, Manila", holdPlaceLine("Malapit sa Quiapo, Manila", quiapo.first, quiapo.second))
     }
 
     @Test
-    fun `no label inside the demo area falls back to the demo barangay`() {
-        assertEquals(DemoArea.BARANGAY_NAME, holdPlaceLine(null, sottoStreet.first, sottoStreet.second))
+    fun `no label inside the curated area falls back to the curated barangay`() {
+        assertEquals(DemoArea.BARANGAY_NAME, holdPlaceLine(null, pandanAvenue.first, pandanAvenue.second))
     }
 
     @Test
-    fun `no label outside the demo area claims no place at all`() {
+    fun `no label outside the curated area claims no place at all`() {
         assertNull(holdPlaceLine(null, quiapo.first, quiapo.second))
     }
 }

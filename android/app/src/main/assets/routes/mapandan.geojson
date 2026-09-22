@@ -1,0 +1,52 @@
+{
+  "type": "FeatureCollection",
+  "_meta": {
+    "demo": true,
+    "description": "Real street centrelines in Mapandan, Pangasinan, added 22 Sep 2026 when Mapandan became the curated area (San Juan Bautista's own routes are unchanged and retained).",
+    "source": "OpenStreetMap contributors, via Overpass API (overpass.kumi.systems mirror), fetched 2026-09-22. ODbL 1.0."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Santa Barbara-Mangaldan Road"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [120.4190827, 16.0250476],
+          [120.4190451, 16.0248336],
+          [120.4189498, 16.0244721],
+          [120.4187905, 16.0239604],
+          [120.4187614, 16.0238727],
+          [120.4186434, 16.0235034],
+          [120.4183745, 16.0226578],
+          [120.4182103, 16.0222202],
+          [120.4175082, 16.0205490],
+          [120.4170398, 16.0194684],
+          [120.4169543, 16.0192626],
+          [120.4159276, 16.0169313]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Pandan Avenue"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [120.4537668, 16.0272720],
+          [120.4537817, 16.0273272],
+          [120.4538025, 16.0273555],
+          [120.4538233, 16.0273774],
+          [120.4544234, 16.0277229],
+          [120.4555399, 16.0283818],
+          [120.4561444, 16.0287414],
+          [120.4564647, 16.0289515]
+        ]
+      }
+    }
+  ]
+}

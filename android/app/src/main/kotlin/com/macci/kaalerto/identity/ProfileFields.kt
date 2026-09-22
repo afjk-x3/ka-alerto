@@ -38,9 +38,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.macci.kaalerto.demo.DemoArea
+import com.macci.kaalerto.demo.isInOfflineCoverage
 import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
-import org.maplibre.android.geometry.LatLng
 
 /**
  * The field blocks [OnboardingScreen] and [ProfileScreen] both need — name, phone, home
@@ -264,12 +264,12 @@ internal fun HomeSection(
     onPickOnMap: () -> Unit,
 ) {
     val colors = LocalKaAlertoColors.current
-    // Every fixture in this build — seeds, evacuation centres, routes, and the 8-tile
-    // offline pack — is frozen to one barangay. A pin outside it is not wrong, and is
-    // kept exactly as found; what would be wrong is letting somebody set a home there
-    // and discover only during a flood that the map is blank and no report will ever be
-    // near them.
-    val outsideDemoArea = home != null && !DemoArea.bounds.contains(LatLng(home.first, home.second))
+    // Real offline map coverage now spans the curated area plus the whole of Pangasinan
+    // (22 Sep 2026) — a pin only counts as "outside" when neither applies. It is still not
+    // wrong, and is kept exactly as found; what would be wrong is letting somebody set a
+    // home with no real coverage and discover only during a flood that the map is blank
+    // and no curated report will ever be near them.
+    val outsideCoverage = home != null && !isInOfflineCoverage(home.first, home.second)
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FieldLabel(tr("BAHAY MO", "YOUR HOME"))
@@ -338,7 +338,7 @@ internal fun HomeSection(
             fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (outsideDemoArea) {
+        if (outsideCoverage) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

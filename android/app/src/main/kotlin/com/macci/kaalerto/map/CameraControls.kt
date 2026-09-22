@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.geometry.Offset
@@ -51,8 +50,6 @@ data class CameraRequest(val lat: Double, val lon: Double, val nonce: Long = Sys
 fun MapCameraControls(
     locating: Boolean,
     onLocateMe: () -> Unit,
-    showDemoJump: Boolean,
-    onJumpToDemo: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -60,24 +57,6 @@ fun MapCameraControls(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (showDemoJump) {
-            // Same in both languages: it names a place, and "Demo" is what the sample reports are
-            // called everywhere else in this build. A small chip now, with the place in its
-            // description, since it only matters to someone who has panned away from the demo area.
-            val demoDescription = "Demo: San Nicolas"
-            Box(
-                modifier = Modifier
-                    .heightIn(min = 40.dp)
-                    .background(MaterialTheme.colorScheme.background)
-                    .border(1.dp, LocalKaAlertoColors.current.borderEmphasis)
-                    .clickable(onClick = onJumpToDemo)
-                    .semantics { contentDescription = demoDescription }
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Demo", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-            }
-        }
         // Icon-only: the crosshair is what every map uses for "where am I", it has a description for
         // screen readers, and the label was costing a wide button for a control people know on sight.
         val locateDescription = if (locating) tr("Hinahanap ang lokasyon…", "Locating…") else tr("Nasaan ako", "My location")

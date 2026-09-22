@@ -3,15 +3,15 @@
     "demo": true,
     "fixtureNoteConvention": "`note` is the resident's own words and IS rendered in the detail sheet. Commentary about why a fixture exists goes in `fixtureNote`, which the loader ignores (SeedLoader uses ignoreUnknownKeys). Do not merge the two back together — on 6 Sep 2026 two reports carried \"CONFLICT PAIR (b): … This pair must render as SX\" straight into the UI, on the exact marker the SX demo opens.",
     "fictional": true,
-    "area": "Barangay San Juan Bautista, San Nicolas, Ilocos Norte",
+    "area": "Mapandan, Pangasinan (curated, added 22 Sep 2026) plus Barangay San Juan Bautista, San Nicolas, Ilocos Norte (retained, no longer curated — see CLAUDE.md)",
     "warning": "All report content (severity, notes, author names) is FICTIONAL, generated for hackathon demo purposes. It is not a claim about real flood conditions or real people in this barangay. Coordinates follow real streets (OSM-sourced); the flood events themselves did not happen.",
     "schemaNote": "timestampMinutesAgo and ttlMinutes are OFFSETS. The seed loader must compute timestampMs = now - timestampMinutesAgo*60000 and expiresAtMs = timestampMs + ttlMinutes*60000 at load time — do not persist the offsets themselves as if they were absolute times.",
     "conflictingPair": [
       "seed-report-018",
       "seed-report-019"
     ],
-    "reportCount": 19,
-    "timeSpreadNote": "Ages are spread so every recency chip changes what the map shows: most reports within 1 h (the live demo), seed-report-008 at 100 min (3h chip), 005 at 8 h (24h chip), 013 at ~26 h and 010 at 14 days (Kailanman only). The SX pair (018/019) must stay minutes old: the S0 half decays with a 60-min tau and drops under the 0.5 conflict threshold ~42 min after its own timestamp. Offsets are still re-applied on every cold start (SeedLoader), so a seed's age is relative to app launch, not a real submission time."
+    "reportCount": 22,
+    "timeSpreadNote": "Ages are spread so every recency chip changes what the map shows: most reports within 1 h (the live demo), seed-report-008 at 100 min (3h chip), 005 at 8 h (24h chip), 013 at ~26 h and 010 at 14 days (Kailanman only). The SX pair (018/019) must stay minutes old: the S0 half decays with a 60-min tau and drops under the 0.5 conflict threshold ~42 min after its own timestamp. Offsets are still re-applied on every cold start (SeedLoader), so a seed's age is relative to app launch, not a real submission time. Three more (020-022) were added 22 Sep 2026 on real Mapandan, Pangasinan streets, all under an hour old."
   },
   "reports": [
     {
@@ -343,6 +343,57 @@
       "hopCount": 0,
       "note": "Humupa na, nadaanan ko kanina lang.",
       "fixtureNote": "CONFLICT PAIR (b). Deliberately contradicts seed-report-018 — cleared at the same spot two minutes later, so the pair must render as SX. Not user-facing — the loader ignores this key."
+    },
+    {
+      "id": "seed-report-020",
+      "type": "flood_report",
+      "lat": 16.0222202,
+      "lon": 120.4182103,
+      "featureRef": "santa-barbara-mangaldan-1",
+      "severity": "S2",
+      "waterLevel": "tuhod",
+      "authorId": "seed-author-4",
+      "authorName": "Precy L.",
+      "authorRole": "resident",
+      "timestampMinutesAgo": 14,
+      "ttlMinutes": 180,
+      "origin": "seed",
+      "hopCount": 0,
+      "note": "Baha hanggang tuhod sa Santa Barbara-Mangaldan Road."
+    },
+    {
+      "id": "seed-report-021",
+      "type": "flood_report",
+      "lat": 16.020549,
+      "lon": 120.4175082,
+      "featureRef": "santa-barbara-mangaldan-2",
+      "severity": "S1",
+      "waterLevel": "bukong-bukong",
+      "authorId": "seed-author-5",
+      "authorName": "Dexter O.",
+      "authorRole": "resident",
+      "timestampMinutesAgo": 22,
+      "ttlMinutes": 120,
+      "origin": "seed",
+      "hopCount": 0,
+      "note": "Bukong-bukong lang, dahan-dahan pa rin."
+    },
+    {
+      "id": "seed-report-022",
+      "type": "flood_report",
+      "lat": 16.0277229,
+      "lon": 120.4544234,
+      "featureRef": "pandan-avenue-1",
+      "severity": "S3",
+      "waterLevel": "dibdib",
+      "authorId": "seed-author-6",
+      "authorName": "Loida S.",
+      "authorRole": "resident",
+      "timestampMinutesAgo": 5,
+      "ttlMinutes": 240,
+      "origin": "seed",
+      "hopCount": 0,
+      "note": "Hanggang dibdib na sa Pandan Avenue, hindi na madaanan."
     }
   ]
 }

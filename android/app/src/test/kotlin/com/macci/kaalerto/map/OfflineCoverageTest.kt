@@ -10,8 +10,9 @@ class OfflineCoverageTest {
     private val baguio = 16.4023 to 120.5960
 
     @Test
-    fun `the demo area is always covered`() {
-        assertTrue(isCovered(18.1709, 120.6058, homePackCentre = null, herePackCentre = null))
+    fun `the curated area is always covered`() {
+        // Mapandan Catholic School, Brgy. Poblacion — DemoArea.centre.
+        assertTrue(isCovered(16.0256546, 120.4544745, homePackCentre = null, herePackCentre = null))
     }
 
     @Test
@@ -30,6 +31,20 @@ class OfflineCoverageTest {
     fun `somewhere with no pack is not covered`() {
         assertFalse(isCovered(16.4023, 120.5960, homePackCentre = dagupan, herePackCentre = null))
         assertFalse(isCovered(16.4023, 120.5960, homePackCentre = null, herePackCentre = null))
+    }
+
+    @Test
+    fun `the Pangasinan pack counts only once it is actually ready`() {
+        // Dagupan City, well inside the province but nowhere near the curated area or any home/here pack.
+        assertFalse(isCovered(16.0433, 120.3333, homePackCentre = null, herePackCentre = null, pangasinanPackReady = false))
+        assertTrue(isCovered(16.0433, 120.3333, homePackCentre = null, herePackCentre = null, pangasinanPackReady = true))
+    }
+
+    @Test
+    fun `the Pangasinan pack does not cover a point genuinely outside its bounding box`() {
+        // Manila — well south of the box, unlike Baguio above, which the rectangle actually
+        // overshoots into (DemoArea.kt's own doc: the rectangle is bigger than the real province).
+        assertFalse(isCovered(14.5995, 120.9842, homePackCentre = null, herePackCentre = null, pangasinanPackReady = true))
     }
 
     @Test

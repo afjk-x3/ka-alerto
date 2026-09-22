@@ -65,6 +65,7 @@ import com.macci.kaalerto.data.FeatureSummary
 import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.demo.isInDemoArea
+import com.macci.kaalerto.demo.isInOfflineCoverage
 import com.macci.kaalerto.detail.DetailSheet
 import com.macci.kaalerto.evac.EvacState
 import com.macci.kaalerto.evac.EvacStatus
@@ -189,6 +190,12 @@ fun MapScreen(
     val scope = rememberCoroutineScope()
     val pack = remember { OfflineMapPack(context) }
     val packState by pack.state.collectAsStateWithLifecycle()
+    // The whole-of-Pangasinan real coverage pack (DemoArea.pangasinanBounds) — a second,
+    // much larger region downloaded the same way as the curated-area one above. Not shown
+    // in the header banner (that stays about the curated pack, which is what a fresh
+    // install actually needs first); its readiness only feeds isCovered below.
+    val pangasinanPack = remember { OfflineMapPack(context, regionName = PANGASINAN_REGION_NAME, bounds = DemoArea.pangasinanBounds) }
+    val pangasinanPackState by pangasinanPack.state.collectAsStateWithLifecycle()
     val featureSummaries by viewModel.featureSummaries.collectAsStateWithLifecycle()
 
     // In-app routes to a report or an SOS (route/Routing.kt). Null = no panel.
@@ -253,9 +260,8 @@ fun MapScreen(
     // instead of closing the app out from under it.
     BackHandler(enabled = homeDraft != null) { homeDraft = null }
     var savedHome by remember { mutableStateOf(HomeLocationStore.get(context)) }
-    // Where the camera sits once it settles. Drives the "Demo" jump, and the offline-
-    // coverage note below. It starts where the map opens, so both are right before the
-    // first idle event arrives.
+    // Where the camera sits once it settles. Drives the offline-coverage note below. It
+    // starts where the map opens, so that note is right before the first idle event arrives.
     var cameraCentre by remember {
         mutableStateOf(
             initialCamera?.let { it.latitude to it.longitude } ?: (DemoArea.CENTRE_LAT to DemoArea.CENTRE_LON),
@@ -291,6 +297,7 @@ fun MapScreen(
         val missing = missingPrimerPerms(context)
         if (shouldShowPrimer(missing, PermissionPrefs.primerAnswered(context))) primerFor = missing
         pack.ensureDownloaded()
+        pangasinanPack.ensureDownloaded()
     }
     if (primerFor.isNotEmpty()) {
         AlertDialog(
@@ -385,7 +392,7 @@ fun MapScreen(
     // tracked around the saved home so an unfinished download resumes, as before, but it
     // counts as coverage nowhere.
     val homePackTrackedCentre = homeBuiltCentre
-        ?: savedHome?.takeUnless { isInDemoArea(it.lat, it.lon) }?.let { it.lat to it.lon }
+        ?: savedHome?.takeUnless { isInOfflineCoverage(it.lat, it.lon) }?.let { it.lat to it.lon }
     val homePack = remember(homePackTrackedCentre) {
         homePackTrackedCentre?.let { (lat, lon) ->
             OfflineMapPack(context, regionName = HOME_REGION_NAME, bounds = boundsAround(lat, lon))
@@ -400,6 +407,7 @@ fun MapScreen(
     val covered = isCovered(
         cameraCentre.first,
         cameraCentre.second,
+        pangasinanPackReady = pangasinanPackState is PackState.Ready,
         homePackCentre = homeBuiltCentre?.takeIf { homePackState is PackState.Ready },
         herePackCentre = hereCentre?.takeIf { herePackState is PackState.Ready },
     )
@@ -569,8 +577,6 @@ fun MapScreen(
                             }
                         }
                     },
-                    showDemoJump = !isInDemoArea(cameraCentre.first, cameraCentre.second),
-                    onJumpToDemo = { cameraRequest = CameraRequest(DemoArea.CENTRE_LAT, DemoArea.CENTRE_LON) },
                     // Directly above the 52 dp "Silungan" control and its 12 dp margin.
                     modifier = Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 72.dp),
                 )
