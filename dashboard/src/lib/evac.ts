@@ -70,12 +70,16 @@ interface EvacStatusPayload {
   municipality?: string | null;
 }
 
-/** Only the demo area has bundled shelters, so it is where the dashboard starts. */
-export const DEMO_MUNICIPALITY = 'San Nicolas, Ilocos Norte';
+/** The curated area has bundled shelters, so it is where the dashboard starts (repointed 22 Sep 2026,
+ * was 'San Nicolas, Ilocos Norte' — see android/.../demo/DemoArea.kt). */
+export const DEMO_MUNICIPALITY = 'Mapandan, Pangasinan';
 const BUNDLED_MUNICIPALITY = DEMO_MUNICIPALITY;
-const BUNDLED_BARANGAY = 'Brgy. San Juan Bautista';
+const BUNDLED_BARANGAY = 'Brgy. Poblacion';
 
-/** The four bundled shelters, as the phone loads them (municipality and barangay filled in). */
+/** The bundled shelters, as the phone loads them: each row's own municipality/barangay if the fixture
+ * gives one (added 22 Sep 2026, when the San Juan Bautista rows needed to keep their real identity
+ * through the repoint above — android/.../evac/EvacCentre.kt's loadEvacCentres mirrors this exactly),
+ * else the bundled default. */
 export const CENTRES: Centre[] = data.centres.map((c) => ({
   id: c.id,
   name: c.name,
@@ -83,8 +87,8 @@ export const CENTRES: Centre[] = data.centres.map((c) => ({
   lon: c.lon,
   kind: c.kind,
   capacityEstimate: c.capacityEstimate,
-  municipality: BUNDLED_MUNICIPALITY,
-  barangay: BUNDLED_BARANGAY,
+  municipality: c.municipality ?? BUNDLED_MUNICIPALITY,
+  barangay: c.barangay ?? BUNDLED_BARANGAY,
   custom: false,
 }));
 
