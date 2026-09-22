@@ -82,8 +82,16 @@ private data class Resolution(
  */
 object Reducer {
 
-    fun summarize(featureRef: String, allEvents: List<Event>, now: Long): FeatureSummary? {
-        val featureEvents = allEvents.filter { it.featureRef == featureRef }
+    fun summarize(featureRef: String, allEvents: List<Event>, now: Long): FeatureSummary? =
+        summarizeFeature(featureRef, allEvents.filter { it.featureRef == featureRef }, now)
+
+    /**
+     * A11: [summarizeAll] groups the whole list by [Event.featureRef] once and calls this
+     * directly per group, instead of re-filtering the full event list once per feature
+     * (was O(features × events), now O(events)). [summarize] still takes the whole list,
+     * for callers that only have one feature's worth of events to hand it.
+     */
+    private fun summarizeFeature(featureRef: String, featureEvents: List<Event>, now: Long): FeatureSummary? {
         if (featureEvents.isEmpty()) return null
         // A withdrawal cancels its author's earlier events (Withdraw.kt). Everything below
         // folds only what is still live; the timeline also keeps the withdrawals themselves.
@@ -177,7 +185,9 @@ object Reducer {
     }
 
     fun summarizeAll(allEvents: List<Event>, now: Long): List<FeatureSummary> =
-        allEvents.mapNotNull { it.featureRef }.distinct().mapNotNull { summarize(it, allEvents, now) }
+        allEvents.groupBy { it.featureRef }.mapNotNull { (featureRef, events) ->
+            featureRef?.let { summarizeFeature(it, events, now) }
+        }
 
     private fun resolveOfficial(officialEvent: Event, weightBySeverity: Map<String, Double>): Resolution {
         val severity = officialEvent.severity!!
