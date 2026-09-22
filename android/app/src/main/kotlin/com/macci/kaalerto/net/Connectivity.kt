@@ -30,17 +30,27 @@ fun rememberIsOnline(): State<Boolean> {
         if (connectivityManager == null) {
             onDispose { }
         } else {
+            // Tracks each network's own validated-internet capability directly from what the
+            // callback reports, rather than re-asking ConnectivityManager for the active network
+            // inside the callback. That re-query is unreliable during airplane mode's near-
+            // simultaneous multi-radio teardown: found 22 Sep 2026 that two onLost calls in a
+            // row (Wi-Fi, then mobile) each still saw the old currentlyOnline() read back true,
+            // and with no network left to lose afterward, nothing ever corrected it to offline —
+            // the header stayed stuck on "Online" indefinitely once that happened.
+            val validNetworks = mutableSetOf<Network>()
+            fun hasInternet(capabilities: NetworkCapabilities) =
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
             val callback = object : ConnectivityManager.NetworkCallback() {
-                override fun onAvailable(network: Network) {
-                    isOnline.value = true
+                override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
+                    if (hasInternet(capabilities)) validNetworks += network else validNetworks -= network
+                    isOnline.value = validNetworks.isNotEmpty()
                 }
 
                 override fun onLost(network: Network) {
-                    isOnline.value = currentlyOnline(connectivityManager)
-                }
-
-                override fun onCapabilitiesChanged(network: Network, capabilities: NetworkCapabilities) {
-                    isOnline.value = currentlyOnline(connectivityManager)
+                    validNetworks -= network
+                    isOnline.value = validNetworks.isNotEmpty()
                 }
             }
             connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), callback)
