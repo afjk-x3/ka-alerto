@@ -10,7 +10,7 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 
 **The day-by-day build history — what was built, how it was verified, what was found and why — is in `BUILD_LOG.md`.** Read the relevant entry there before changing a feature; it records the reasoning behind many non-obvious choices. This section is only the summary and the things that are easy to undo by accident.
 
-**The demo area is frozen: Barangay San Juan Bautista, San Nicolas, Ilocos Norte.** Every fixture, screenshot and route lives inside `DemoArea.kt`'s bounding box; read its class doc before touching any coordinate. None of it has been checked against a printed barangay map.
+**The curated area is Brgy. Poblacion, Mapandan, Pangasinan** (repointed 22 Sep 2026 from Barangay San Juan Bautista, San Nicolas, Ilocos Norte, at the user's request — see `DemoArea.kt`'s class doc for the real OSM/PSGC sourcing). Read that class doc before touching any coordinate. Real offline map coverage now also spans the whole of Pangasinan province (`DemoArea.pangasinanBounds`, `isInOfflineCoverage`) — measured cost: 2,349–3,891 tiles, ~18–24 MB, under 90 seconds, far cheaper than a naive per-km² guess suggested. **San Juan Bautista's own fixtures (19 seed reports, 4 evacuation centres, 3 routes) are retained, not deleted** — they simply have no offline pack any more and are no longer the curated area. None of the area boundaries (old or new) have been checked against a printed map. The "Demo" jump chip was removed outright at the same time, not replaced.
 
 **Status by build day** (verified = on the `API34_Test` emulator in airplane mode unless noted):
 
@@ -261,6 +261,7 @@ The project follows a 15-day build schedule divided into five gates (one per Sep
 - **Every day ends with something demonstrable.** A day ending in "the refactor is halfway done" was a lost day.
 - **Test in airplane mode every single day.** The one claim that cannot break on stage is the one the project is named for.
 - **Seed data from build day 2.** An empty map demos terribly and debugs worse.
+- **File a fresh report or two right before demoing, on top of the seeds.** Every fresh phone pulls the *whole* shared Supabase table (sync has no cursor, on purpose — see the sync bullet above), including real `flood_report` events from past real-hardware test sessions (18–19 Sep). Those are long past their own TTL by now, so a phone that has just synced can show mostly grey "expired" markers even though its local seeds are fresh (found 22 Sep, A10). That old data is proof of real testing, not junk — don't delete it to fix the look of a demo; just add something newer on top.
 - **Demo-path first.** If it is not in the demo script (`docs/04-build-plan.md` §11), it is optional.
 - Be honest in the README and the release notes about what is not built. Judges reward it and punish the alternative.
 
