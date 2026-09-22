@@ -14,7 +14,7 @@ export const SEVERITY_LABEL: Record<string, string> = {
 const SOS_TYPES = new Set(['sos', 'sos_amend', 'sos_state']);
 
 // Lowest to highest, same order as SosState.rank on the phone: the highest state seen wins.
-const STATE_ORDER = [
+export const STATE_ORDER = [
   'DRAFT', 'QUEUED', 'BEACONING', 'UNREACHABLE', 'RELAYED', 'DELIVERED',
   'ACKNOWLEDGED', 'EN_ROUTE', 'ON_SCENE', 'RESCUED', 'CANCELLED', 'SAFE_SELF_RESOLVED',
 ];

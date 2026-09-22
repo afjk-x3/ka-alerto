@@ -3,9 +3,9 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEvents } from '@/hooks/useEvents';
 import { useAlerts } from '@/hooks/useAlerts';
-import { getPin, setPin, clearPin, postEvac } from '@/lib/api';
+import { getPin, setPin, clearPin, postEvac, postSosAck } from '@/lib/api';
 import { AuthError } from '@/lib/types';
-import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item } from '@/lib/items';
+import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item, SosItem } from '@/lib/items';
 import { NO_ROUTES, NO_ORIGIN, OriginMode, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon, originOf } from '@/lib/routing';
 import PinGate from '@/components/PinGate';
 import Logo from '@/components/Logo';
@@ -217,6 +217,16 @@ export default function DashboardPage() {
       setOriginState((o) => ({ ...o, picked: null, picking: true }));
     },
   };
+
+  const onAcknowledgeSos = useCallback(async (item: SosItem) => {
+    try {
+      await postSosAck(item.id, item.lat, item.lon);
+    } catch (e) {
+      if (e instanceof AuthError) onAuthFail(e.status === 429 ? e.message : undefined);
+      throw e;
+    }
+    void refresh({ silent: true });
+  }, [onAuthFail, refresh]);
 
   const manage: EvacManage = {
     acting,
@@ -482,6 +492,7 @@ export default function DashboardPage() {
           routing={routing}
           originCtl={originCtl}
           onFindRoutes={findRoutes}
+          onAcknowledge={onAcknowledgeSos}
           onPickRoute={(i) => setRouting((r) => ({ ...r, active: i }))}
         />
       </main>

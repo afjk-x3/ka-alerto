@@ -51,3 +51,20 @@ export async function postEvac(body: Record<string, unknown>): Promise<void> {
   if (res.status === 401 || res.status === 429) throw new AuthError(undefined, res.status);
   if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Server error (${res.status})`);
 }
+
+/** Acknowledges an SOS request (a `sos_state` event) via the dashboard's own PIN-checked /api/sos route. */
+export async function postSosAck(sosId: string, lat: number, lon: number): Promise<void> {
+  const pin = getPin();
+  let res: Response;
+  try {
+    res = await fetch('/api/sos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(pin ? { 'X-Dashboard-Pin': pin } : {}) },
+      body: JSON.stringify({ sosId, lat, lon }),
+    });
+  } catch {
+    throw new Error("Can't reach the dashboard server.");
+  }
+  if (res.status === 401 || res.status === 429) throw new AuthError(undefined, res.status);
+  if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Server error (${res.status})`);
+}

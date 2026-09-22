@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fetchPhoto } from '@/lib/api';
 import { RoutingState, OriginMode, OriginState, describeRoute, googleDirectionsUrl, originOf, originMissing } from '@/lib/routing';
-import { Item, SosItem, ReportItem, STATE_LABEL, SEVERITY_LABEL, latestReport, reportCount, statusLine, timeAgo } from '@/lib/items';
+import { Item, SosItem, ReportItem, STATE_LABEL, STATE_ORDER, SEVERITY_LABEL, latestReport, reportCount, statusLine, timeAgo } from '@/lib/items';
 import type { Event } from '@/lib/types';
 import { describePlace, placeLine } from '@/lib/gazetteer';
 
@@ -26,6 +26,7 @@ interface DetailProps {
   routing: RoutingState;
   onFindRoutes: () => void;
   onPickRoute: (i: number) => void;
+  onAcknowledge: (item: SosItem) => Promise<void>;
 }
 
 /** A field nobody filled in is left out rather than shown as a dash. */
@@ -172,13 +173,50 @@ const when = (ms: number) => new Date(ms).toLocaleString([], { dateStyle: 'mediu
 
 type DirProps = Pick<DetailProps, 'routing' | 'onFindRoutes' | 'onPickRoute' | 'originCtl'>;
 
-function SosDetail({ item, routing, onFindRoutes, onPickRoute, originCtl }: { item: SosItem } & DirProps) {
+/** Whether an "Acknowledge" write would move anything — false once the request is already at or
+ * past ACKNOWLEDGED (by anyone, phone or dashboard) or already closed. */
+function canAcknowledge(item: SosItem): boolean {
+  return !item.closed && STATE_ORDER.indexOf(item.state) < STATE_ORDER.indexOf('ACKNOWLEDGED');
+}
+
+/** The one write this panel can make (added 22 Sep 2026, review D3) — everything else about an SOS is
+ * still read-only, same trust note as the shelter controls: one shared PIN, no roster seat. */
+function AcknowledgeControl({ item, onAcknowledge }: { item: SosItem; onAcknowledge: (item: SosItem) => Promise<void> }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!canAcknowledge(item)) return null;
+  return (
+    <div className="sos-ack">
+      <button
+        className="btn btn-primary"
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          setError(null);
+          try {
+            await onAcknowledge(item);
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Could not save');
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
+        {busy ? 'Acknowledging…' : 'Acknowledge (LGU has seen this)'}
+      </button>
+      {error && <p className="hint" role="alert">{error}</p>}
+    </div>
+  );
+}
+
+function SosDetail({ item, routing, onFindRoutes, onPickRoute, originCtl, onAcknowledge }: { item: SosItem } & DirProps & Pick<DetailProps, 'onAcknowledge'>) {
   const c = item.context;
   return (
     <>
       <div className={`status-banner ${item.closed ? 'closed' : 'open'}`}>
         {STATE_LABEL[item.state] ?? item.state}
       </div>
+      <AcknowledgeControl item={item} onAcknowledge={onAcknowledge} />
       <dl>
         <Field label="Location"><Coords lat={item.lat} lon={item.lon} /></Field>
         {item.accuracyMeters != null && <Field label="GPS accuracy">± {Math.round(item.accuracyMeters)} m</Field>}
@@ -269,7 +307,7 @@ function ReportDetail({ item, routing, onFindRoutes, onPickRoute, originCtl }: {
   );
 }
 
-export default function EventDetail({ item, onClose, routing, onFindRoutes, onPickRoute, originCtl }: DetailProps) {
+export default function EventDetail({ item, onClose, routing, onFindRoutes, onPickRoute, originCtl, onAcknowledge }: DetailProps) {
   if (!item) return null;
   return (
     <aside className="detail" aria-label="Details">
@@ -279,7 +317,7 @@ export default function EventDetail({ item, onClose, routing, onFindRoutes, onPi
       </div>
       <div className="detail-body">
         {item.kind === 'sos' ? (
-          <SosDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} originCtl={originCtl} />
+          <SosDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} originCtl={originCtl} onAcknowledge={onAcknowledge} />
         ) : (
           <ReportDetail item={item} routing={routing} onFindRoutes={onFindRoutes} onPickRoute={onPickRoute} originCtl={originCtl} />
         )}
