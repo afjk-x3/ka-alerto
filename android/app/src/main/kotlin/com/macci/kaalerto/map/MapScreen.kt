@@ -62,10 +62,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.macci.kaalerto.data.FeatureSummary
+import com.macci.kaalerto.data.haversineMeters
 import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.demo.isInDemoArea
 import com.macci.kaalerto.detail.DetailSheet
+import com.macci.kaalerto.evac.EvacState
+import com.macci.kaalerto.evac.EvacStatus
 import com.macci.kaalerto.evac.evacStates
+import com.macci.kaalerto.evac.formatDistance
+import com.macci.kaalerto.evac.kindLabel
+import com.macci.kaalerto.evac.label
 import com.macci.kaalerto.evac.loadEvacCentres
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.i18n.tr
@@ -175,6 +181,9 @@ fun MapScreen(
      */
     sosFocus: LatLng? = null,
     onDismissSosFocus: (() -> Unit)? = null,
+    /** Set by a shelter-card tap ("Mga silungan"); shows the bottom card below until dismissed. */
+    shelterFocus: EvacState? = null,
+    onDismissShelterFocus: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -353,6 +362,15 @@ fun MapScreen(
     val evacCentres = remember { loadEvacCentres(context) }
     val evacStateList = remember(evacCentres, allEvents, savedHome) {
         evacStates(evacCentres, allEvents, savedHome?.lat, savedHome?.lon)
+    }
+
+    // The card's distance starts at whatever the shelter list already knew (GPS-or-home) and refines
+    // to a fresh fix once one arrives — the same bounded fetch reports and SOS use, not the home
+    // screen's longer stream (CLAUDE.md: don't unify the two).
+    var shelterFocusDistance by remember(shelterFocus?.centre?.id) { mutableStateOf(shelterFocus?.distanceMeters) }
+    LaunchedEffect(shelterFocus?.centre?.id) {
+        val here = shelterFocus?.let { fetchCurrentLocation(context) } ?: return@LaunchedEffect
+        shelterFocusDistance = haversineMeters(here.latitude, here.longitude, shelterFocus.centre.lat, shelterFocus.centre.lon)
     }
 
     val isOnline by rememberIsOnline()
@@ -604,6 +622,16 @@ fun MapScreen(
             )
         }
 
+        if (shelterFocus != null) {
+            ShelterFocusCard(
+                state = shelterFocus,
+                distanceMeters = shelterFocusDistance,
+                onDismiss = { onDismissShelterFocus?.invoke() },
+                onRoutes = { requestRoutes(LatLon(shelterFocus.centre.lat, shelterFocus.centre.lon)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
         routeUi?.let { ui ->
             RoutePanel(
                 ui = ui,
@@ -791,6 +819,92 @@ private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -
         )
         IconButton(onClick = onDismiss) {
             Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"), tint = MaterialTheme.colorScheme.inverseOnSurface)
+        }
+    }
+}
+
+/**
+ * Shown after a tap on a shelter card in `evac/EvacScreen.kt`'s "Mga silungan" list — the map jumps to
+ * the shelter (`KaAlertoApp.kt`'s `shelterFocus`) and this card says what's there: status, where it is,
+ * how full it is (if known), and the distance and walking time from here. Distance starts at the list's
+ * own GPS-or-home figure and refines once a fresh fix arrives — see [MapScreen]'s `shelterFocusDistance`.
+ * Same routing path as [SosFocusBanner]: OSRM through `requestRoutes`, with its own first-use disclosure.
+ */
+@Composable
+private fun ShelterFocusCard(state: EvacState, distanceMeters: Double?, onDismiss: () -> Unit, onRoutes: () -> Unit, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val colors = LocalKaAlertoColors.current
+    val centre = state.centre
+    val accent = when (state.status) {
+        EvacStatus.ACCEPTING -> colors.safeFg
+        EvacStatus.NEARLY_FULL -> colors.warningFg
+        EvacStatus.NOT_OPEN -> MaterialTheme.colorScheme.inverseOnSurface
+    }
+    val where = listOfNotNull(centre.barangay, centre.municipality).joinToString(", ").ifEmpty { null }
+
+    Column(
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.inverseSurface)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    centre.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+                Text(
+                    listOfNotNull(kindLabel(centre.kind), where).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                )
+            }
+            Text(
+                state.status.label(),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = accent,
+            )
+            IconButton(onClick = onDismiss) {
+                Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"), tint = MaterialTheme.colorScheme.inverseOnSurface)
+            }
+        }
+        Text(
+            buildString {
+                append(distanceMeters?.let { formatDistance(it) } ?: tr("Hindi alam ang layo", "Distance unknown"))
+                val fraction = state.occupancyFraction
+                if (fraction != null) {
+                    append(" · ${state.occupancy} / ${centre.capacityEstimate}")
+                } else {
+                    centre.capacityEstimate?.let { append(" · " + tr("Kapasidad $it (tantiya)", "Capacity $it (estimate)")) }
+                }
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        Row(modifier = Modifier.padding(top = 6.dp)) {
+            Text(
+                tr("Mga ruta", "Routes"),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier.clickable(onClick = onRoutes).padding(vertical = 4.dp, horizontal = 8.dp),
+            )
+            Text(
+                tr("Buksan sa Maps", "Open in Maps"),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.inverseOnSurface,
+                modifier = Modifier
+                    .clickable {
+                        val uri = Uri.parse("geo:${centre.lat},${centre.lon}?q=${centre.lat},${centre.lon}")
+                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    }
+                    .padding(vertical = 4.dp, horizontal = 8.dp),
+            )
         }
     }
 }

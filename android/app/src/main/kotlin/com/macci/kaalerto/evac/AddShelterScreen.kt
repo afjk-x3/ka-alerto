@@ -52,8 +52,9 @@ data class ShelterDraft(
     val lon: Double? = null,
 )
 
+/** Shared with the map's shelter-focus card, so the two screens never drift on wording. */
 @Composable
-private fun kindLabel(kind: String): String = when (kind) {
+internal fun kindLabel(kind: String): String = when (kind) {
     "school" -> tr("Paaralan", "School")
     "gym" -> tr("Gym", "Gym")
     "barangay_hall" -> tr("Barangay hall", "Barangay hall")

@@ -37,6 +37,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.macci.kaalerto.evac.AddShelterScreen
 import com.macci.kaalerto.report.ReportsListScreen
 import com.macci.kaalerto.evac.EvacScreen
+import com.macci.kaalerto.evac.EvacState
 import com.macci.kaalerto.evac.ShelterDraft
 import com.macci.kaalerto.evac.evacStates
 import com.macci.kaalerto.evac.loadEvacCentres
@@ -151,6 +152,10 @@ fun KaAlertoApp(
     // see the LaunchedEffect(Unit) at that branch. A tap should move the camera exactly
     // once, not pin every later visit to the map on a shelter the user tapped an hour ago.
     var evacFocusCamera by remember { mutableStateOf<LatLng?>(null) }
+    // Set alongside evacFocusCamera by a shelter-card tap, so the map's bottom card shows what was
+    // tapped. Cleared by the card's own X, not on entry — a resident should be able to pan around
+    // and come back to the same shelter without the card vanishing underneath them.
+    var shelterFocus by remember { mutableStateOf<EvacState?>(null) }
     // Set when a responder taps "Nakita ko" / "Nakita ko — papunta na" on the SOS queue,
     // so the map they land on immediately shows the request's location — unlike
     // evacFocusCamera this is not cleared on entry, since the marker and banner
@@ -323,7 +328,12 @@ fun KaAlertoApp(
     Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
     when (val current = screen) {
         Screen.Map -> {
-        val focusCamera = evacFocusCamera
+        // remember, not a live read: the map's own native init is slow enough that a plain `val` read
+        // here would still be seeing the OLD (correct) value when this LaunchedEffect nulls the state
+        // below, but the recomposition it triggers hands MapScreen the NEW (null) value before its
+        // camera-placement effect ever fires — the jump silently reverted to the home fallback (found
+        // 22 Sep testing the shelter card). remember captures once per visit to this branch instead.
+        val focusCamera = remember { evacFocusCamera }
         LaunchedEffect(Unit) { if (focusCamera != null) evacFocusCamera = null }
         // A spot to open is consumed once: left set, its sheet reopened every time the map came back
         // (found while adding the reports list, which uses the same path as the flood alert).
@@ -337,6 +347,8 @@ fun KaAlertoApp(
             initialCamera = sosFocus ?: focusCamera ?: homeStart(HomeLocationStore.get(context))?.let { (lat, lon) -> LatLng(lat, lon) },
             sosFocus = sosFocus,
             onDismissSosFocus = { sosFocus = null },
+            shelterFocus = shelterFocus,
+            onDismissShelterFocus = { shelterFocus = null },
             onStartReport = { lat, lon, accuracy -> screen = gated(Screen.Report(lat, lon, accuracy)) },
             onEnterPickLocation = { screen = gated(Screen.PickLocation) },
             // Day 4's conflict sheet: "I-check ko ngayon" files a fresh report at the
@@ -740,6 +752,7 @@ fun KaAlertoApp(
                 onOpenMenu = { drawerOpen = true },
                 onCentreClick = { centre ->
                     evacFocusCamera = LatLng(centre.lat, centre.lon)
+                    shelterFocus = states.firstOrNull { it.centre.id == centre.id }
                     screen = Screen.Map
                 },
             )
