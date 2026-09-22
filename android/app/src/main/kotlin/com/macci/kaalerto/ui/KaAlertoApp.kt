@@ -876,26 +876,45 @@ fun KaAlertoApp(
         Screen.SosQueue -> {
             val incidents by sosViewModel.incidents.collectAsStateWithLifecycle()
             val isOfficial = role == LocalIdentity.ROLE_OFFICIAL
+            // Where the responder is right now, not their registered home — a Kagawad
+            // out in the field needs distance from here, not from the house. One bounded
+            // fetch per visit to the queue (fetchCurrentLocation's usual 6 s + last-known
+            // pattern), starting from home so the list isn't empty of distances while it resolves.
+            var liveLat by remember { mutableStateOf(HomeLocationStore.get(context)?.lat) }
+            var liveLon by remember { mutableStateOf(HomeLocationStore.get(context)?.lon) }
+            LaunchedEffect(Unit) {
+                fetchCurrentLocation(context)?.let {
+                    liveLat = it.latitude
+                    liveLon = it.longitude
+                }
+            }
             // Acknowledging is also "I need to find this place" — land back on the map
             // with the exact spot marked rather than leaving the responder on a queue
             // list with no way to see where to go.
-            fun focusAndAdvance(sosId: String, state: SosState) {
+            fun focus(sosId: String) {
                 incidents.firstOrNull { it.primary.sosId == sosId }?.let {
                     sosFocus = LatLng(it.primary.lat, it.primary.lon)
                 }
+            }
+            fun focusAndAdvance(sosId: String, state: SosState) {
+                focus(sosId)
                 sosViewModel.advance(sosId, state)
                 screen = Screen.Map
             }
             SosQueueScreen(
                 modifier = modifier,
                 incidents = incidents,
-                myLat = HomeLocationStore.get(context)?.lat,
-                myLon = HomeLocationStore.get(context)?.lon,
+                myLat = liveLat,
+                myLon = liveLon,
                 onAcknowledge = { focusAndAdvance(it, SosState.ACKNOWLEDGED) },
                 onEnRoute = { focusAndAdvance(it, SosState.EN_ROUTE) },
                 isOfficial = isOfficial,
                 onMarkFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = false) }) else null,
                 onUndoFalseAlarm = if (isOfficial) ({ sosViewModel.markFalseAlarm(it, undo = true) }) else null,
+                onOpenMap = { incident ->
+                    focus(incident.primary.sosId)
+                    screen = Screen.Map
+                },
                 onBack = { screen = Screen.Map },
                 onOpenMenu = { drawerOpen = true },
             )

@@ -60,6 +60,8 @@ fun SosQueueScreen(
     isOfficial: Boolean = false,
     onMarkFalseAlarm: ((SosIncident) -> Unit)? = null,
     onUndoFalseAlarm: ((SosIncident) -> Unit)? = null,
+    /** Tapping the card previews the spot on the map — no state change, unlike the ack buttons below. */
+    onOpenMap: ((SosIncident) -> Unit)? = null,
     onBack: () -> Unit,
     onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
@@ -173,6 +175,7 @@ fun SosQueueScreen(
                         onEnRoute = { onEnRoute(request.sosId) },
                         onMarkFalseAlarm = onMarkFalseAlarm?.let { act -> { act(incident) } },
                         onUndoFalseAlarm = onUndoFalseAlarm?.let { act -> { act(incident) } },
+                        onOpenMap = onOpenMap?.let { act -> { act(incident) } },
                     )
                 }
                 Spacer(Modifier.size(8.dp))
@@ -213,6 +216,7 @@ private fun RequestCard(
     onEnRoute: () -> Unit,
     onMarkFalseAlarm: (() -> Unit)?,
     onUndoFalseAlarm: (() -> Unit)?,
+    onOpenMap: (() -> Unit)?,
 ) {
     val colors = LocalKaAlertoColors.current
     val claimed = request.state.rank >= SosState.ACKNOWLEDGED.rank
@@ -223,6 +227,7 @@ private fun RequestCard(
             .fillMaxWidth()
             .background(if (claimed) colors.safeBg else MaterialTheme.colorScheme.background)
             .border(1.dp, colors.border)
+            .then(if (onOpenMap != null) Modifier.clickable(onClick = onOpenMap) else Modifier)
             .padding(start = 0.dp),
     ) {
         Row {
@@ -470,10 +475,10 @@ private fun Chip(text: String) {
     }
 }
 
-/** "6 min · 340 m · 2 hops" — the artboard's own monospace meta line. */
+/** "6 min · 0.3 km · 2 hops" — the artboard's own monospace meta line. */
 private fun metaLine(request: SosSnapshot, distanceMeters: Double?): String = buildList {
     add(elapsedLabel(request.startedAtMs, System.currentTimeMillis()))
-    distanceMeters?.let { add("${it.roundToInt()} m") }
+    distanceMeters?.let { add("%.1f km".format(it / 1_000)) }
     if (request.hopCount > 0) add("${request.hopCount} hops")
 }.joinToString(" · ")
 
