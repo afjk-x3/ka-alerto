@@ -6,6 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "check": "node --experimental-strip-types checks/reducer.check.mts && node --experimental-strip-types checks/focus.check.mts && node --experimental-strip-types checks/evac.check.mts && node --experimental-strip-types checks/dashboardAuth.check.mts",
+    "e2e": "playwright test",
     "start": "next start --port 3001"
   },
   "dependencies": {
@@ -15,6 +16,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
