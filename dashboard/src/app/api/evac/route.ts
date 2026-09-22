@@ -8,6 +8,7 @@
 // is the same); a phone's official, by contrast, is bound to their profile municipality. Writes are refused
 // outright when DASHBOARD_PIN is not set, so a deployment with no PIN can never be written to.
 import { randomUUID } from 'node:crypto';
+import { checkDashboardPin } from '@/lib/dashboardAuth';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KINDS = new Set(['school', 'gym', 'barangay_hall', 'church', 'other']);
@@ -22,9 +23,8 @@ const optionalText = (v: unknown, max: number): string | null | undefined =>
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 
 export async function POST(request: Request) {
-  const pin = process.env.DASHBOARD_PIN;
-  if (!pin) return Response.json({ error: 'writes need DASHBOARD_PIN to be set on the server' }, { status: 403 });
-  if (request.headers.get('x-dashboard-pin') !== pin) return Response.json({ error: 'unauthorized' }, { status: 401 });
+  const authFail = checkDashboardPin(request, { requirePin: true });
+  if (authFail) return authFail;
 
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;

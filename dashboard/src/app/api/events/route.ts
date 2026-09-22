@@ -2,14 +2,14 @@
 // checked here (not in browser code) and the Supabase key never reaches the browser.
 // Demo-only gate: phones read the same table with the public anon key, so this guards the
 // dashboard's door, not the data.
+import { checkDashboardPin } from '@/lib/dashboardAuth';
+
 const PAGE = 1000; // PostgREST returns at most 1000 rows per request by default.
 const MAX_PAGES = 20;
 
 export async function GET(request: Request) {
-  const pin = process.env.DASHBOARD_PIN;
-  if (pin && request.headers.get('x-dashboard-pin') !== pin) {
-    return Response.json({ error: 'unauthorized' }, { status: 401 });
-  }
+  const authFail = checkDashboardPin(request);
+  if (authFail) return authFail;
 
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_ANON_KEY;

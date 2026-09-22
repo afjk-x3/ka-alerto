@@ -5,10 +5,12 @@ import Logo from '@/components/Logo';
 
 interface PinGateProps {
   wrongPin: boolean;
+  /** The server's own "Too many attempts. Try again in Ns." (lib/dashboardAuth.ts), when that's why this shows. */
+  message?: string | null;
   onSubmit: (pin: string) => void;
 }
 
-export default function PinGate({ wrongPin, onSubmit }: PinGateProps) {
+export default function PinGate({ wrongPin, message, onSubmit }: PinGateProps) {
   const [pin, setPin] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +45,7 @@ export default function PinGate({ wrongPin, onSubmit }: PinGateProps) {
           aria-describedby="pin-error"
         />
         <div id="pin-error" className="gate-error" role="alert">
-          {wrongPin ? 'That PIN was not accepted. Try again.' : ''}
+          {wrongPin ? (message ?? 'That PIN was not accepted. Try again.') : ''}
         </div>
         <button className="btn btn-primary btn-block" type="submit" disabled={!pin.trim()}>
           Open dashboard

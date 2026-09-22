@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEvents } from '@/hooks/useEvents';
 import { useAlerts } from '@/hooks/useAlerts';
 import { getPin, setPin, clearPin, postEvac } from '@/lib/api';
+import { AuthError } from '@/lib/types';
 import { buildItems, sortItems, applyFilters, isFiltering, toCsv, NO_FILTERS, Filters, SEVERITY_LABEL, Item } from '@/lib/items';
 import { NO_ROUTES, NO_ORIGIN, OriginMode, RoutingState, currentPosition, fetchRoutes, floodPoints, LatLon, originOf } from '@/lib/routing';
 import PinGate from '@/components/PinGate';
@@ -30,6 +31,9 @@ const ACTING_KEY = 'kaalerto_acting';
 export default function DashboardPage() {
   const [locked, setLocked] = useState(false);
   const [wrongPin, setWrongPin] = useState(false);
+  // Set only for a 429 (lib/dashboardAuth.ts's lockout message, "Try again in Ns."); a plain
+  // wrong PIN keeps PinGate's own wording instead of repeating the server's bare "unauthorized".
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>('sos');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState(false);
@@ -51,8 +55,9 @@ export default function DashboardPage() {
     setOrigin(null);
   }, []);
 
-  const onAuthFail = useCallback(() => {
+  const onAuthFail = useCallback((rateLimitMessage?: string) => {
     setWrongPin(getPin() !== null);
+    setAuthMessage(rateLimitMessage ?? null);
     clearPin();
     setLocked(true);
   }, []);
@@ -221,7 +226,7 @@ export default function DashboardPage() {
       try {
         await postEvac(body);
       } catch (e) {
-        if (e instanceof Error && e.name === 'AuthError') onAuthFail();
+        if (e instanceof AuthError) onAuthFail(e.status === 429 ? e.message : undefined);
         throw e;
       }
       void refresh({ silent: true });
@@ -245,6 +250,7 @@ export default function DashboardPage() {
     return (
       <PinGate
         wrongPin={wrongPin}
+        message={authMessage}
         onSubmit={(pin) => {
           setPin(pin);
           setLocked(false);

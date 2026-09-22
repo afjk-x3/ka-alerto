@@ -4,12 +4,14 @@ import { useState, useCallback, useRef } from 'react';
 import { Event, AuthError } from '@/lib/types';
 import { fetchEvents } from '@/lib/api';
 
+export type OnAuthFail = (rateLimitMessage?: string) => void;
+
 /**
  * Refetches everything each time (Supabase has no cursor; a barangay's volume is tiny —
  * ponytail: switch to `timestampMs=gt.` or Supabase Realtime if this ever gets heavy).
  * A `silent` refresh is the background poll: it never toggles `loading`, so nothing flashes.
  */
-export function useEvents(onAuthFail: () => void) {
+export function useEvents(onAuthFail: OnAuthFail) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +38,7 @@ export function useEvents(onAuthFail: () => void) {
         setUpdatedAt(Date.now());
         setError(null);
       } catch (e) {
-        if (e instanceof AuthError) onAuthFail();
+        if (e instanceof AuthError) onAuthFail(e.status === 429 ? e.message : undefined);
         else setError(e instanceof Error ? e.message : 'Something went wrong');
       } finally {
         inFlight.current = false;

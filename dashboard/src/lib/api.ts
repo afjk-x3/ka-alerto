@@ -17,8 +17,11 @@ export async function fetchEvents(): Promise<{ events: Event[]; truncated: boole
   } catch {
     throw new Error("Can't reach the dashboard server.");
   }
-  if (res.status === 401) throw new AuthError();
   const body = await res.json().catch(() => ({}));
+  // 429 carries its own "try again in Ns" text (lib/dashboardAuth.ts) — worth showing verbatim
+  // on the PIN screen someone is actively guessing at; a plain 401 keeps PinGate's own wording.
+  if (res.status === 401) throw new AuthError();
+  if (res.status === 429) throw new AuthError(body.error, 429);
   if (!res.ok) throw new Error(body.error ?? `Server error (${res.status})`);
   return { events: body.events, truncated: body.truncated === true };
 }
@@ -27,7 +30,7 @@ export async function fetchEvents(): Promise<{ events: Event[]; truncated: boole
 export async function fetchPhoto(hash: string): Promise<string | null> {
   const pin = getPin();
   const res = await fetch(`/api/photo/${hash}`, { headers: pin ? { 'X-Dashboard-Pin': pin } : {} });
-  if (res.status === 401) throw new AuthError();
+  if (res.status === 401 || res.status === 429) throw new AuthError(undefined, res.status);
   if (!res.ok) return null;
   return URL.createObjectURL(await res.blob());
 }
@@ -45,6 +48,6 @@ export async function postEvac(body: Record<string, unknown>): Promise<void> {
   } catch {
     throw new Error("Can't reach the dashboard server.");
   }
-  if (res.status === 401) throw new AuthError();
+  if (res.status === 401 || res.status === 429) throw new AuthError(undefined, res.status);
   if (!res.ok) throw new Error(((await res.json().catch(() => ({}))) as { error?: string }).error ?? `Server error (${res.status})`);
 }

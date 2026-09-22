@@ -1,13 +1,13 @@
 // A report's photo, proxied from Supabase Storage so the PIN check stays on the dashboard's
 // server. The bucket itself is public (phones upload and read with the anon key), so this
 // guards the dashboard's door, not the file.
+import { checkDashboardPin } from '@/lib/dashboardAuth';
+
 const HASH = /^[0-9a-f]{64}$/; // PhotoStore names a photo by its SHA-256, lowercase hex.
 
 export async function GET(request: Request, { params }: { params: Promise<{ hash: string }> }) {
-  const pin = process.env.DASHBOARD_PIN;
-  if (pin && request.headers.get('x-dashboard-pin') !== pin) {
-    return Response.json({ error: 'unauthorized' }, { status: 401 });
-  }
+  const authFail = checkDashboardPin(request);
+  if (authFail) return authFail;
 
   const { hash } = await params;
   if (!HASH.test(hash)) return Response.json({ error: 'bad hash' }, { status: 400 });

@@ -19,8 +19,11 @@ export interface Event {
 }
 
 export class AuthError extends Error {
-  constructor() {
-    super('Unauthorized');
+  /** 401 (wrong or missing PIN) or 429 (too many wrong attempts — see lib/dashboardAuth.ts). */
+  status: number;
+  constructor(message = 'Unauthorized', status = 401) {
+    super(message);
     this.name = 'AuthError';
+    this.status = status;
   }
 }
