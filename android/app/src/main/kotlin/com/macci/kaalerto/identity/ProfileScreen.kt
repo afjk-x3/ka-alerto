@@ -144,9 +144,6 @@ fun ProfileScreen(
                     suggestions = barangaySuggestions,
                 )
                 NameVisibilityDisclosure()
-                // The same rows as registration, so "Mamaya" on the map's explanation is a real answer:
-                // whatever was skipped can be turned on here, or in Settings if the system will not ask again.
-                PermissionSection(label = tr("MGA PAHINTULOT", "PERMISSIONS"))
                 Spacer(Modifier.size(8.dp))
             }
         }

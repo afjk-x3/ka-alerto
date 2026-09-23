@@ -1,11 +1,5 @@
 package com.macci.kaalerto.map
 
-import com.macci.kaalerto.identity.shouldShowPrimer
-import com.macci.kaalerto.identity.missingPrimerPerms
-import com.macci.kaalerto.identity.PermissionPrefs
-import com.macci.kaalerto.identity.Perm
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.AlertDialog
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -297,65 +291,25 @@ fun MapScreen(
         meshPermitted = MeshPermissions.allGranted(context)
     }
 
-    // What is still missing, explained once before the system asks. It used to fire every outstanding system
-    // dialog at the moment the map first appeared, one after another with no reason given, and again on later
-    // visits. Now, and only if something is missing, one dialog says what and why: "Magpatuloy" asks the system
-    // for exactly that set (mesh permissions included, since asking for them mid-flood would be too late to help),
-    // and "Mamaya" leaves it for the profile screen. Either answer is remembered, so the map never asks by itself again.
-    var primerFor by remember { mutableStateOf<List<Perm>>(emptyList()) }
     LaunchedEffect(Unit) {
-        val missing = missingPrimerPerms(context)
-        if (shouldShowPrimer(missing, PermissionPrefs.primerAnswered(context))) primerFor = missing
         pack.ensureDownloaded()
         pangasinanPack.ensureDownloaded()
-    }
-    if (primerFor.isNotEmpty()) {
-        AlertDialog(
-            onDismissRequest = {
-                PermissionPrefs.markPrimerAnswered(context)
-                primerFor = emptyList()
-            },
-            title = { Text(tr("May mga pahintulot pang kailangan", "A few permissions are still needed")) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    primerFor.forEach { perm ->
-                        Column {
-                            Text(perm.title(), fontWeight = FontWeight.SemiBold)
-                            Text(perm.reason(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    Text(
-                        tr(
-                            "Gumagana pa rin ang app kung hindi mo ito papayagan. Mababago mo ito sa profile mo.",
-                            "The app still works if you decline. You can change this later in your profile.",
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    val ask = primerFor.flatMap { it.permissions().toList() }.distinct().toTypedArray()
-                    PermissionPrefs.markPrimerAnswered(context)
-                    primerFor = emptyList()
-                    if (ask.isNotEmpty()) permissionLauncher.launch(ask)
-                }) { Text(tr("Magpatuloy", "Continue")) }
-            },
-            dismissButton = {
-                TextButton(onClick = {
-                    PermissionPrefs.markPrimerAnswered(context)
-                    primerFor = emptyList()
-                }) { Text(tr("Mamaya", "Later")) }
-            },
-        )
     }
 
     // The mesh runs for as long as the app does — it is a foreground service precisely
     // so it keeps reconciling with peers while this screen is off. Hence start-only:
     // leaving the map (to file a report) must not tear down the relay, and stopping it
     // is the notification's "Ihinto" action, i.e. the resident's decision.
+    //
+    // Nearby-devices permission is asked for right here, on-demand, rather than by a
+    // separate explanatory dialog the way it used to be (removed 23 Sep 2026 along with
+    // the profile screen's permission section — declining once must not mean being
+    // asked again by a second surface seconds later). Keyed on meshPermitted, so this
+    // fires once per cold start while it's false and reruns automatically once the
+    // callback flips it true; Android's own repeated-denial throttling keeps a standing
+    // "no" quiet after the first couple of asks.
     LaunchedEffect(meshPermitted) {
-        if (meshPermitted) MeshService.start(context)
+        if (meshPermitted) MeshService.start(context) else permissionLauncher.launch(MeshPermissions.required())
     }
     val meshStatus by MeshState.status.collectAsStateWithLifecycle()
 
@@ -724,6 +678,11 @@ fun MapScreen(
                 onSos = onStartSos?.let { start ->
                     {
                         if (locatingSos) return@let
+                        // Asked for here, on demand, rather than only at onboarding -- but
+                        // never awaited: SOS is never gated on a permission grant, so this
+                        // tap still proceeds at t+0 with fetchCurrentLocation's own
+                        // demo-centre fallback below regardless of the answer.
+                        if (!hasLocation) permissionLauncher.launch(LOCATION_PERMISSIONS)
                         locatingSos = true
                         scope.launch {
                             // Best fix available, but never a blocker: §6.1 has the
@@ -742,6 +701,10 @@ fun MapScreen(
                 },
                 onClick = {
                     if (locatingReport) return@MapActionBar
+                    // Same as SOS above: asked for on demand, never awaited -- a decline
+                    // (or a not-yet-answered system dialog) still lands on the map-tap
+                    // fallback via the null case below, exactly as it did with no permission at all.
+                    if (!hasLocation) permissionLauncher.launch(LOCATION_PERMISSIONS)
                     locatingReport = true
                     scope.launch {
                         val location = fetchCurrentLocation(context)

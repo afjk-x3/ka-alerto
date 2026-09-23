@@ -1,6 +1,9 @@
 package com.macci.kaalerto.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.macci.kaalerto.identity.Perm
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -98,6 +101,12 @@ fun KaAlertoApp(
     openFeatureRef: String? = null,
 ) {
     val appContext = LocalContext.current
+    // On-demand location ask for "Subukan ulit" on the onboarding form and the profile
+    // screen (23 Sep 2026: the profile screen's own permission section was removed, so
+    // this is now the only way to grant location from there after declining once).
+    // Fire-and-forget: granting it doesn't retry the fetch by itself, same as the map's
+    // own "Nasaan ako" -- the person taps the button again once they've said yes.
+    val locationPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {}
     // PRD §9 is literal: registration is required at first run, so an unregistered
     // device opens on the form rather than the map. The SOS banner on that form stops
     // being a courtesy at this point and becomes the only thing reachable — which is
@@ -556,14 +565,18 @@ fun KaAlertoApp(
             placeName = draftPlaceName,
             locating = locatingHome,
             onLocate = {
-                scope.launch {
-                    locatingHome = true
-                    val fix = fetchAccurateLocation(appContext)
-                    if (fix != null) {
-                        draftHome = fix.latitude to fix.longitude
-                        draftAccuracy = fix.accuracy
+                if (!Perm.LOCATION.isGranted(appContext)) {
+                    locationPermissionLauncher.launch(Perm.LOCATION.permissions())
+                } else {
+                    scope.launch {
+                        locatingHome = true
+                        val fix = fetchAccurateLocation(appContext)
+                        if (fix != null) {
+                            draftHome = fix.latitude to fix.longitude
+                            draftAccuracy = fix.accuracy
+                        }
+                        locatingHome = false
                     }
-                    locatingHome = false
                 }
             },
             onPickOnMap = { screen = Screen.PickHome },
@@ -652,14 +665,18 @@ fun KaAlertoApp(
                 placeName = draftPlaceName,
                 locating = locatingHome,
                 onLocate = {
-                    scope.launch {
-                        locatingHome = true
-                        val fix = fetchAccurateLocation(appContext)
-                        if (fix != null) {
-                            draftHome = fix.latitude to fix.longitude
-                            draftAccuracy = fix.accuracy
+                    if (!Perm.LOCATION.isGranted(appContext)) {
+                        locationPermissionLauncher.launch(Perm.LOCATION.permissions())
+                    } else {
+                        scope.launch {
+                            locatingHome = true
+                            val fix = fetchAccurateLocation(appContext)
+                            if (fix != null) {
+                                draftHome = fix.latitude to fix.longitude
+                                draftAccuracy = fix.accuracy
+                            }
+                            locatingHome = false
                         }
-                        locatingHome = false
                     }
                 },
                 onPickOnMap = { screen = Screen.PickHome },
