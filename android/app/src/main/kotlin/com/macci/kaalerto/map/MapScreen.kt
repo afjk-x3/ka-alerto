@@ -229,16 +229,6 @@ fun MapScreen(
     var pickedLatLng by remember { mutableStateOf<LatLng?>(null) }
     var locatingPick by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
-    var showBackgroundTip by remember { mutableStateOf(BackgroundTip.shouldShow(context)) }
-    // Auto-closes after 5 minutes rather than sitting on the map indefinitely for
-    // whoever doesn't tap "Tapos na" -- same effect as dismissing it by hand, since the
-    // point was to be noticed once, not to be a permanent fixture.
-    LaunchedEffect(showBackgroundTip) {
-        if (!showBackgroundTip) return@LaunchedEffect
-        delay(5 * 60_000L)
-        BackgroundTip.dismiss(context)
-        showBackgroundTip = false
-    }
     // Whether featureSummaries has ever actually contained selectedFeatureRef. Guards
     // the "vanished feature" auto-clear below: a freshly-picked selectedFeatureRef (the
     // registration-gate resume, or a just-submitted report's own featureRef) can easily
@@ -429,15 +419,6 @@ fun MapScreen(
         if (showChrome && !covered && herePackState !is PackState.Downloading) {
             UncoveredAreaNote(onDownloadHere = onDownloadHere, modifier = Modifier.fillMaxWidth())
         }
-        if (showChrome && showBackgroundTip) {
-            BackgroundTipBanner(
-                onDismiss = {
-                    BackgroundTip.dismiss(context)
-                    showBackgroundTip = false
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
 
         if (showChrome && onOpenQueue != null) {
             RoleActionStrip(
@@ -620,9 +601,6 @@ fun MapScreen(
             }
         }
 
-        if (showChrome) {
-            MapDisclaimer()
-        }
 
         routeDisclosureFor?.let { target ->
             RouteDisclosureDialog(

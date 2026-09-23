@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -75,6 +76,17 @@ fun MapLegend(modifier: Modifier = Modifier) {
             LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S2)), tr("Hindi madaanan ng sasakyan", "Impassable by vehicle"))
             LegendRow(Color(android.graphics.Color.parseColor(SeverityColors.S1)), tr("Madaanan, mag-ingat", "Passable, be careful"))
             LegendRow(Color(0xFFB9A98F), tr("Luma na — kailangang tingnan", "Stale — needs a look"), muted = true)
+            // PRD FR-1.5's statement lives here now rather than in a permanent strip under
+            // the map, which cost a full row of map height for a sentence read once.
+            Text(
+                tr(
+                    "Galing sa ulat ng residente. Maaaring may kulang o luma. Tingnan pa rin ang nasa harap mo.",
+                    "From resident reports. May be incomplete or outdated. Still check what's in front of you.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 6.dp).widthIn(max = 240.dp),
+            )
         }
     }
 }
