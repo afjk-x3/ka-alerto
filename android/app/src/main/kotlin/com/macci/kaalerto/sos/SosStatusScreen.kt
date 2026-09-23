@@ -295,8 +295,8 @@ private fun PayloadPanel(snapshot: SosSnapshot, modifier: Modifier = Modifier) {
             leftValue = context.medical.joinToString(" · ").ifEmpty { tr("Hindi sinabi", "Not stated") },
             leftColor = if (context.hasMedicalNeed) SosColors.CriticalSoft else SosColors.PrimaryText,
             rightLabel = tr("Lokasyon", "Location"),
-            rightValue = "%.4f\n%.4f".format(snapshot.lat, snapshot.lon),
-            rightMono = true,
+            rightValue = if (snapshot.locationKnown) "%.4f\n%.4f".format(snapshot.lat, snapshot.lon) else tr("Hinahanap pa", "Still finding"),
+            rightMono = snapshot.locationKnown,
         )
     }
 }

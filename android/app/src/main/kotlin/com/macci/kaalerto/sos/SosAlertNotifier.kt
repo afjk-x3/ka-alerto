@@ -59,7 +59,7 @@ object SosAlertNotifier {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-        val distance = if (fromLat != null && fromLon != null) {
+        val distance = if (fromLat != null && fromLon != null && snapshot.locationKnown) {
             haversineMeters(fromLat, fromLon, snapshot.lat, snapshot.lon)
         } else {
             null

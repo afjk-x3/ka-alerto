@@ -72,10 +72,8 @@ private const val HOLD_TICK_MS = 16L
  */
 @Composable
 fun SosHoldScreen(
-    lat: Double,
-    lon: Double,
-    accuracyMeters: Float?,
-    onHoldComplete: () -> Unit,
+    /** Called with the fix found so far — null when there is none yet; the request still goes out. */
+    onHoldComplete: (lat: Double?, lon: Double?, accuracyMeters: Float?) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -84,6 +82,19 @@ fun SosHoldScreen(
     var progress by remember { mutableFloatStateOf(0f) }
     var holding by remember { mutableStateOf(false) }
     var completed by remember { mutableStateOf(false) }
+
+    // Found while the screen is up rather than before it opens: pressing SOS on the map
+    // used to wait for GPS (up to 6 s) before this screen appeared at all. Holding never
+    // waits for this either — if it lands first, the request goes out as "unknown" and
+    // SosViewModel keeps looking.
+    var fix by remember { mutableStateOf<android.location.Location?>(null) }
+    var locating by remember { mutableStateOf(true) }
+    LaunchedEffect(Unit) {
+        fix = com.macci.kaalerto.location.fetchCurrentLocation(context)
+        locating = false
+    }
+    val latestFix by androidx.compose.runtime.rememberUpdatedState(fix)
+    fun complete() = latestFix.let { onHoldComplete(it?.latitude, it?.longitude, it?.accuracy) }
 
     // The countdown runs here rather than inside the gesture handler so that releasing
     // early cancels it by flipping `holding`, and so the haptic ticks stay on the same
@@ -110,7 +121,7 @@ fun SosHoldScreen(
         if (isActive) {
             completed = true
             haptics.confirm()
-            onHoldComplete()
+            complete()
         }
     }
 
@@ -148,7 +159,7 @@ fun SosHoldScreen(
                             if (completed) return@onLongClick false
                             completed = true
                             haptics.confirm()
-                            onHoldComplete()
+                            complete()
                             true
                         }
                     }
@@ -185,9 +196,8 @@ fun SosHoldScreen(
         )
 
         OutgoingPanel(
-            lat = lat,
-            lon = lon,
-            accuracyMeters = accuracyMeters,
+            fix = fix,
+            locating = locating,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp),
         )
 
@@ -277,16 +287,18 @@ internal fun holdPlaceLine(placeLabel: String?, lat: Double, lon: Double): Strin
 
 /** SOSHold.dc.html's "Ipapadala agad" panel — what leaves the phone the instant the hold lands. */
 @Composable
-private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modifier: Modifier = Modifier) {
+private fun OutgoingPanel(fix: android.location.Location?, locating: Boolean, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
+    val lat = fix?.latitude
+    val lon = fix?.longitude
     // Best-effort, same as the registration home row (location/PlaceName.kt): a name is
     // a courtesy label over the coordinate, never a replacement for it, so the raw fix
     // stays visible underneath whether or not this resolves. Inside the demo area the
     // barangay line shows at once and the label replaces it when it arrives.
     var place by remember(lat, lon) { mutableStateOf<Place?>(null) }
-    LaunchedEffect(lat, lon) { place = describePlace(context, lat, lon) }
-    val placeLine = holdPlaceLine(place?.label, lat, lon)
+    LaunchedEffect(lat, lon) { if (lat != null && lon != null) place = describePlace(context, lat, lon) }
+    val placeLine = if (lat != null && lon != null) holdPlaceLine(place?.label, lat, lon) else null
 
     Column(
         modifier = modifier
@@ -303,27 +315,54 @@ private fun OutgoingPanel(lat: Double, lon: Double, accuracyMeters: Float?, modi
             color = SosColors.MutedText,
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            PinGlyph(SosColors.Mesh, Modifier.size(18.dp))
+            PinGlyph(if (fix == null) SosColors.Warning else SosColors.Mesh, Modifier.size(18.dp))
             Spacer(Modifier.size(10.dp))
             Column {
-                if (placeLine != null) {
-                    Text(
-                        placeLine,
+                when {
+                    fix != null -> {
+                        if (placeLine != null) {
+                            Text(
+                                placeLine,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = SosColors.PrimaryText,
+                            )
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                            Text(
+                                "%.4f, %.4f".format(fix.latitude, fix.longitude),
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 12.sp,
+                                color = SosColors.MutedText,
+                            )
+                            if (fix.hasAccuracy()) {
+                                Spacer(Modifier.size(8.dp))
+                                Text("±${fix.accuracy.toInt()} m", fontSize = 12.sp, color = SosColors.MutedText)
+                            }
+                        }
+                    }
+                    locating -> Text(
+                        tr("Hinahanap ang lokasyon mo…", "Finding your location…"),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Medium,
                         color = SosColors.PrimaryText,
                     )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                    Text(
-                        "%.4f, %.4f".format(lat, lon),
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 12.sp,
-                        color = SosColors.MutedText,
-                    )
-                    if (accuracyMeters != null) {
-                        Spacer(Modifier.size(8.dp))
-                        Text("±${accuracyMeters.toInt()} m", fontSize = 12.sp, color = SosColors.MutedText)
+                    else -> {
+                        Text(
+                            tr("Hindi pa alam ang lokasyon", "Location not known yet"),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SosColors.Warning,
+                        )
+                        Text(
+                            tr(
+                                "Ipapadala pa rin. Idadagdag ang lokasyon kapag nakuha ng GPS.",
+                                "It still goes out. The location is added once GPS finds it.",
+                            ),
+                            fontSize = 12.sp,
+                            color = SosColors.MutedText,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
                     }
                 }
             }

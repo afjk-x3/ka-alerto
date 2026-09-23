@@ -112,10 +112,10 @@ private data class HomeDraft(val lat: Double, val lon: Double, val radiusMeters:
  * @param onStartReportAt Bubbles up when the day 4 conflict sheet's "I-check ko
  *   ngayon" is tapped — filing a fresh report is the resolution path for a
  *   conflicting feature, not a confirm/dispute (see detail/DetailSheet.kt).
- * @param onStartSos Day 8's SOS path. Uses the same GPS-first, last-known-fallback
- *   location as a report, but unlike [onStartReport] it never bounces to pick-mode:
- *   asking someone to tap their own position on a map during a rescue is not an
- *   acceptable fallback, so a coarse fix is used and its accuracy is shown instead.
+ * @param onStartSos Day 8's SOS path. Opens the hold screen at once; that screen finds
+ *   the location itself, and a request raised before any fix goes out marked unknown.
+ *   It never bounces to pick-mode: asking someone to tap their own position on a map
+ *   during a rescue is not an acceptable fallback.
  * @param stormMode / onToggleStormMode Day 5's dark-mode toggle — a manual condition
  *   the resident or barangay declares, not a system setting (docs/02-prd.md §6), so
  *   it's a button here rather than following `isSystemInDarkTheme()`.
@@ -130,7 +130,7 @@ fun MapScreen(
     onStartReport: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
     onEnterPickLocation: (() -> Unit)? = null,
     onStartReportAt: ((lat: Double, lon: Double) -> Unit)? = null,
-    onStartSos: ((lat: Double, lon: Double, accuracyMeters: Float?) -> Unit)? = null,
+    onStartSos: (() -> Unit)? = null,
     sosActive: Boolean = false,
     role: String = com.macci.kaalerto.identity.LocalIdentity.ROLE_RESIDENT,
     onOpenEvac: (() -> Unit)? = null,
@@ -228,9 +228,6 @@ fun MapScreen(
     // until the confirm bar's "I-save" is tapped. See PickLocationBanner below.
     var pickedLatLng by remember { mutableStateOf<LatLng?>(null) }
     var locatingPick by remember { mutableStateOf(false) }
-    // The SOS button had no pending state at all: it awaited a fix and, if none came,
-    // simply never navigated. Observed on device as the red button doing nothing.
-    var locatingSos by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
     var showBackgroundTip by remember { mutableStateOf(BackgroundTip.shouldShow(context)) }
     // Auto-closes after 5 minutes rather than sitting on the map indefinitely for
@@ -674,29 +671,13 @@ fun MapScreen(
             onStartReport != null -> MapActionBar(
                 label = if (locatingReport) tr("Kinukuha ang lokasyon…", "Getting location…") else tr("Mag-ulat", "Report"),
                 sosActive = sosActive,
-                locatingSos = locatingSos,
                 onSos = onStartSos?.let { start ->
                     {
-                        if (locatingSos) return@let
-                        // Asked for here, on demand, rather than only at onboarding -- but
-                        // never awaited: SOS is never gated on a permission grant, so this
-                        // tap still proceeds at t+0 with fetchCurrentLocation's own
-                        // demo-centre fallback below regardless of the answer.
+                        // Asked for here, on demand, but never awaited: SOS is never gated
+                        // on a permission grant, and the hold screen opens at once and
+                        // finds the location itself (no fix = sent as unknown, never a guess).
                         if (!hasLocation) permissionLauncher.launch(LOCATION_PERMISSIONS)
-                        locatingSos = true
-                        scope.launch {
-                            // Best fix available, but never a blocker: §6.1 has the
-                            // request going out at t+0 with the last known position and
-                            // refining afterwards. A null here still opens the hold
-                            // screen at the demo centre rather than refusing.
-                            val location = fetchCurrentLocation(context)
-                            locatingSos = false
-                            start(
-                                location?.latitude ?: DemoArea.centre.latitude,
-                                location?.longitude ?: DemoArea.centre.longitude,
-                                location?.accuracy,
-                            )
-                        }
+                        start()
                     }
                 },
                 onClick = {
@@ -1008,7 +989,6 @@ private fun MapActionBar(
     onClick: () -> Unit,
     onSos: (() -> Unit)?,
     sosActive: Boolean,
-    locatingSos: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -1053,7 +1033,6 @@ private fun MapActionBar(
                 )
                 Text(
                     when {
-                        locatingSos -> tr("sandali…", "wait…")
                         sosActive -> tr("aktibo", "active")
                         else -> tr("pindutin", "press")
                     },

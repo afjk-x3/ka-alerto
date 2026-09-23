@@ -53,6 +53,12 @@ fun SosLiveBanner(title: String, subtitle: String, modifier: Modifier = Modifier
     }
 }
 
+/** "16.0265, 120.4216", or plainly that the fix hasn't come in yet — never a guessed point. */
+@Composable
+fun SosSnapshot.locationLine(): String =
+    if (locationKnown) "%.4f, %.4f".format(lat, lon)
+    else com.macci.kaalerto.i18n.tr("lokasyon: hinahanap pa", "location: still finding")
+
 /** "mm:ss" for the first hour, then "N min". What the banner counts up. */
 fun elapsedLabel(startedAtMs: Long, nowMs: Long): String {
     val seconds = ((nowMs - startedAtMs).coerceAtLeast(0)) / 1000

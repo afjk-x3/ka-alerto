@@ -15,7 +15,8 @@ sealed interface Screen {
      * The last of those is reached automatically as well as by tap: the rescue card is
      * a *state*, not a destination, and appears when no channel has produced anything.
      */
-    data class SosHold(val lat: Double, val lon: Double, val accuracyMeters: Float?) : Screen
+    /** Opens at once; the hold screen finds the location itself while it is showing. */
+    data object SosHold : Screen
     data class SosAddContext(val sosId: String) : Screen
     data class SosStatus(val sosId: String) : Screen
     data class SosRescueCard(val sosId: String) : Screen

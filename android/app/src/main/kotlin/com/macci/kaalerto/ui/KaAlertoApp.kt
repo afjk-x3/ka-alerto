@@ -376,10 +376,7 @@ fun KaAlertoApp(
             // a second one — five people pressing SOS is one rescue
             // (docs/03-architecture.md §6.5, duplicate collapse), and the same person
             // pressing twice certainly is.
-            onStartSos = { lat, lon, accuracy ->
-                val existing = activeSos
-                screen = if (existing != null) Screen.SosStatus(existing.sosId) else Screen.SosHold(lat, lon, accuracy)
-            },
+            onStartSos = { screen = sosEntry(activeSos) },
             sosActive = activeSos != null,
             role = role,
             onOpenEvac = { screen = Screen.EvacCentres },
@@ -438,13 +435,10 @@ fun KaAlertoApp(
             )
         }
 
-        is Screen.SosHold -> SosHoldScreen(
+        Screen.SosHold -> SosHoldScreen(
             modifier = modifier,
-            lat = current.lat,
-            lon = current.lon,
-            accuracyMeters = current.accuracyMeters,
-            onHoldComplete = {
-                sosViewModel.raise(current.lat, current.lon, current.accuracyMeters) { sosId ->
+            onHoldComplete = { lat, lon, accuracy ->
+                sosViewModel.raise(lat, lon, accuracy) { sosId ->
                     screen = Screen.SosAddContext(sosId)
                 }
             },
@@ -495,7 +489,7 @@ fun KaAlertoApp(
                 SosNearbyScreen(
                     modifier = modifier,
                     snapshot = snapshot,
-                    distanceMeters = HomeLocationStore.get(context)?.let {
+                    distanceMeters = HomeLocationStore.get(context)?.takeIf { snapshot.locationKnown }?.let {
                         haversineMeters(it.lat, it.lon, snapshot.lat, snapshot.lon)
                     },
                     isResponder = isResponder,
@@ -614,23 +608,8 @@ fun KaAlertoApp(
             },
             // The escape hatch is the whole reason the gate is defensible: nobody is
             // ever held behind this form during an emergency.
-            // Use fetchAccurateLocation (15s window, degrades to 6s one-shot) for consistency
-            // with the registration screen's own location stream — same hardware scenario.
-            onSos = {
-                scope.launch {
-                    val location = fetchAccurateLocation(context)
-                    val existing = activeSos
-                    screen = if (existing != null) {
-                        Screen.SosStatus(existing.sosId)
-                    } else {
-                        Screen.SosHold(
-                            location?.latitude ?: DemoArea.centre.latitude,
-                            location?.longitude ?: DemoArea.centre.longitude,
-                            location?.accuracy,
-                        )
-                    }
-                }
-            },
+            // Opens at once: the hold screen finds the location while it is showing.
+            onSos = { screen = sosEntry(activeSos) },
         )
         }
 
@@ -998,8 +977,8 @@ fun KaAlertoApp(
             // with the exact spot marked rather than leaving the responder on a queue
             // list with no way to see where to go.
             fun focus(sosId: String) {
-                incidents.firstOrNull { it.primary.sosId == sosId }?.let {
-                    sosFocus = LatLng(it.primary.lat, it.primary.lon)
+                incidents.firstOrNull { it.primary.sosId == sosId }?.primary?.takeIf { it.locationKnown }?.let {
+                    sosFocus = LatLng(it.lat, it.lon)
                 }
             }
             fun focusAndAdvance(sosId: String, state: SosState) {
@@ -1071,3 +1050,12 @@ fun KaAlertoApp(
     }
     }
 }
+
+/**
+ * Where any SOS control leads. An already-running request reopens its status rather than
+ * starting a second one — five people pressing SOS is one rescue
+ * (docs/03-architecture.md §6.5, duplicate collapse), and the same person pressing twice
+ * certainly is.
+ */
+private fun sosEntry(active: com.macci.kaalerto.sos.SosSnapshot?): Screen =
+    active?.let { Screen.SosStatus(it.sosId) } ?: Screen.SosHold

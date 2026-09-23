@@ -156,8 +156,14 @@ internal fun groupNearby(open: List<SosSnapshot>, radiusMeters: Double): List<Li
     val groups = mutableListOf<List<SosSnapshot>>()
     while (remaining.isNotEmpty()) {
         val seed = remaining.removeAt(0)
-        val near = remaining.filter {
-            haversineMeters(seed.lat, seed.lon, it.lat, it.lon) <= radiusMeters
+        // An unknown location is not a shared location: two requests still waiting for
+        // GPS would otherwise both sit at the 0,0 sentinel and merge into one incident.
+        val near = if (!seed.locationKnown) {
+            emptyList()
+        } else {
+            remaining.filter {
+                it.locationKnown && haversineMeters(seed.lat, seed.lon, it.lat, it.lon) <= radiusMeters
+            }
         }
         remaining.removeAll(near)
         groups += listOf(seed) + near

@@ -124,20 +124,29 @@ fun RescueCardScreen(
                 .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 12.dp),
         ) {
             CardLabel(tr("LOKASYON", "LOCATION"))
-            Text(
-                "%.4f".format(snapshot.lat),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 34.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = SosColors.CardInk,
-            )
-            Text(
-                "%.4f".format(snapshot.lon),
-                fontFamily = FontFamily.Monospace,
-                fontSize = 34.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = SosColors.CardInk,
-            )
+            if (snapshot.locationKnown) {
+                Text(
+                    "%.4f".format(snapshot.lat),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SosColors.CardInk,
+                )
+                Text(
+                    "%.4f".format(snapshot.lon),
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 34.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SosColors.CardInk,
+                )
+            } else {
+                Text(
+                    tr("Hinahanap pa ng GPS", "GPS still searching"),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SosColors.CardInk,
+                )
+            }
             Text(
                 buildString {
                     snapshot.accuracyMeters?.let { append("±${it.toInt()} m · ") }

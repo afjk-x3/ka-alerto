@@ -166,7 +166,7 @@ fun SosQueueScreen(
                         request = request,
                         incident = incident,
                         isOfficial = isOfficial,
-                        distanceMeters = if (myLat != null && myLon != null) {
+                        distanceMeters = if (myLat != null && myLon != null && request.locationKnown) {
                             haversineMeters(myLat, myLon, request.lat, request.lon)
                         } else {
                             null
@@ -238,7 +238,7 @@ private fun RequestCard(
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                            "%.4f, %.4f".format(request.lat, request.lon),
+                            request.locationLine(),
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
@@ -366,7 +366,7 @@ private fun NearbyReportsNote(incident: SosIncident) {
         Spacer(Modifier.size(6.dp))
         incident.all.forEach { request ->
             Text(
-                "· ${"%.4f, %.4f".format(request.lat, request.lon)} · ${request.context.people?.let(SosContext::peopleLabel) ?: "?"} " + tr("tao", "people"),
+                "· ${request.locationLine()} · ${request.context.people?.let(SosContext::peopleLabel) ?: "?"} " + tr("tao", "people"),
                 fontSize = 12.sp,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,

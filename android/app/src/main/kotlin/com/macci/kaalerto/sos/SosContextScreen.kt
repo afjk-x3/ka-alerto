@@ -66,7 +66,7 @@ fun SosContextScreen(
     ) {
         SosLiveBanner(
             title = tr("Ipinapadala na ang SOS mo", "Your SOS is already going out"),
-            subtitle = "$elapsedLabel · %.4f, %.4f".format(snapshot.lat, snapshot.lon),
+            subtitle = "$elapsedLabel · " + snapshot.locationLine(),
         )
 
         Row(

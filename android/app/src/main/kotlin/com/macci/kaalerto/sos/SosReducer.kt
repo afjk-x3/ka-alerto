@@ -36,6 +36,9 @@ data class SosSnapshot(
     val claimedByName: String?,
 ) {
     val isActive: Boolean get() = !state.isClosed
+
+    /** False while the request is still waiting for its first GPS fix — see [isKnownLocation]. */
+    val locationKnown: Boolean get() = isKnownLocation(lat, lon)
 }
 
 /**
@@ -62,8 +65,17 @@ object SosReducer {
         var state = SosState.QUEUED
         var context = requestPayload.context ?: SosContext()
         var claimedByName: String? = null
+        var lat = request.lat
+        var lon = request.lon
+        var accuracyMeters = requestPayload.accuracyMeters
 
         for ((event, payload) in events) {
+            // Only the requester's own phone can say where the requester is.
+            if (payload.locationUpdate && event.authorId == request.authorId && isKnownLocation(event.lat, event.lon)) {
+                lat = event.lat
+                lon = event.lon
+                accuracyMeters = payload.accuracyMeters
+            }
             when (event.type) {
                 TYPE_SOS_STATE -> payload.state?.let { incoming ->
                     val merged = mergeSosState(state, incoming)
@@ -83,9 +95,9 @@ object SosReducer {
         return SosSnapshot(
             sosId = sosId,
             startedAtMs = request.timestampMs,
-            lat = request.lat,
-            lon = request.lon,
-            accuracyMeters = requestPayload.accuracyMeters,
+            lat = lat,
+            lon = lon,
+            accuracyMeters = accuracyMeters,
             state = state,
             context = context,
             authorName = request.authorName,

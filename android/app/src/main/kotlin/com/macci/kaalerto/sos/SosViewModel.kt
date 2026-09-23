@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.macci.kaalerto.location.fetchCurrentLocation
 
 class SosViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -91,11 +93,31 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
      * `docs/03-architecture.md` §6.1 t+0.0: the local write is the *first* thing that
      * happens, before a fix is refined and before any screen asks for context.
      */
-    fun raise(lat: Double, lon: Double, accuracyMeters: Float?, onRaised: (String) -> Unit) {
+    fun raise(lat: Double?, lon: Double?, accuracyMeters: Float?, onRaised: (String) -> Unit) {
         val event = newSosEvent(identity, lat, lon, accuracyMeters, System.currentTimeMillis())
         viewModelScope.launch {
             repository.insert(event)
             onRaised(event.id)
+            if (!isKnownLocation(event.lat, event.lon)) followUpLocation(event.id)
+        }
+    }
+
+    /**
+     * Keeps asking for a fix after a request went out without one, and sends the first
+     * one it gets as a location update. Stops once the request closes.
+     */
+    private suspend fun followUpLocation(sosId: String) {
+        repeat(LOCATION_RETRIES) {
+            val snapshot = snapshotOf(sosId)
+            if (snapshot != null && (!snapshot.isActive || snapshot.locationKnown)) return
+            val fix = fetchCurrentLocation(getApplication())
+            if (fix != null) {
+                repository.insert(
+                    sosLocationEvent(sosId, identity, fix.latitude, fix.longitude, fix.accuracy, System.currentTimeMillis()),
+                )
+                return
+            }
+            delay(LOCATION_RETRY_MS)
         }
     }
 
@@ -140,5 +162,11 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
                 ),
             )
         }
+    }
+
+    private companion object {
+        // ponytail: ~10 min of retries in-process; a request still unknown after that stays unknown until re-raised.
+        const val LOCATION_RETRIES = 40
+        const val LOCATION_RETRY_MS = 15_000L
     }
 }

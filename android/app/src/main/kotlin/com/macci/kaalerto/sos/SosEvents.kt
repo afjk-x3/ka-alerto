@@ -45,7 +45,20 @@ data class SosPayload(
     val state: SosState? = null,
     /** Metres of horizontal uncertainty on the fix, shown on the rescue card as "±6 m". */
     val accuracyMeters: Float? = null,
+    /**
+     * True on a `sos_amend` that carries a fresh fix in its own lat/lon — see
+     * [sosLocationEvent]. Every other follow-up copies whatever location the request
+     * already had, so only these may move it.
+     */
+    val locationUpdate: Boolean = false,
 )
+
+/**
+ * A request raised before GPS answered is sent with this sentinel instead of a guessed
+ * point — the same null-island convention role and circle events use for "no real
+ * coordinate here". No real SOS can come from 0°, 0°.
+ */
+fun isKnownLocation(lat: Double, lon: Double): Boolean = !(lat == 0.0 && lon == 0.0)
 
 fun SosPayload.encode(): String = sosJson.encodeToString(SosPayload.serializer(), this)
 
@@ -55,21 +68,23 @@ fun decodeSosPayload(raw: String?): SosPayload? =
 /**
  * The request itself, written the instant the hold completes — before GPS is refined,
  * before any channel is tried, and before the context screen is even shown. FR-2.2 and
- * `docs/03-architecture.md` §6.1's t+0.0 row.
+ * `docs/03-architecture.md` §6.1's t+0.0 row. A null [lat]/[lon] (no fix yet) is sent
+ * as unknown, never replaced with a guess; [sosLocationEvent] fills it in later.
  */
 fun newSosEvent(
     identity: LocalIdentity.Identity,
-    lat: Double,
-    lon: Double,
+    lat: Double?,
+    lon: Double?,
     accuracyMeters: Float?,
     nowMs: Long,
 ): Event {
     val sosId = "sos-${UUID.randomUUID()}"
+    val known = lat != null && lon != null
     return Event(
         id = sosId,
         type = TYPE_SOS,
-        lat = lat,
-        lon = lon,
+        lat = if (known) lat!! else 0.0,
+        lon = if (known) lon!! else 0.0,
         // Null on purpose: the map's reducer groups by featureRef, and a rescue request
         // is not an observation of a flooded segment. Giving it a geohash would put a
         // severity marker on someone's house.
@@ -84,9 +99,27 @@ fun newSosEvent(
         origin = "local",
         hopCount = 0,
         note = null,
-        payload = SosPayload(sosId = sosId, accuracyMeters = accuracyMeters).encode(),
+        payload = SosPayload(sosId = sosId, accuracyMeters = if (known) accuracyMeters else null).encode(),
     )
 }
+
+/** The requester's own phone reporting a fix it did not have (or had worse) when the request went out. */
+fun sosLocationEvent(
+    sosId: String,
+    identity: LocalIdentity.Identity,
+    lat: Double,
+    lon: Double,
+    accuracyMeters: Float?,
+    nowMs: Long,
+): Event = sosFollowUp(
+    sosId = sosId,
+    type = TYPE_SOS_AMEND,
+    identity = identity,
+    lat = lat,
+    lon = lon,
+    nowMs = nowMs,
+    payload = SosPayload(sosId = sosId, accuracyMeters = accuracyMeters, locationUpdate = true),
+)
 
 fun sosAmendEvent(
     sosId: String,
