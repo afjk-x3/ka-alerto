@@ -4,6 +4,8 @@ import com.macci.kaalerto.data.Event
 import com.macci.kaalerto.data.TYPE_FLOOD_WITHDRAW
 import com.macci.kaalerto.evac.TYPE_EVAC_CENTRE
 import com.macci.kaalerto.evac.TYPE_EVAC_STATUS
+import com.macci.kaalerto.family.TYPE_CIRCLE_CREATE
+import com.macci.kaalerto.family.TYPE_CIRCLE_JOIN
 import com.macci.kaalerto.sos.TYPE_SOS
 import com.macci.kaalerto.sos.TYPE_SOS_AMEND
 import com.macci.kaalerto.sos.TYPE_SOS_STATE
@@ -14,12 +16,16 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 
 /**
- * Only these event types leave the device. `family_checkin`, `circle_invite` and `role_*`
- * stay mesh-only: Supabase has no access control (the anon key ships in the APK), so
+ * Only these event types leave the device. `family_checkin` and `role_*` stay
+ * mesh-only: Supabase has no access control (the anon key ships in the APK), so
  * anything posted is readable by anyone who extracts it. SOS is included, but always
- * redacted first — see [eventsToSync].
+ * redacted first — see [eventsToSync]. `circle_create`/`circle_join`, unlike the
+ * pairwise `circle_invite` they replaced, ARE synced — a real circle's membership and
+ * chosen name needs to resolve from anywhere a join code was shared, not only within
+ * Bluetooth range. See `specs/2026-09-23-circle-create-join-redesign.md`'s privacy
+ * residual for what that trades away.
  */
-val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_EVAC_CENTRE, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE)
+val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_EVAC_CENTRE, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE, TYPE_CIRCLE_CREATE, TYPE_CIRCLE_JOIN)
 
 /**
  * Every locally-held event worth pushing — mesh-received ones included, not just

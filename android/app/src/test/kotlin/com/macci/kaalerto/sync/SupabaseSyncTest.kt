@@ -57,11 +57,18 @@ class SupabaseSyncTest {
     }
 
     @Test
-    fun `flood-reporting and SOS types are synced, family and role events are excluded`() {
+    fun `flood-reporting and SOS types are synced, family check-ins and roles are excluded`() {
         val events = listOf("flood_report", "confirm", "dispute", "official_status", "sos", "sos_amend", "sos_state",
-            "family_checkin", "circle_invite", "role_grant").mapIndexed { i, t -> event("e$i", type = t) }
+            "family_checkin", "role_grant").mapIndexed { i, t -> event("e$i", type = t) }
 
         assertEquals(setOf("e0", "e1", "e2", "e3", "e4", "e5", "e6"), eventsToSync(events).map { it.id }.toSet())
+    }
+
+    @Test
+    fun `a circle's creation and its joins are synced, unlike the check-in pings inside it`() {
+        val events = listOf("circle_create", "circle_join", "family_checkin").mapIndexed { i, t -> event("e$i", type = t) }
+
+        assertEquals(setOf("e0", "e1"), eventsToSync(events).map { it.id }.toSet())
     }
 
     @Test
