@@ -5,67 +5,45 @@ import com.macci.kaalerto.data.Event
 /** One circle member as the Family screen renders them. */
 data class CircleMember(val authorId: String, val displayName: String, val pairedAtMs: Long)
 
+/** What a device resolves to for its own circle. [name] is null until this device
+ * has seen the matching [TYPE_CIRCLE_CREATE] event — e.g. right after joining by
+ * code, before the creator's event has arrived over mesh or Supabase. */
+data class ResolvedCircle(
+    val circleId: String,
+    val name: String?,
+    val members: List<CircleMember>,
+)
+
+private fun circleIdOf(event: Event): String? = when (event.type) {
+    TYPE_CIRCLE_CREATE -> decodeCircleCreatePayload(event.payload)?.circleId
+    TYPE_CIRCLE_JOIN -> decodeCircleJoinPayload(event.payload)?.circleId
+    else -> null
+}
+
 /**
- * "Who's in my circle" as the connected component of the [TYPE_CIRCLE_INVITE] event
- * graph containing [myAuthorId] — a pure fold over the shared event log, same shape as
- * `data/Reducer.kt`/`sos/SosReducer.kt`/`identity/RoleReducer.kt`, recomputed on every
- * call rather than cached or persisted anywhere.
- *
- * Every `circle_invite` event is treated as one *undirected* edge between its author and
- * its target — who scanned whom is provenance, not a constraint on the result. "My
- * circle" is everyone reachable from me by following those edges, not just people who
- * directly invited me or whom I directly invited: if A and B have already paired, and I
- * pair with either one of them, I end up with both, with no fan-out messaging and no
- * shared circle identifier for any device to keep in sync. See
- * `specs/2026-09-12-circle-unification-redesign.md` for why this replaced an earlier,
- * per-device `circleId` model that could not make that guarantee.
- *
- * A member reachable only transitively — someone I never scanned and who never scanned
- * me — has no event of their own to supply a display name from, which is exactly why
- * [CircleInvitePayload] carries `targetAuthorName`: whichever edge first connects them to
- * the graph is also the only place their name is guaranteed to appear.
+ * My circle: whichever of my own [TYPE_CIRCLE_CREATE]/[TYPE_CIRCLE_JOIN] events is
+ * newest gives my `circleId` — switching circles is simply authoring a newer one, no
+ * explicit "leave" needed. Membership is everyone else whose own newest create/join
+ * event points at that same `circleId`. Pure fold, same shape as
+ * `evac/EvacCentre.kt`'s `resolveCentres` — no persisted store, recomputed on every
+ * call. See `specs/2026-09-23-circle-create-join-redesign.md`.
  */
-fun effectiveCircle(allEvents: List<Event>, myAuthorId: String): List<CircleMember> {
-    data class Edge(
-        val authorId: String,
-        val authorName: String,
-        val targetId: String,
-        val targetName: String,
-        val atMs: Long,
-    )
+fun resolveCircle(allEvents: List<Event>, myAuthorId: String): ResolvedCircle? {
+    val relevant = allEvents.filter { it.type == TYPE_CIRCLE_CREATE || it.type == TYPE_CIRCLE_JOIN }
+    val latestPerAuthor = relevant.groupBy { it.authorId }
+        .mapValues { (_, events) -> events.maxBy { it.timestampMs } }
 
-    val edges = allEvents
-        .asSequence()
-        .filter { it.type == TYPE_CIRCLE_INVITE }
-        .mapNotNull { event ->
-            decodeCircleInvitePayload(event.payload)?.let { payload ->
-                Edge(event.authorId, event.authorName, payload.targetAuthorId, payload.targetAuthorName, event.timestampMs)
-            }
-        }
-        .toList()
+    val myEvent = latestPerAuthor[myAuthorId] ?: return null
+    val myCircleId = circleIdOf(myEvent) ?: return null
 
-    val neighbors = mutableMapOf<String, MutableSet<String>>()
-    val nameOf = mutableMapOf<String, String>()
-    val firstSeenAt = mutableMapOf<String, Long>()
-    for (edge in edges) {
-        neighbors.getOrPut(edge.authorId) { mutableSetOf() }.add(edge.targetId)
-        neighbors.getOrPut(edge.targetId) { mutableSetOf() }.add(edge.authorId)
-        nameOf[edge.authorId] = edge.authorName
-        nameOf[edge.targetId] = edge.targetName
-        firstSeenAt.merge(edge.authorId, edge.atMs, ::minOf)
-        firstSeenAt.merge(edge.targetId, edge.atMs, ::minOf)
-    }
+    val name = relevant
+        .filter { it.type == TYPE_CIRCLE_CREATE && circleIdOf(it) == myCircleId }
+        .maxByOrNull { it.timestampMs }
+        ?.let { decodeCircleCreatePayload(it.payload)?.name }
 
-    // BFS from myAuthorId over the undirected invite graph.
-    val visited = mutableSetOf(myAuthorId)
-    val queue = ArrayDeque(listOf(myAuthorId))
-    while (queue.isNotEmpty()) {
-        for (neighbor in neighbors[queue.removeFirst()].orEmpty()) {
-            if (visited.add(neighbor)) queue.add(neighbor)
-        }
-    }
+    val members = latestPerAuthor.values
+        .filter { it.authorId != myAuthorId && circleIdOf(it) == myCircleId }
+        .map { CircleMember(authorId = it.authorId, displayName = it.authorName, pairedAtMs = it.timestampMs) }
 
-    return visited
-        .filterNot { it == myAuthorId }
-        .map { id -> CircleMember(authorId = id, displayName = nameOf[id] ?: id, pairedAtMs = firstSeenAt[id] ?: 0L) }
+    return ResolvedCircle(circleId = myCircleId, name = name, members = members)
 }
