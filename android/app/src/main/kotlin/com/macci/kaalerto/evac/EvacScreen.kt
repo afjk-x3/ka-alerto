@@ -83,11 +83,17 @@ fun EvacScreen(
     val colors = LocalKaAlertoColors.current
     var editing by remember { mutableStateOf<String?>(null) }
 
-    // A resident sees only what they could actually walk to right now — an official
-    // still sees every centre, open or not, because "not open" is exactly the state
-    // they're here to change (OfficialControls below). Filtering this for officials
-    // too would hide the one button that opens a closed centre.
-    val visibleStates = if (isOfficial) states.filter { canManage(municipality, it.centre) } else states.filter { it.status != EvacStatus.NOT_OPEN }
+    // A resident sees every centre, open ones first and closed ones greyed below them:
+    // hiding closed ones left a fresh install with an empty list until an official
+    // opened something, when knowing where the shelters are is useful before they open.
+    // An official sees the ones their municipality manages, open or not, because "not
+    // open" is exactly the state they're here to change (OfficialControls below).
+    val visibleStates = if (isOfficial) {
+        states.filter { canManage(municipality, it.centre) }
+    } else {
+        states.sortedBy { it.status == EvacStatus.NOT_OPEN }
+    }
+    val noneOpen = states.isNotEmpty() && states.all { it.status == EvacStatus.NOT_OPEN }
 
     Column(
         modifier = modifier
@@ -141,7 +147,7 @@ fun EvacScreen(
                     fontSize = 15.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            } else if (visibleStates.isEmpty() && !isOfficial) {
+            } else if (noneOpen && !isOfficial) {
                 // Not the same message as an empty fixture: centres exist, none are
                 // open yet. A blank screen here would read as "nothing to see" when
                 // it actually means "check back" — the failure the NOT_OPEN default
@@ -154,8 +160,8 @@ fun EvacScreen(
                 )
                 Text(
                     tr(
-                        "May ${states.size} silungan sa lugar mo, pero wala pang binuksan ang barangay. Susubaybayan ito at ipapakita agad kapag may nagbukas.",
-                        "There ${if (states.size == 1) "is" else "are"} ${states.size} shelter${if (states.size == 1) "" else "s"} in your area, but the barangay hasn't opened one yet. This is watched and will show up as soon as one opens.",
+                        "Nakalista pa rin sa ibaba para malaman mo kung saan. Makikita agad dito kapag may binuksan ang barangay.",
+                        "They're still listed below so you know where they are. You'll see it here as soon as the barangay opens one.",
                     ),
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
