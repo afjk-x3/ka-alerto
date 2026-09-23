@@ -35,3 +35,14 @@ private val SEVERITY_TEXT = mapOf(
 )
 
 fun severityTextFor(severity: String): Pair<String, String> = SEVERITY_TEXT[severity] ?: ("Hindi tiyak" to "Unknown")
+
+/** Two or three words for a badge — the tier codes (S0-S3, SX) are internal and never shown. */
+private val SEVERITY_SHORT_TEXT = mapOf(
+    "S0" to ("Humupa na" to "Cleared"),
+    "S1" to ("Mag-ingat" to "Caution"),
+    "S2" to ("Bawal sasakyan" to "No cars"),
+    "S3" to ("Hindi madaanan" to "Impassable"),
+    "SX" to ("Magkasalungat" to "Conflicting"),
+)
+
+fun severityShortTextFor(severity: String): Pair<String, String> = SEVERITY_SHORT_TEXT[severity] ?: ("Hindi tiyak" to "Unknown")

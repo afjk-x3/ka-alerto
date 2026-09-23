@@ -268,7 +268,7 @@ private fun NowOnMap(summary: FeatureSummary) {
             SectionLabel(tr("NGAYON SA MAPA", "ON THE MAP NOW"))
             val (fil, en) = severityTextFor(summary.severity)
             Text(
-                "${summary.severity} · ${tr(fil, en)}",
+                tr(fil, en),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,

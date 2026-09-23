@@ -514,7 +514,8 @@ private fun SeverityBadge(severity: String) {
                 SeverityBadgeIcon(severity, tint = onColor, modifier = Modifier.size(15.dp))
                 Spacer(Modifier.size(6.dp))
             }
-            Text(severity, color = onColor, fontWeight = FontWeight.Bold)
+            val (fil, en) = com.macci.kaalerto.data.severityShortTextFor(severity)
+            Text(tr(fil, en), color = onColor, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -647,18 +648,33 @@ private fun EventHistoryRow(event: Event) {
         Column(modifier = Modifier.weight(1f)) {
             val label = when (event.type) {
                 "confirm" -> "${tr("Kumpirmasyon", "Confirmation")} · ${sourceLabel(event)}"
-                "dispute" -> "${tr("Pagtutol", "Dispute")} (${event.disputeReason ?: "?"}) · ${sourceLabel(event)}"
+                "dispute" -> listOfNotNull(
+                    tr("Pagtutol", "Dispute"),
+                    disputeReasonText(event.disputeReason),
+                ).joinToString(" — ") + " · ${sourceLabel(event)}"
                 TYPE_FLOOD_WITHDRAW -> "${tr("Binawi ng nag-ulat", "Withdrawn by its author")} · ${sourceLabel(event)}"
                 else -> sourceLabel(event)
             }
             Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            val detail = listOfNotNull(event.waterLevel, event.note).joinToString(" · ")
+            // The stored id ("ankle", or a seed's "bukong-bukong") is data, not copy.
+            val level = event.waterLevel?.let { raw -> resolveLevelOption(raw)?.let { tr(it.fil, it.en) } }
+            val detail = listOfNotNull(level, event.note).joinToString(" · ")
             if (detail.isNotBlank()) {
                 Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Text(ageLabel(System.currentTimeMillis() - event.timestampMs, LocalAppLanguage.current), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+/** The dispute's follow-up in words; the stored value is the enum name, never shown as-is. */
+@Composable
+private fun disputeReasonText(raw: String?): String? = when (raw?.uppercase()) {
+    DisputeReason.CLEARED_NOW.name -> tr("Humupa na", "Cleared now")
+    DisputeReason.WORSE.name -> tr("Lumala", "Worse now")
+    DisputeReason.SHALLOWER.name -> tr("Bumaba", "Shallower now")
+    DisputeReason.WRONG_LOCATION.name -> tr("Maling lokasyon", "Wrong location")
+    else -> null
 }
 
 @Composable

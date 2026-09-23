@@ -51,7 +51,7 @@ object FloodNotifier {
 
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("$severity — $severityLabel")
+            .setContentTitle(severityLabel)
             .setContentText(tr(
                     language,
                     "${distanceMeters.toInt()} m mula sa bahay mo · Baha pa ba rito? I-tap para kumpirmahin",

@@ -252,7 +252,8 @@ fun ReportScreen(
                     modifier = Modifier.size(44.dp).border(2.dp, onSeverityColor),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(derivedSeverity, color = onSeverityColor, fontWeight = FontWeight.Bold)
+                    // The map marker's own glyph, not the internal tier code ("S2").
+                    com.macci.kaalerto.detail.SeverityBadgeIcon(derivedSeverity, tint = onSeverityColor, modifier = Modifier.size(22.dp))
                 }
                 Spacer(Modifier.size(12.dp))
                 Column {
@@ -581,7 +582,7 @@ private fun SeverityOverrideDialog(current: String, onSelect: (String) -> Unit, 
                     ) {
                         Box(modifier = Modifier.size(16.dp).background(color, RoundedCornerShape(4.dp)))
                         Spacer(Modifier.size(12.dp))
-                        Text("$severity — ${tr(fil, en)}", fontWeight = if (severity == current) FontWeight.Bold else FontWeight.Normal)
+                        Text(tr(fil, en), fontWeight = if (severity == current) FontWeight.Bold else FontWeight.Normal)
                     }
                 }
             }
