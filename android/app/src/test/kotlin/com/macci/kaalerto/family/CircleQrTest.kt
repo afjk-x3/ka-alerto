@@ -43,37 +43,39 @@ class CircleQrTest {
         return result.text
     }
 
-    private val card = CircleCard(authorId = "local-a1b2c3d4", authorName = "Residente A1B2")
+    private val card = CircleJoinCard(circleId = "circle-a1b2c3d4", name = "Pamilya Reyes")
 
     @Test
-    fun `a circle card round-trips through an actual QR decode`() {
+    fun `a circle join card round-trips through an actual QR decode`() {
         val encoded = card.encode()
 
         val scanned = decode(encoded)
 
         assertEquals(encoded, scanned)
-        val decoded = decodeCircleCard(scanned)
+        val decoded = decodeCircleJoinCard(scanned)
         assertNotNull(decoded)
-        assertEquals(card.authorId, decoded!!.authorId)
-        assertEquals(card.authorName, decoded.authorName)
+        assertEquals(card.circleId, decoded!!.circleId)
+        assertEquals(card.name, decoded.name)
     }
 
     @Test
-    fun `the payload carries the identity itself, not a link to it`() {
+    fun `the payload carries the circle id itself, not a link to it`() {
         val encoded = card.encode()
 
         assertTrue(encoded.startsWith(CIRCLE_QR_PREFIX))
         assertTrue(!encoded.contains("http"))
-        assertTrue(encoded.contains(card.authorId))
+        assertTrue(encoded.contains(card.circleId))
     }
 
     @Test
-    fun `a QR that is not ours is rejected rather than half-parsed`() {
-        assertNull(decodeCircleCard("https://example.com"))
-        assertNull(decodeCircleCard("""{"authorId":"local-1"}"""))
-        assertNull(decodeCircleCard(CIRCLE_QR_PREFIX + "not json"))
+    fun `a QR that is not ours, or is the old v1 shape, is rejected rather than half-parsed`() {
+        assertNull(decodeCircleJoinCard("https://example.com"))
+        assertNull(decodeCircleJoinCard("""{"circleId":"circle-1"}"""))
+        assertNull(decodeCircleJoinCard(CIRCLE_QR_PREFIX + "not json"))
+        // The old pairwise-pairing format must not be silently accepted as the new shape.
+        assertNull(decodeCircleJoinCard("KAALERTO/CIRCLE/1:{\"id\":\"local-a1\",\"n\":\"A\"}"))
         // Also not confusable with the SOS card's own prefix:
-        assertNull(decodeCircleCard("KAALERTO/SOS/1:{}"))
+        assertNull(decodeCircleJoinCard("KAALERTO/SOS/1:{}"))
     }
 
     @Test
