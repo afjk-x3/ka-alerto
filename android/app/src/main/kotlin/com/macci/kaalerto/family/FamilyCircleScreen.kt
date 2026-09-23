@@ -64,15 +64,22 @@ private const val CHECKIN_TAP_COOLDOWN_MS = 3_000L
  * `Screen.EvacCentres` already uses — this screen is presentation only. */
 @Composable
 fun FamilyCircleScreen(
-    myQrContent: String,
+    hasCircle: Boolean,
+    circleName: String?,
     myLastCheckInMs: Long?,
     statuses: List<CircleMemberStatus>,
     onCheckIn: () -> Unit,
     onOpenMenu: () -> Unit,
-    onOpenScanner: () -> Unit,
-    onShowMyQr: () -> Unit,
+    onCreateCircle: () -> Unit,
+    onJoinCircle: () -> Unit,
+    onScanQr: () -> Unit,
+    onInvite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (!hasCircle) {
+        FamilyCircleEmptyState(onOpenMenu = onOpenMenu, onCreateCircle = onCreateCircle, onJoinCircle = onJoinCircle, onScanQr = onScanQr, modifier = modifier)
+        return
+    }
 
     Column(
         modifier = modifier
@@ -94,10 +101,9 @@ fun FamilyCircleScreen(
                     // explicitly excludes myAuthorId from its result — but the count here is
                     // "how many people are in this circle," which includes the viewer.
                     Text(
-                        tr(
-                            "${statuses.size + 1} tao · nasa mga phone lang, hindi ina-upload",
-                            "${statuses.size + 1} people · on phones only, never uploaded",
-                        ),
+                        circleName?.let { name ->
+                            tr("$name · ${statuses.size + 1} tao", "$name · ${statuses.size + 1} people")
+                        } ?: tr("${statuses.size + 1} tao", "${statuses.size + 1} people"),
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 3.dp),
@@ -211,30 +217,101 @@ fun FamilyCircleScreen(
                 }
             }
 
-            // Adding someone works from either side: show your own QR for them to scan,
-            // or scan theirs — the circle-unification fold treats a scan from either
-            // device as the same mutual invite (specs/2026-09-12-circle-unification-redesign.md).
+            // Inviting more people is the main ongoing action once a circle exists;
+            // joining a *different* circle (which drops this device from this one, see
+            // family/CircleStore.kt's resolveCircle) is a rare, de-emphasized escape
+            // hatch, not a peer of "Ligtas ako" — same reasoning
+            // family/MyCircleQrScreen.kt's own small "scan instead" link already follows.
+            QrActionButton(
+                icon = { tint -> QrCodeIcon(tint = tint, modifier = Modifier.size(14.dp)) },
+                label = tr("Mag-imbita", "Invite"),
+                onClick = onInvite,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onJoinCircle)
+                    .padding(vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    tr("Sumali sa ibang Circle", "Join a different circle"),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/** Shown when [resolveCircle] has found nothing for this device yet — before the
+ * first circle_create or circle_join, this screen has ever authored. Two entry
+ * points, matching the two ways a code can travel: paste it, or scan it. */
+@Composable
+private fun FamilyCircleEmptyState(
+    onOpenMenu: () -> Unit,
+    onCreateCircle: () -> Unit,
+    onJoinCircle: () -> Unit,
+    onScanQr: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            HamburgerButton(onClick = onOpenMenu, modifier = Modifier.padding(end = 12.dp, top = 3.dp))
+            Text(tr("Pamilya", "Family"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        }
+        Column(
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            PersonOutlineIcon(tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(36.dp))
+            Spacer(Modifier.height(10.dp))
+            Text(
+                tr("Wala ka pang Circle", "You're not in a circle yet"),
+                fontSize = 17.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                tr("Gumawa ng bago, o sumali sa isang mayroon na", "Create a new one, or join an existing one"),
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .background(Color(0xFF14171A))
+                    .clickable(onClick = onCreateCircle),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(tr("Gumawa ng Circle", "Create a circle"), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 QrActionButton(
                     icon = { tint -> QrCodeIcon(tint = tint, modifier = Modifier.size(14.dp)) },
-                    label = tr("Ipakita ang QR ko", "Show my QR"),
-                    onClick = onShowMyQr,
+                    label = tr("I-type ang code", "Type a code"),
+                    onClick = onJoinCircle,
                     modifier = Modifier.weight(1f),
                 )
                 QrActionButton(
                     icon = { tint -> ScanIcon(tint = tint, modifier = Modifier.size(14.dp)) },
                     label = tr("I-scan ang QR", "Scan a QR"),
-                    onClick = onOpenScanner,
+                    onClick = onScanQr,
                     modifier = Modifier.weight(1f),
                 )
             }
-            Text(
-                tr("Magdagdag ng tao gamit ang QR — walang internet", "Add people using QR — no internet"),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
         }
     }
 }
