@@ -92,7 +92,7 @@ fun FilterBar(
         Box {
             Row(
                 modifier = Modifier
-                    .border(androidx.compose.foundation.BorderStroke(1.dp, colors.border))
+                    .border(androidx.compose.foundation.BorderStroke(1.dp, colors.borderEmphasis))
                     .clickable { recencyMenuOpen = true }
                     .padding(horizontal = 12.dp, vertical = 9.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -132,7 +132,7 @@ private fun FilterPill(
     Row(
         modifier = Modifier
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
-            .border(androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else colors.border))
+            .border(androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else colors.borderEmphasis))
             .selectable(selected = selected, role = Role.Button, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 9.dp),
         verticalAlignment = Alignment.CenterVertically,

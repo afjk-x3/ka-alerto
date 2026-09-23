@@ -133,7 +133,7 @@ fun AddShelterScreen(
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = nameDescription },
                     )
                     if (draft.name.isEmpty()) {
-                        Text("San Nicolas Central School", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.border)
+                        Text("San Nicolas Central School", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
                     }
                 }
             }
@@ -146,7 +146,7 @@ fun AddShelterScreen(
                         Box(
                             modifier = Modifier
                                 .background(if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background)
-                                .border(1.5.dp, if (selected) MaterialTheme.colorScheme.onBackground else colors.border)
+                                .border(1.5.dp, if (selected) MaterialTheme.colorScheme.onBackground else colors.borderEmphasis)
                                 .clickable { onDraftChange(draft.copy(kind = kind)) }
                                 .padding(horizontal = 14.dp, vertical = 10.dp),
                         ) {
@@ -163,7 +163,7 @@ fun AddShelterScreen(
 
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 FieldLabel(tr("BAYAN / LUNGSOD", "MUNICIPALITY / CITY"))
-                Box(Modifier.fillMaxWidth().border(1.5.dp, colors.border).padding(horizontal = 12.dp, vertical = 12.dp)) {
+                Box(Modifier.fillMaxWidth().border(1.5.dp, colors.borderEmphasis).padding(horizontal = 12.dp, vertical = 12.dp)) {
                     Text(municipality, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
                 }
                 Text(

@@ -221,7 +221,7 @@ private fun CentreCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
-            .border(1.dp, colors.border)
+            .border(1.dp, colors.borderEmphasis)
             .clickable(onClick = onClick)
             .padding(15.dp),
     ) {

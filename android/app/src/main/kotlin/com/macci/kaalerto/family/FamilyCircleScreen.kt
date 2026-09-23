@@ -331,7 +331,7 @@ private fun QrActionButton(
     val colors = LocalKaAlertoColors.current
     Box(
         modifier = modifier
-            .border(1.5.dp, colors.border)
+            .border(1.5.dp, colors.borderEmphasis)
             .clickable(onClick = onClick)
             .padding(vertical = 14.dp),
         contentAlignment = Alignment.Center,

@@ -126,7 +126,7 @@ internal fun NameFields(
             if (firstName.isEmpty()) {
                 // A hint, never the label — the label above is the real one, so it does
                 // not vanish the moment somebody starts typing.
-                Text("Juan", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.border)
+                Text("Juan", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
             }
         }
         if (showError && !usable) {
@@ -170,7 +170,7 @@ internal fun NameFields(
                     .semantics { contentDescription = lastNameDescription },
             )
             if (lastName.isEmpty()) {
-                Text("Dela Cruz", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.border)
+                Text("Dela Cruz", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
             }
         }
         if (showError && !surnameUsable) {
@@ -209,7 +209,7 @@ internal fun PhoneField(phone: String, onPhoneChange: (String) -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.5.dp, colors.border)
+                .border(1.5.dp, colors.borderEmphasis)
                 .padding(horizontal = 12.dp, vertical = 12.dp),
         ) {
             BasicTextField(
@@ -276,7 +276,7 @@ internal fun HomeSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.5.dp, colors.border)
+                .border(1.5.dp, colors.borderEmphasis)
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -394,7 +394,7 @@ internal fun BarangaySection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.5.dp, colors.border)
+                .border(1.5.dp, colors.borderEmphasis)
                 .padding(horizontal = 12.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

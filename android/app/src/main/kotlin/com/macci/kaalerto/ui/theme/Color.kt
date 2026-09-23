@@ -25,7 +25,9 @@ val NormalPrimaryText = Color(0xFF14171A)
 val NormalSecondaryText = Color(0xFF5C666F)
 val NormalDisabledText = Color(0xFF8A939B)
 val NormalBorder = Color(0xFFE3E7EB)
-val NormalBorderEmphasis = Color(0xFFD8DEE3)
+// Outline of anything tappable or typeable: #8A939B is ~3.2:1 on white (WCAG 1.4.11's 3:1
+// for controls). The old #D8DEE3 (~1.3:1) vanished outdoors. Dividers keep NormalBorder.
+val NormalBorderEmphasis = Color(0xFF8A939B)
 val NormalPrimaryAction = Color(0xFF14171A)
 val NormalOnPrimaryAction = Color(0xFFFFFFFF)
 val NormalSafeBg = Color(0xFFE4F1E9)
@@ -47,6 +49,8 @@ val StormSecondaryText = Color(0xFFA8B0BA)
 val StormCriticalAccent = Color(0xFFFF5A4E)
 val StormSafeAccent = Color(0xFF4FA3E3)
 val StormBorder = Color(0xFF3A4149)
+/** Storm's control outline — StormBorder is ~1.9:1 on the Storm background, this is ~3.8:1. */
+val StormBorderEmphasis = Color(0xFF6B747E)
 val StormDivider = Color(0xFF23272C)
 /**
  * Not in Palettes.dc.html's 6-token Storm list — needed because Material3's

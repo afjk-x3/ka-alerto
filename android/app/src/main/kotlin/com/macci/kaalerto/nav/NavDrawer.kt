@@ -235,7 +235,7 @@ private fun LanguageToggleRow(current: AppLanguage, onSet: (AppLanguage) -> Unit
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(BorderStroke(1.dp, colors.border)),
+                .border(BorderStroke(1.dp, colors.borderEmphasis)),
         ) {
             LanguageOption("Filipino", selected = current == AppLanguage.FIL, onClick = { onSet(AppLanguage.FIL) }, modifier = Modifier.weight(1f))
             LanguageOption("English", selected = current == AppLanguage.EN, onClick = { onSet(AppLanguage.EN) }, modifier = Modifier.weight(1f))

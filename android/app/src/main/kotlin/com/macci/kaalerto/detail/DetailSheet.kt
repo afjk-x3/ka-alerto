@@ -546,7 +546,7 @@ private fun ConfidenceSection(summary: FeatureSummary) {
                     progress = { summary.confidence.toFloat() },
                     modifier = Modifier.fillMaxWidth().height(6.dp),
                     color = MaterialTheme.colorScheme.primary,
-                    trackColor = colors.borderEmphasis,
+                    trackColor = colors.border,
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(

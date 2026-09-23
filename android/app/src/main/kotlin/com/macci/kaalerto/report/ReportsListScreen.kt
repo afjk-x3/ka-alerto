@@ -156,7 +156,7 @@ private fun SortChip(label: String, selected: Boolean, enabled: Boolean = true, 
         modifier = Modifier
             .heightIn(min = 40.dp)
             .background(if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background)
-            .border(1.dp, if (selected) MaterialTheme.colorScheme.onBackground else colors.border)
+            .border(1.dp, if (selected) MaterialTheme.colorScheme.onBackground else colors.borderEmphasis)
             .selectable(selected = selected, enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,

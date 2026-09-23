@@ -126,7 +126,7 @@ fun RoutePanel(
                             .fillMaxWidth()
                             .padding(vertical = 3.dp)
                             .border(
-                                if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onBackground) else BorderStroke(1.dp, colors.border),
+                                if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.onBackground) else BorderStroke(1.dp, colors.borderEmphasis),
                             )
                             .clickable { onPick(i) }
                             .padding(horizontal = 12.dp, vertical = 10.dp),

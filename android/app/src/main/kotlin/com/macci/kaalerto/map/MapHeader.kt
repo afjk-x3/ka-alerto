@@ -104,7 +104,7 @@ fun MapHeader(
             modifier = Modifier
                 .padding(start = 12.dp)
                 .size(48.dp)
-                .border(BorderStroke(1.dp, colors.border)),
+                .border(BorderStroke(1.dp, colors.borderEmphasis)),
             contentAlignment = Alignment.Center,
         ) {
             IconButton(onClick = onModeIconClick, modifier = Modifier.size(48.dp)) {
