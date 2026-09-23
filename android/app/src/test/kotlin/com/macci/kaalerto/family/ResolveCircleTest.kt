@@ -121,6 +121,19 @@ class ResolveCircleTest {
     }
 
     @Test
+    fun `a later circle_create for the same id cannot rename the circle`() {
+        val events = listOf(
+            create("c1", from = "local-boy", fromName = "Boy", circleId = "circle-1", name = "Original Name", minutesAgo = 30),
+            join("j1", from = me, fromName = "Me", circleId = "circle-1", minutesAgo = 20),
+            create("c2", from = "local-attacker", fromName = "Attacker", circleId = "circle-1", name = "Renamed!", minutesAgo = 10),
+        )
+
+        val result = resolveCircle(events, me)
+
+        assertEquals("Original Name", result?.name)
+    }
+
+    @Test
     fun `folding the same events in every rotation resolves the same circle`() {
         val events = listOf(
             create("c1", from = "local-1", fromName = "One", circleId = "circle-1", name = "Test Circle", minutesAgo = 30),

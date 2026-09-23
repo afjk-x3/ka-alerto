@@ -36,9 +36,11 @@ fun resolveCircle(allEvents: List<Event>, myAuthorId: String): ResolvedCircle? {
     val myEvent = latestPerAuthor[myAuthorId] ?: return null
     val myCircleId = circleIdOf(myEvent) ?: return null
 
+    // Earliest create wins the name, not latest — otherwise anyone holding the join
+    // code could rename the circle by posting a newer circle_create for the same id.
     val name = relevant
         .filter { it.type == TYPE_CIRCLE_CREATE && circleIdOf(it) == myCircleId }
-        .maxByOrNull { it.timestampMs }
+        .minByOrNull { it.timestampMs }
         ?.let { decodeCircleCreatePayload(it.payload)?.name }
 
     val members = latestPerAuthor.values
