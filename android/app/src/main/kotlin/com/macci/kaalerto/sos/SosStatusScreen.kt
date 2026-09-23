@@ -17,7 +17,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,6 +58,32 @@ fun SosStatusScreen(
     onShowRescueCard: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Closing a live request stops the broadcast rescuers may be following, so one stray
+    // tap on the button nearest the thumb must not do it.
+    var confirmSafe by remember { mutableStateOf(false) }
+    if (confirmSafe) {
+        AlertDialog(
+            onDismissRequest = { confirmSafe = false },
+            title = { Text(tr("Ligtas ka na ba talaga?", "Are you really safe now?")) },
+            text = {
+                Text(
+                    tr(
+                        "Isasara nito ang SOS mo at titigil ang pag-broadcast. Makikita ng mga rescuer na ligtas ka na.",
+                        "This closes your SOS and stops the broadcast. Rescuers will see that you are safe.",
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmSafe = false
+                    onMarkSafe()
+                }) { Text(tr("Oo, ligtas na ako", "Yes, I'm safe")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSafe = false }) { Text(tr("Hindi pa", "Not yet")) }
+            },
+        )
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -116,7 +147,7 @@ fun SosStatusScreen(
                     .height(56.dp)
                     .background(SosColors.Surface)
                     .border(1.5.dp, SosColors.Border)
-                    .clickable(onClick = onMarkSafe),
+                    .clickable { confirmSafe = true },
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
