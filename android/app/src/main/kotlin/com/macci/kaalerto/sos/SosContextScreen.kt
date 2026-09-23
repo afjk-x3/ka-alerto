@@ -79,7 +79,14 @@ fun SosContextScreen(
             Spacer(Modifier.size(12.dp))
             Column {
                 Text(
-                    tr("Padala na ang lokasyon mo. Opsyonal lang ito.", "Your location is already going out. This is optional."),
+                    if (snapshot.locationKnown) {
+                        tr("Padala na ang lokasyon mo. Opsyonal lang ito.", "Your location is already going out. This is optional.")
+                    } else {
+                        tr(
+                            "Padala na ang SOS mo. Idadagdag ang lokasyon kapag nakuha ng GPS. Opsyonal lang ito.",
+                            "Your SOS is already going out. The location is added once GPS finds it. This is optional.",
+                        )
+                    },
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = SosColors.PrimaryText,
