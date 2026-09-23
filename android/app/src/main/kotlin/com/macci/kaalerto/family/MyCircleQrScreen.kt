@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -26,26 +27,25 @@ import com.macci.kaalerto.sos.QrCode
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /**
- * The other half of family-circle pairing: [family/QrScannerScreen.kt] scans someone
- * else's QR, this screen shows this device's own so a second phone can scan *it* instead
- * — pairing was always meant to work from either side (see the circle-unification
- * redesign: scanning either device's QR joins both to the same circle). `myQrContent`
- * (a `CircleCard.encode()` string) was already computed in `ui/KaAlertoApp.kt` for
- * [FamilyCircleScreen] and had nowhere to render until this screen existed.
+ * The invite screen for an existing circle: its join code as a QR
+ * (`CircleJoinCard(circleId, circleName)`, see `family/CircleQr.kt`), plus a share
+ * button that hands the same code to Android's own share sheet — one join mechanism,
+ * two delivery paths, per `specs/2026-09-23-circle-create-join-redesign.md`.
  *
- * [displayName] is shown under the code so the person scanning it can confirm they are
- * looking at the right phone before they scan — the QR payload itself carries the same
- * name, but nobody can read a QR by eye.
+ * [circleName] is null while this device's own `circle_create` event hasn't arrived
+ * yet (see `family/CircleStore.kt`'s `resolveCircle`) — the QR still encodes
+ * [circleId] correctly in that window, just with an empty name until it does.
  */
 @Composable
 fun MyCircleQrScreen(
-    qrContent: String,
-    displayName: String,
+    circleId: String,
+    circleName: String?,
     onBack: () -> Unit,
-    onSwitchToScan: () -> Unit,
+    onShare: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalKaAlertoColors.current
+    val qrContent = remember(circleId, circleName) { CircleJoinCard(circleId = circleId, name = circleName.orEmpty()).encode() }
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -58,7 +58,7 @@ fun MyCircleQrScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
-                tr("Ang QR ko", "My QR"),
+                tr("Mag-imbita", "Invite"),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -81,12 +81,12 @@ fun MyCircleQrScreen(
                 QrCode(content = qrContent, modifier = Modifier.fillMaxSize())
             }
             Spacer(Modifier.size(18.dp))
-            Text(displayName, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Text(circleName ?: tr("Circle", "Circle"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(Modifier.size(6.dp))
             Text(
                 tr(
-                    "Ipakita ito sa taong magdadagdag sa iyo sa Aking Pamilya",
-                    "Show this to the person adding you to My Family",
+                    "Ipakita ito, o ibahagi ang code, sa taong sasali",
+                    "Show this, or share the code, with the person joining",
                 ),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
@@ -98,14 +98,15 @@ fun MyCircleQrScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onSwitchToScan)
-                .padding(vertical = 14.dp),
+                .border(1.5.dp, colors.borderEmphasis)
+                .clickable(onClick = onShare)
+                .padding(vertical = 16.dp),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                tr("I-scan ng QR sa halip", "Scan a QR instead"),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                tr("Ibahagi", "Share"),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }

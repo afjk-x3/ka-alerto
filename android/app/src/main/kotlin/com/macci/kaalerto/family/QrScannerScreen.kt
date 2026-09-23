@@ -38,7 +38,7 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
  * The ScanContract provides a full-screen scanner with square viewfinder overlay. */
 @Composable
 fun QrScannerScreen(
-    onResult: (CircleCard) -> Unit,
+    onResult: (CircleJoinCard) -> Unit,
     onError: (String) -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
@@ -54,7 +54,7 @@ fun QrScannerScreen(
         // separate Cancel tap — an extra step nobody asked for. Reads as a cancel
         // immediately instead, so backing out of the camera lands straight on Family.
         val scanned = result.contents ?: run { onCancel(); return@rememberLauncherForActivityResult }
-        val card = decodeCircleCard(scanned)
+        val card = decodeCircleJoinCard(scanned)
         if (card == null) {
             scanError = notKaAlertoQrError
             return@rememberLauncherForActivityResult
