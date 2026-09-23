@@ -95,8 +95,13 @@ interface Payload {
   sosId?: string;
   state?: string;
   accuracyMeters?: number;
+  /** A sos_amend that carries a fresh fix in its own lat/lon (the phone's sosLocationEvent). */
+  locationUpdate?: boolean;
   context?: SosContext;
 }
+
+/** An SOS raised before GPS answered is sent at 0,0 — "not known yet", never a place to plot. */
+export const hasLocation = (p: { lat: number; lon: number }) => !(p.lat === 0 && p.lon === 0);
 
 function parsePayload(raw: string | null): Payload | null {
   if (!raw) return null;
@@ -157,11 +162,19 @@ export function buildItems(events: Event[], now = Date.now()): Item[] {
     const history: SosStep[] = [];
     let state = 'QUEUED';
     let accuracyMeters: number | undefined;
+    let lat = request.lat;
+    let lon = request.lon;
 
     for (const e of group) {
       const p = parsePayload(e.payload);
       if (!p) continue;
       if (p.accuracyMeters != null && e.type === 'sos') accuracyMeters = p.accuracyMeters;
+      // Same rule as the phone's SosReducer: only the requester's own phone may move the location.
+      if (p.locationUpdate && e.authorId === request.authorId && hasLocation(e)) {
+        lat = e.lat;
+        lon = e.lon;
+        accuracyMeters = p.accuracyMeters;
+      }
       if (e.type === 'sos_amend' && p.context) {
         for (const [k, v] of Object.entries(p.context)) {
           if (v != null && !(Array.isArray(v) && v.length === 0)) (context as Record<string, unknown>)[k] = v;
@@ -176,8 +189,8 @@ export function buildItems(events: Event[], now = Date.now()): Item[] {
     items.push({
       kind: 'sos',
       id: sosId,
-      lat: request.lat,
-      lon: request.lon,
+      lat,
+      lon,
       state,
       closed: CLOSED_STATES.has(state),
       context,

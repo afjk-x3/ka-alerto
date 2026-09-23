@@ -73,5 +73,6 @@ export const placeLine = (p: PlaceName) => [p.primary, p.secondary].filter(Boole
 
 /** What a list row says about where: the street or landmark, else compact coordinates. */
 export function whereShort(lat: number, lon: number): string {
+  if (lat === 0 && lon === 0) return 'Location not known yet';
   return describePlace(lat, lon)?.primary ?? `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
 }

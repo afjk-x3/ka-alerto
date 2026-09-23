@@ -42,6 +42,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 /** The place name when the demo-area gazetteer knows it, and always the coordinates. */
 function Coords({ lat, lon }: { lat: number; lon: number }) {
+  if (lat === 0 && lon === 0) return <span>Not known yet — the phone is still waiting for GPS and will send it.</span>;
   const place = describePlace(lat, lon);
   return (
     <>
@@ -229,7 +230,9 @@ function SosDetail({ item, routing, onFindRoutes, onPickRoute, originCtl, onAckn
       {!c.people && !c.companions?.length && !c.water && !c.trend && (
         <p className="hint">The requester has not added details yet.</p>
       )}
-      <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} originCtl={originCtl} />
+      {!(item.lat === 0 && item.lon === 0) && (
+        <Directions lat={item.lat} lon={item.lon} routing={routing} onFind={onFindRoutes} onPick={onPickRoute} originCtl={originCtl} />
+      )}
       <p className="hint">
         Name and medical details are deliberately not sent — they stay on the requester&apos;s phone.
       </p>

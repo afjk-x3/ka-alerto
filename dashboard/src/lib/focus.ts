@@ -13,7 +13,9 @@ const NEAR_NEWEST_M = 100_000;
  * Open SOS requests and the last day's activity first, since that is what an operator opening the
  * console needs to see. With none of either, the newest item and whatever is within 100 km of it.
  */
-export function initialFocus(list: Item[], now = Date.now()): Item[] {
+export function initialFocus(all: Item[], now = Date.now()): Item[] {
+  // 0,0 is an SOS still waiting for GPS (lib/items.ts hasLocation) — nothing to frame.
+  const list = all.filter((i) => !(i.lat === 0 && i.lon === 0));
   if (list.length === 0) return list;
   const recent = list.filter((i) => (i.kind === 'sos' && !i.closed) || now - i.updatedAtMs <= DAY_MS);
   if (recent.length > 0) return recent;

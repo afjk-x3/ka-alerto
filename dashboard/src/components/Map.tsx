@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { Item } from '@/lib/items';
+import { Item, hasLocation } from '@/lib/items';
 import { LatLon, RouteOption } from '@/lib/routing';
 import { EVAC_LABEL, EvacState } from '@/lib/evac';
 import { initialFocus } from '@/lib/focus';
@@ -87,7 +87,9 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     const map = mapRef.current;
     if (!map || list.length === 0) return;
     const bounds = new maplibregl.LngLatBounds();
-    list.forEach((i) => bounds.extend([i.lon, i.lat]));
+    const located = list.filter(hasLocation);
+    if (located.length === 0) return;
+    located.forEach((i) => bounds.extend([i.lon, i.lat]));
     map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration });
   };
 
@@ -96,7 +98,8 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     if (!map) return;
 
     // Diff against the markers already on the map: a poll that changes nothing touches nothing.
-    itemsById.current = new Map(items.map((i) => [i.id, i]));
+    // A request still waiting for GPS has nowhere to go on the map; it stays in the list.
+    itemsById.current = new Map(items.filter(hasLocation).map((i) => [i.id, i]));
     markers.current.forEach(({ marker }, id) => {
       if (!itemsById.current.has(id)) {
         marker.remove();
@@ -105,6 +108,7 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
     });
 
     for (const item of items) {
+      if (!hasLocation(item)) continue;
       const label = item.kind === 'sos' ? (item.closed ? 'SOS request, closed' : 'SOS request, open') : `Flooded spot, ${item.stale ? 'expired' : item.summary.severity}`;
       const existing = markers.current.get(item.id);
       if (existing) {
@@ -236,7 +240,7 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
   useEffect(() => {
     markers.current.forEach(({ el }, id) => el.classList.toggle('is-selected', id === selectedId));
     const item = items.find((i) => i.id === selectedId);
-    if (item && mapRef.current) {
+    if (item && hasLocation(item) && mapRef.current) {
       mapRef.current.flyTo({ center: [item.lon, item.lat], zoom: Math.max(mapRef.current.getZoom(), 15), duration: 700 });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
