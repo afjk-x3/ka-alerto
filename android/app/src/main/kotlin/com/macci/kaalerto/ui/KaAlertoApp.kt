@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -1019,6 +1021,19 @@ fun KaAlertoApp(
         }
     }
 
+    // SOS one tap away everywhere. The map and registration have their own controls, the
+    // SOS screens are the SOS, and the circle/queue screens keep their close button in
+    // this corner — every other screen gets the shortcut in its free top-right corner.
+    if (screen.showsSosShortcut()) {
+        com.macci.kaalerto.sos.SosShortcut(
+            active = activeSos != null,
+            onClick = { screen = sosEntry(activeSos) },
+            modifier = Modifier
+                .align(androidx.compose.ui.Alignment.TopEnd)
+                .padding(top = 6.dp, end = 12.dp),
+        )
+    }
+
     val identity = LocalIdentity.getOrCreate(appContext)
     NavDrawer(
         open = drawerOpen,
@@ -1059,3 +1074,9 @@ fun KaAlertoApp(
  */
 private fun sosEntry(active: com.macci.kaalerto.sos.SosSnapshot?): Screen =
     active?.let { Screen.SosStatus(it.sosId) } ?: Screen.SosHold
+
+private fun Screen.showsSosShortcut(): Boolean = when (this) {
+    Screen.FamilyCircle, Screen.EvacCentres, Screen.AddShelter, Screen.Reports, Screen.Roles -> true
+    is Screen.Profile, is Screen.Report, is Screen.OfficialStatus, is Screen.SosNearby -> true
+    else -> false
+}

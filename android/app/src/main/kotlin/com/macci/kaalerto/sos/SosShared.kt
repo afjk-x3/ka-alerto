@@ -2,6 +2,10 @@ package com.macci.kaalerto.sos
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -58,6 +62,31 @@ fun SosLiveBanner(title: String, subtitle: String, modifier: Modifier = Modifier
 fun SosSnapshot.locationLine(): String =
     if (locationKnown) "%.4f, %.4f".format(lat, lon)
     else com.macci.kaalerto.i18n.tr("lokasyon: hinahanap pa", "location: still finding")
+
+/**
+ * The SOS control on screens other than the map, which has its own 88 dp button — so a
+ * request is one tap away from anywhere in the app, not only after navigating back.
+ */
+@Composable
+fun SosShortcut(active: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val description = com.macci.kaalerto.i18n.tr("Humingi ng tulong (SOS)", "Request rescue (SOS)")
+    Box(
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .background(SosColors.Critical)
+            .clickable(onClick = onClick)
+            .semantics { contentDescription = description }
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            if (active) "SOS · " + com.macci.kaalerto.i18n.tr("aktibo", "active") else "SOS",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = SosColors.CardBackground,
+        )
+    }
+}
 
 /** "mm:ss" for the first hour, then "N min". What the banner counts up. */
 fun elapsedLabel(startedAtMs: Long, nowMs: Long): String {
