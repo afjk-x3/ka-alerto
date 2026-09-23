@@ -196,7 +196,7 @@ fun FamilyCircleScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(64.dp)
-                    .background(Color(0xFF14171A))
+                    .background(MaterialTheme.colorScheme.primary)
                     .clickable(enabled = checkInEnabled) {
                         onCheckIn()
                         lastCheckInAtMs = System.currentTimeMillis()
@@ -207,13 +207,13 @@ fun FamilyCircleScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(23.dp))
+                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(23.dp))
                     Spacer(Modifier.size(10.dp))
                     Text(
                         tr("Ligtas ako", "I'm safe"),
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                     )
                 }
             }
@@ -293,11 +293,11 @@ private fun FamilyCircleEmptyState(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .background(Color(0xFF14171A))
+                    .background(MaterialTheme.colorScheme.primary)
                     .clickable(onClick = onCreateCircle),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(tr("Gumawa ng Circle", "Create a circle"), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(tr("Gumawa ng Circle", "Create a circle"), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 QrActionButton(
@@ -362,15 +362,17 @@ private fun QrActionButton(
 @Composable
 private fun MyStatusCard(lastCheckInMs: Long?) {
     val checkedIn = lastCheckInMs != null
-    val accentColor = if (checkedIn) Color(0xFF2E7D4F) else Color(0xFF8A939B)
-    val backgroundColor = if (checkedIn) Color(0xFFE4F1E9) else Color(0xFFF2F4F6)
+    val colors = LocalKaAlertoColors.current
+    // Theme tokens, not fixed hex: in Storm mode the fixed light card glared on the dark screen.
+    val accentColor = if (checkedIn) colors.safeFg else MaterialTheme.colorScheme.onSurfaceVariant
+    val backgroundColor = if (checkedIn) colors.safeBg else colors.recessedSurface
     val headline = if (checkedIn) tr("Ligtas ka", "You are safe") else tr("Wala ka pang check-in", "You haven't checked in yet")
     val subtext = if (checkedIn) {
         checkInAgeLabel(lastCheckInMs)
     } else {
         tr("I-tap ang \"Ligtas ako\" sa ibaba para malaman ng iyong bilog", "Tap \"I'm safe\" below to let your circle know")
     }
-    val subtextColor = if (checkedIn) Color(0xFF1E6B3F) else Color(0xFF5C666F)
+    val subtextColor = if (checkedIn) colors.safeFg else MaterialTheme.colorScheme.onSurfaceVariant
 
     Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
         Box(
@@ -401,7 +403,7 @@ private fun MyStatusCard(lastCheckInMs: Long?) {
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(headline, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF14171A))
+                Text(headline, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Text(subtext, fontSize = 14.sp, color = subtextColor)
             }
         }
@@ -410,6 +412,7 @@ private fun MyStatusCard(lastCheckInMs: Long?) {
 
 @Composable
 private fun CircleMemberRow(status: CircleMemberStatus) {
+    val colors = LocalKaAlertoColors.current
     val avatarBg: Color
     val avatarFg: Color
     val statusText: String
@@ -418,24 +421,24 @@ private fun CircleMemberRow(status: CircleMemberStatus) {
     when {
         status.lastCheckInMs == null -> {
             // Never checked in - grey
-            avatarBg = Color(0xFFF2F4F6)
-            avatarFg = Color(0xFF8A939B)
+            avatarBg = colors.recessedSurface
+            avatarFg = MaterialTheme.colorScheme.onSurfaceVariant
             statusText = tr("Hindi pa nag-check in", "No check-in yet")
             statusColor = MaterialTheme.colorScheme.onSurfaceVariant
         }
         (System.currentTimeMillis() - status.lastCheckInMs!!) < 60 * 60 * 1000 -> {
             // Recent check-in (< 1 hour) - green
-            avatarBg = Color(0xFFE4F1E9)
-            avatarFg = Color(0xFF2E7D4F)
+            avatarBg = colors.safeBg
+            avatarFg = colors.safeFg
             statusText = checkInAgeLabel(status.lastCheckInMs)
-            statusColor = Color(0xFF1E6B3F)
+            statusColor = colors.safeFg
         }
         else -> {
             // Stale check-in (> 1 hour) - amber
-            avatarBg = Color(0xFFFFF8E8)
-            avatarFg = Color(0xFFA3791A)
+            avatarBg = colors.warningBg
+            avatarFg = colors.warningFg
             statusText = checkInAgeLabel(status.lastCheckInMs)
-            statusColor = Color(0xFFA3791A)
+            statusColor = colors.warningFg
         }
     }
 
