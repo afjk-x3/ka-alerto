@@ -90,6 +90,7 @@ import com.macci.kaalerto.route.floodPoints
 import com.macci.kaalerto.sos.SosColors
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
@@ -238,6 +239,15 @@ fun MapScreen(
     var locatingSos by remember { mutableStateOf(false) }
     var selectedFeatureRef by remember { mutableStateOf<String?>(null) }
     var showBackgroundTip by remember { mutableStateOf(BackgroundTip.shouldShow(context)) }
+    // Auto-closes after 5 minutes rather than sitting on the map indefinitely for
+    // whoever doesn't tap "Tapos na" -- same effect as dismissing it by hand, since the
+    // point was to be noticed once, not to be a permanent fixture.
+    LaunchedEffect(showBackgroundTip) {
+        if (!showBackgroundTip) return@LaunchedEffect
+        delay(5 * 60_000L)
+        BackgroundTip.dismiss(context)
+        showBackgroundTip = false
+    }
     // Whether featureSummaries has ever actually contained selectedFeatureRef. Guards
     // the "vanished feature" auto-clear below: a freshly-picked selectedFeatureRef (the
     // registration-gate resume, or a just-submitted report's own featureRef) can easily
@@ -790,14 +800,13 @@ fun MapScreen(
  * Shown after a responder taps "Nakita ko" / "Nakita ko — papunta na" on the SOS queue
  * (`sos/SosQueueScreen.kt`) and lands back on the map with [MapScreen]'s `sosFocus` set —
  * the orange marker (`updateSosFocusMarker`) is where to look, this banner is how to get
- * there. "Buksan sa Maps" hands off to whatever navigation app is installed via a plain
- * `geo:` intent: this app has no routing engine of its own (day 11's route check was
- * never built), so real turn-by-turn is only ever available through that handoff, and
- * only once there is a connection to fetch a route with.
+ * there. "Mga ruta" is the only routing action (OSRM through `requestRoutes`, with its
+ * own first-use disclosure); the separate "Buksan sa Maps" handoff to an external nav app
+ * was dropped 23 Sep 2026 once in-app routing existed, so a responder had no reason to
+ * leave the app to get directions.
  */
 @Composable
 private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -> Unit, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
     Row(
         modifier = modifier
             .background(MaterialTheme.colorScheme.inverseSurface)
@@ -823,18 +832,6 @@ private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.inverseOnSurface,
             modifier = Modifier.clickable(onClick = onRoutes).padding(horizontal = 8.dp, vertical = 4.dp),
-        )
-        Text(
-            tr("Buksan sa Maps", "Open in Maps"),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.inverseOnSurface,
-            modifier = Modifier
-                .clickable {
-                    val uri = Uri.parse("geo:${latLng.latitude},${latLng.longitude}?q=${latLng.latitude},${latLng.longitude}")
-                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                }
-                .padding(horizontal = 8.dp, vertical = 4.dp),
         )
         IconButton(onClick = onDismiss) {
             Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"), tint = MaterialTheme.colorScheme.inverseOnSurface)

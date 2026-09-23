@@ -65,8 +65,8 @@ fun RouteDisclosureDialog(onAccept: () -> Unit, onDismiss: () -> Unit) {
         text = {
             Text(
                 tr(
-                    "Ipapadala sa isang pampublikong routing server (OSRM) ang lokasyon mo ngayon at ang pupuntahan para makuha ang ruta. Hindi kasama ang pangalan mo. Ito lang ang bahagi ng app na gumagawa nito.",
-                    "Your current location and the destination are sent to a public routing server (OSRM) to get the route. Your name is not included. This is the only part of the app that does this.",
+                    "Para makuha ang ruta, ipapadala ang kinaroroonan mo ngayon at ang pupuntahan sa isang serbisyo sa internet na humahanap ng ruta. Hindi kasama ang pangalan mo. Ito lang ang bahagi ng app na nagpapadala ng lokasyon sa labas.",
+                    "To get the route, your current location and the destination are sent to an outside service that finds directions. Your name is not included. This is the only part of the app that sends location outside your phone.",
                 ),
             )
         },
