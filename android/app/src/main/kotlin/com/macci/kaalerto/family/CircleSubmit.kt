@@ -4,6 +4,7 @@ import android.content.Context
 import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.identity.LocalIdentity
+import java.util.UUID
 
 /** Posts this device's "Ligtas ako". [lat]/[lon] null means the resident declined to
  * share position — see `newCheckInEvent`'s null-island handling. */
@@ -13,12 +14,22 @@ suspend fun submitCheckIn(context: Context, lat: Double?, lon: Double?) {
     EventRepository(KaAlertoDatabase.getInstance(context).eventDao()).insert(event)
 }
 
-/** Posts the mutual-pairing invite after this device scans [targetAuthorId]'s QR.
- * [targetAuthorName] is the scanned card's own name — the only place it's guaranteed to
- * be captured for a member reachable only transitively later. See
- * `CircleInvitePayload`'s doc comment. */
-suspend fun submitCircleInvite(context: Context, targetAuthorId: String, targetAuthorName: String) {
+/** Creates a new circle and writes its one circle_create event. Returns the new
+ * circleId so the caller can immediately offer it for sharing. */
+suspend fun submitCreateCircle(context: Context, name: String): String {
     val identity = LocalIdentity.getOrCreate(context)
-    val event = newCircleInviteEvent(identity, targetAuthorId, targetAuthorName, System.currentTimeMillis())
+    val circleId = "circle-${UUID.randomUUID()}"
+    val event = newCircleCreateEvent(identity, circleId, name, System.currentTimeMillis())
+    EventRepository(KaAlertoDatabase.getInstance(context).eventDao()).insert(event)
+    return circleId
+}
+
+/** Joins an existing circle by its id, however the id was obtained (pasted text or a
+ * scanned QR — see `family/QrScannerScreen.kt` and `family/JoinCircleScreen.kt`). No
+ * existence check against [circleId] before writing: same as every other event this
+ * app writes optimistically — see `family/CircleStore.kt`'s `resolveCircle`. */
+suspend fun submitJoinCircle(context: Context, circleId: String) {
+    val identity = LocalIdentity.getOrCreate(context)
+    val event = newCircleJoinEvent(identity, circleId, System.currentTimeMillis())
     EventRepository(KaAlertoDatabase.getInstance(context).eventDao()).insert(event)
 }
