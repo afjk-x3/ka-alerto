@@ -111,9 +111,12 @@ fun KaAlertoApp(
     // navigates to the map and back, and a name typed before that must survive the trip.
     var draftFirstName by remember { mutableStateOf(LocalIdentity.registeredFirstName(appContext)) }
     var draftLastName by remember { mutableStateOf(LocalIdentity.registeredLastName(appContext)) }
-    var draftBarangay by remember {
-        mutableStateOf(LocalIdentity.homeBarangay(appContext).ifBlank { DemoArea.BARANGAY_NAME })
-    }
+    // Starts blank rather than defaulting to the demo barangay: a name that looks
+    // already filled in reads as already detected, when a fresh registration with no
+    // GPS fix yet has detected nothing. The geocode-follow effect below fills it once
+    // a fix actually resolves; until then the field stays editable (ProfileFields.kt's
+    // `editingBarangay` defaults to true exactly when this is blank).
+    var draftBarangay by remember { mutableStateOf(LocalIdentity.homeBarangay(appContext)) }
     // The barangay follows the pin until somebody corrects it, and then stops following:
     // a field that keeps overwriting a correction is worse than one that never filled
     // itself, because the person has already told the app it was wrong once.
