@@ -74,13 +74,15 @@ fun MapHeader(
                 Box(
                     modifier = Modifier
                         .size(7.dp)
-                        .background(if (isOnline) colors.safeFg else colors.criticalFg, CircleShape),
+                        // Amber, not red: offline is this app's normal operating state, and
+                        // red is kept for SOS. The copy says the app still works.
+                        .background(if (isOnline) colors.safeFg else colors.warningFg, CircleShape),
                 )
                 Spacer(Modifier.size(6.dp))
                 val statusText = if (isOnline) {
                     tr("May koneksyon · $reportsToday ulat ngayong araw", "Online · $reportsToday reports today")
                 } else {
-                    tr("Walang signal · $reportsToday ulat ngayong araw", "No signal · $reportsToday reports today")
+                    tr("Walang signal — gumagana pa rin · $reportsToday ulat", "Offline — still works · $reportsToday reports")
                 }
                 Text(
                     statusText,
