@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.tr
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -147,15 +146,22 @@ fun RescueCardScreen(
                     color = SosColors.CardInk,
                 )
             }
-            Text(
-                buildString {
-                    snapshot.accuracyMeters?.let { append("±${it.toInt()} m · ") }
-                    append(DemoArea.BARANGAY_NAME)
-                },
-                fontSize = 15.sp,
-                color = SosColors.CardMuted,
-                modifier = Modifier.padding(top = 5.dp),
-            )
+            // The same place line the hold screen showed — never the demo barangay by
+            // default: a stranger reading this card must not be sent to Poblacion.
+            var placeLabel by remember(snapshot.lat, snapshot.lon) { mutableStateOf<String?>(null) }
+            androidx.compose.runtime.LaunchedEffect(snapshot.lat, snapshot.lon) {
+                if (snapshot.locationKnown) placeLabel = com.macci.kaalerto.location.describePlace(context, snapshot.lat, snapshot.lon)?.label
+            }
+            val placeLine = if (snapshot.locationKnown) holdPlaceLine(placeLabel, snapshot.lat, snapshot.lon) else null
+            val detail = listOfNotNull(snapshot.accuracyMeters?.let { "±${it.toInt()} m" }, placeLine).joinToString(" · ")
+            if (detail.isNotEmpty()) {
+                Text(
+                    detail,
+                    fontSize = 15.sp,
+                    color = SosColors.CardMuted,
+                    modifier = Modifier.padding(top = 5.dp),
+                )
+            }
         }
         Divider()
 
