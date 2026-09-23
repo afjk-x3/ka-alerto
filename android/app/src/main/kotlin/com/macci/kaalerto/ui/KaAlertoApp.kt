@@ -128,6 +128,10 @@ fun KaAlertoApp(
     var draftLastName by remember { mutableStateOf(LocalIdentity.registeredLastName(appContext)) }
     var draftCircleName by remember { mutableStateOf("") }
     var draftJoinCode by remember { mutableStateOf("") }
+    var joinInvalid by remember { mutableStateOf(false) }
+    // Set when joining would drop this device from the circle it is already in; the
+    // dialog below asks first. Holds the new circle's id and the current circle's name.
+    var pendingCircleSwitch by remember { mutableStateOf<Pair<String, String?>?>(null) }
     // Starts blank rather than defaulting to the demo barangay: a name that looks
     // already filled in reads as already detected, when a fresh registration with no
     // GPS fix yet has detected nothing. The geocode-follow effect below fills it once
@@ -201,6 +205,28 @@ fun KaAlertoApp(
     // event stream the map does rather than opening a second subscription.
     val mapViewModel: MapViewModel = viewModel()
     val mapEvents = remember { mapViewModel.events }
+
+    fun joinCircle(circleId: String) {
+        scope.launch {
+            submitJoinCircle(context, circleId)
+            draftJoinCode = ""
+            screen = Screen.FamilyCircle
+        }
+    }
+
+    /** Joins, but asks first when that would take this device out of a circle it is already in. */
+    fun requestJoin(circleId: String) {
+        val current = resolveCircle(mapEvents.value, LocalIdentity.getOrCreate(context).authorId)
+        when {
+            current == null -> joinCircle(circleId)
+            current.circleId == circleId -> {
+                // Already a member: nothing to write.
+                draftJoinCode = ""
+                screen = Screen.FamilyCircle
+            }
+            else -> pendingCircleSwitch = circleId to current.name
+        }
+    }
 
     // Tapping the alert lands on the request it was about, not on the map. A responder
     // goes straight to the queue; a resident gets the coarse nearby view.
@@ -877,22 +903,24 @@ fun KaAlertoApp(
             JoinCircleScreen(
                 modifier = modifier,
                 code = draftJoinCode,
-                onCodeChange = { draftJoinCode = it },
+                invalid = joinInvalid,
+                onCodeChange = {
+                    draftJoinCode = it
+                    joinInvalid = false
+                },
                 onJoin = {
                     // The share message wraps the code in a sentence; a long-press Copy in a
                     // messaging app copies the whole thing. Extract the real id rather than
                     // trusting a bare trim -- see extractCircleId's own doc.
                     val circleId = extractCircleId(draftJoinCode)
-                    if (circleId != null && !submitting) {
-                        submitting = true
-                        scope.launch {
-                            submitJoinCircle(context, circleId)
-                            draftJoinCode = ""
-                            screen = Screen.FamilyCircle
+                    when {
+                        circleId == null -> joinInvalid = true
+                        !submitting -> {
+                            submitting = true
+                            requestJoin(circleId)
+                            submitting = false
                         }
                     }
-                    // else: leave screen as Screen.JoinCircle -- nothing was submitted, so
-                    // nothing should look like it was.
                 },
                 onScanQr = { screen = Screen.QrScanner },
                 onBack = { screen = Screen.FamilyCircle },
@@ -902,9 +930,9 @@ fun KaAlertoApp(
         Screen.QrScanner -> QrScannerScreen(
             modifier = modifier,
             onResult = { card: CircleJoinCard ->
-                scope.launch { submitJoinCircle(context, card.circleId) }
                 draftJoinCode = ""
                 screen = Screen.FamilyCircle
+                requestJoin(card.circleId)
             },
             onError = { /* error is shown in the scanner screen itself */ },
             onCancel = { screen = Screen.FamilyCircle },
@@ -1019,6 +1047,36 @@ fun KaAlertoApp(
                 )
             }
         }
+    }
+
+    pendingCircleSwitch?.let { (newCircleId, currentName) ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { pendingCircleSwitch = null },
+            title = {
+                androidx.compose.material3.Text(
+                    currentName?.let { tr("Aalis ka sa \"$it\"?", "Leave \"$it\"?") } ?: tr("Aalis ka sa Circle mo?", "Leave your circle?"),
+                )
+            },
+            text = {
+                androidx.compose.material3.Text(
+                    tr(
+                        "Isang Circle lang ang kasama mo. Kapag sumali ka sa bago, aalis ka sa kasalukuyan at hindi ka na makikita ng mga kasama mo roon.",
+                        "You can be in one circle at a time. Joining the new one takes you out of the current one, and its members stop seeing you.",
+                    ),
+                )
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    pendingCircleSwitch = null
+                    joinCircle(newCircleId)
+                }) { androidx.compose.material3.Text(tr("Sumali sa bago", "Join the new one")) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { pendingCircleSwitch = null }) {
+                    androidx.compose.material3.Text(tr("Manatili", "Stay"))
+                }
+            },
+        )
     }
 
     // SOS one tap away everywhere. The map and registration have their own controls, the

@@ -44,6 +44,8 @@ fun JoinCircleScreen(
     onScanQr: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** True after "Sumali" found no circle code in [code]; cleared as soon as it changes. */
+    invalid: Boolean = false,
 ) {
     val colors = LocalKaAlertoColors.current
     Column(
@@ -74,9 +76,21 @@ fun JoinCircleScreen(
             onValueChange = onCodeChange,
             placeholder = { Text(tr("Code", "Code")) },
             singleLine = true,
+            isError = invalid,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             modifier = Modifier.fillMaxWidth(),
         )
+        if (invalid) {
+            Text(
+                tr(
+                    "Walang code ng Circle dito. Kopyahin ang buong mensahe o ang code na nagsisimula sa \"circle-\".",
+                    "There's no circle code in this. Copy the whole message, or the code that starts with \"circle-\".",
+                ),
+                fontSize = 13.sp,
+                color = colors.criticalFg,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
         Spacer(Modifier.size(20.dp))
         Box(
             modifier = Modifier
