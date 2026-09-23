@@ -324,7 +324,7 @@ fun KaAlertoApp(
         Screen.PickShelter -> Screen.AddShelter
         is Screen.SosAddContext -> Screen.SosStatus(current.sosId)
         is Screen.SosRescueCard -> Screen.SosStatus(current.sosId)
-        Screen.QrScanner, Screen.MyCircleQr -> Screen.FamilyCircle
+        Screen.QrScanner, Screen.MyCircleQr, Screen.CreateCircle, Screen.JoinCircle -> Screen.FamilyCircle
         else -> Screen.Map
     }
     BackHandler(enabled = drawerOpen || backTarget != null) {

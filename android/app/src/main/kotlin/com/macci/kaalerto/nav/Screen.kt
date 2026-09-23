@@ -73,4 +73,10 @@ sealed interface Screen {
      * instead of the other way around. `myQrContent` was already computed for
      * [FamilyCircle] and unused until this screen existed to show it. */
     data object MyCircleQr : Screen
+
+    /** Names a new circle and writes its circle_create event. */
+    data object CreateCircle : Screen
+
+    /** Enters or scans a join code for an existing circle. */
+    data object JoinCircle : Screen
 }
