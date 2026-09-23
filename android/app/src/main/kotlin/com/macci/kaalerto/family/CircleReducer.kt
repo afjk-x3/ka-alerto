@@ -27,7 +27,7 @@ data class CircleMemberStatus(
 /**
  * Folds the shared event stream independently of the flood reducer (`data/Reducer.kt`),
  * the same shape as `sos/SosReducer.kt`/`identity/RoleReducer.kt`. [circle] is
- * `effectiveCircle(...)`'s output, not raw `CircleStore` — every paired member appears
+ * `resolveCircle(...)`'s output, not raw `CircleStore` — every joined member appears
  * here regardless of whether any check-in has arrived, the same "absence isn't the same
  * claim as presence" reasoning `map/RoleActionStrip.kt` already established for the
  * empty rescue queue.
@@ -62,8 +62,8 @@ fun circleStatuses(allEvents: List<Event>, circle: List<CircleMember>): List<Cir
 
 /**
  * This device's own most recent "Ligtas ako" — deliberately separate from
- * [circleStatuses], which only ever covers [CircleMember]s from [effectiveCircle], and
- * [effectiveCircle] explicitly excludes `myAuthorId` from its own result (see that
+ * [circleStatuses], which only ever covers [CircleMember]s from [resolveCircle], and
+ * [resolveCircle] explicitly excludes `myAuthorId` from its own result (see that
  * function's own filter). `family/FamilyCircleScreen.kt` used to derive "my" status by
  * picking `statuses.firstOrNull { it.lastCheckInMs != null }` — the first *other* member
  * who happened to have checked in, silently mislabelled as the viewer's own status the

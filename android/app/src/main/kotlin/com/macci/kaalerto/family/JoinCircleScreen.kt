@@ -27,11 +27,14 @@ import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 
 /**
- * Enters a join code (pasted, or filled in by the caller after [onScanQr] returns from
- * `family/QrScannerScreen.kt`) and writes one [TYPE_CIRCLE_JOIN] event on submit
- * ([submitJoinCircle]). No existence check against the code before writing — same as
- * every other event this app writes optimistically; a wrong code just resolves to a
- * circle of one until proven otherwise (`family/CircleStore.kt`'s `resolveCircle`).
+ * Enters a join code (typed, pasted, or clipboard-pre-filled — see
+ * `ui/KaAlertoApp.kt`'s `Screen.JoinCircle` branch) and writes one [TYPE_CIRCLE_JOIN]
+ * event on submit ([submitJoinCircle]). [onScanQr] leaves this screen entirely: the
+ * scanner (`family/QrScannerScreen.kt`) writes its own join event and navigates
+ * straight back to Family on a successful scan, rather than filling in [code] here.
+ * No existence check against the code before writing — same as every other event this
+ * app writes optimistically; a wrong code just resolves to a circle of one until proven
+ * otherwise (`family/CircleStore.kt`'s `resolveCircle`).
  */
 @Composable
 fun JoinCircleScreen(

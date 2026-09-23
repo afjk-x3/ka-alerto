@@ -58,10 +58,11 @@ import kotlinx.coroutines.delay
  * blocked. */
 private const val CHECKIN_TAP_COOLDOWN_MS = 3_000L
 
-/** "Aking Pamilya" — a household circle joined by QR, plus a one-tap "Ligtas ako".
- * Deliberately no ViewModel: [statuses] and [myQrContent] are computed by the caller
- * (`ui/KaAlertoApp.kt`) from the shared event stream, the same pattern
- * `Screen.EvacCentres` already uses — this screen is presentation only. */
+/** "Aking Pamilya" — a household circle created or joined by a shareable code (or its
+ * QR form), plus a one-tap "Ligtas ako". Deliberately no ViewModel: [statuses] and
+ * [circleName] are computed by the caller (`ui/KaAlertoApp.kt`) from the shared event
+ * stream, the same pattern `Screen.EvacCentres` already uses — this screen is
+ * presentation only. */
 @Composable
 fun FamilyCircleScreen(
     hasCircle: Boolean,
@@ -97,7 +98,7 @@ fun FamilyCircleScreen(
                 HamburgerButton(onClick = onOpenMenu, modifier = Modifier.padding(end = 12.dp, top = 3.dp))
                 Column {
                     Text(tr("Pamilya", "Family"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    // +1: statuses never includes the viewer's own device — effectiveCircle
+                    // +1: statuses never includes the viewer's own device — resolveCircle
                     // explicitly excludes myAuthorId from its result — but the count here is
                     // "how many people are in this circle," which includes the viewer.
                     Text(
@@ -316,9 +317,10 @@ private fun FamilyCircleEmptyState(
     }
 }
 
-/** One half of the "show mine" / "scan theirs" pair below the check-in button — same
- * bordered-box shape as this app's other paired choices (e.g. `identity/RoleScreen.kt`'s
- * role rows), sized to sit side by side rather than stacked. */
+/** A small bordered action button — used for the "Mag-imbita" (invite) action on an
+ * existing circle, and for the "type a code" / "scan a QR" pair on the empty state.
+ * Same bordered-box shape as this app's other paired choices (e.g.
+ * `identity/RoleScreen.kt`'s role rows), sized to sit side by side when paired. */
 @Composable
 private fun QrActionButton(
     icon: @Composable (Color) -> Unit,
@@ -666,7 +668,7 @@ private fun PersonOutlineIcon(tint: Color, modifier: Modifier = Modifier) {
 }
 
 /** A viewfinder-corners glyph — distinct from [QrCodeIcon]'s module-pattern glyph, so the
- * "show mine" and "scan theirs" buttons read apart from each other at a glance. */
+ * "type a code" and "scan a QR" buttons read apart from each other at a glance. */
 @Composable
 private fun ScanIcon(tint: Color, modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {

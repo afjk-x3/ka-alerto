@@ -33,3 +33,10 @@ suspend fun submitJoinCircle(context: Context, circleId: String) {
     val event = newCircleJoinEvent(identity, circleId, System.currentTimeMillis())
     EventRepository(KaAlertoDatabase.getInstance(context).eventDao()).insert(event)
 }
+
+private val CIRCLE_ID_PATTERN = Regex("circle-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+
+/** Pulls a circleId out of arbitrary pasted text — the share message wraps it in a
+ * sentence, and a long-press Copy in a messaging app copies the whole sentence, not
+ * just the code. Returns null when nothing matching is found. */
+fun extractCircleId(text: String): String? = CIRCLE_ID_PATTERN.find(text)?.value

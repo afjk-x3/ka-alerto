@@ -13,8 +13,9 @@ import kotlinx.coroutines.launch
  * `geofence/GeofenceNotifier.kt`'s shape exactly: the first Flow emission establishes a
  * baseline with no notifications (a fresh install, or a cold start with a backlog of
  * old check-ins, must not fire N notifications at once), and only a genuinely new
- * [TYPE_CHECKIN] event from someone in [resolveCircle] counts. Pairing itself
- * (`circle_invite`) is deliberately silent — see the design spec's Notifications section.
+ * [TYPE_CHECKIN] event from someone in [resolveCircle] counts. Creating or joining a
+ * circle itself (`circle_create`/`circle_join`) is deliberately silent — see the design
+ * spec's Notifications section.
  */
 class CircleCheckInNotifier(private val context: Context) {
     fun start(scope: CoroutineScope) {

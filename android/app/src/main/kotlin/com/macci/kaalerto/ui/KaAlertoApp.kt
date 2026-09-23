@@ -84,6 +84,7 @@ import com.macci.kaalerto.family.JoinCircleScreen
 import com.macci.kaalerto.family.MyCircleQrScreen
 import com.macci.kaalerto.family.QrScannerScreen
 import com.macci.kaalerto.family.circleStatuses
+import com.macci.kaalerto.family.extractCircleId
 import com.macci.kaalerto.family.myLastCheckInMs
 import com.macci.kaalerto.family.resolveCircle
 import com.macci.kaalerto.family.submitCheckIn
@@ -854,41 +855,74 @@ fun KaAlertoApp(
             )
         }
 
-        Screen.CreateCircle -> CreateCircleScreen(
-            modifier = modifier,
-            name = draftCircleName,
-            onNameChange = { draftCircleName = it },
-            onCreate = {
-                val name = draftCircleName.trim()
-                scope.launch {
-                    submitCreateCircle(context, name)
-                    draftCircleName = ""
-                    screen = Screen.FamilyCircle
-                }
-            },
-            onBack = { screen = Screen.FamilyCircle },
-        )
+        Screen.CreateCircle -> {
+            var submitting by remember { mutableStateOf(false) }
+            CreateCircleScreen(
+                modifier = modifier,
+                name = draftCircleName,
+                onNameChange = { draftCircleName = it },
+                onCreate = {
+                    if (!submitting) {
+                        submitting = true
+                        val name = draftCircleName.trim()
+                        scope.launch {
+                            submitCreateCircle(context, name)
+                            draftCircleName = ""
+                            screen = Screen.FamilyCircle
+                        }
+                    }
+                },
+                onBack = { screen = Screen.FamilyCircle },
+            )
+        }
 
-        Screen.JoinCircle -> JoinCircleScreen(
-            modifier = modifier,
-            code = draftJoinCode,
-            onCodeChange = { draftJoinCode = it },
-            onJoin = {
-                val circleId = draftJoinCode.trim()
-                scope.launch {
-                    submitJoinCircle(context, circleId)
-                    draftJoinCode = ""
-                    screen = Screen.FamilyCircle
+        Screen.JoinCircle -> {
+            var submitting by remember { mutableStateOf(false) }
+            // Pre-fills from the clipboard the moment the screen is entered, so pasting
+            // a shared code is often not even needed. Only takes effect when the field is
+            // still blank and the clipboard's own text (not the raw text -- see
+            // extractCircleId) actually contains a circleId; a stray copy of something
+            // else must not clobber a code already being typed.
+            LaunchedEffect(Unit) {
+                if (draftJoinCode.isBlank()) {
+                    val clip = runCatching {
+                        context.getSystemService(android.content.ClipboardManager::class.java)
+                            ?.primaryClip?.getItemAt(0)?.text?.toString()
+                    }.getOrNull()
+                    val extracted = clip?.let { extractCircleId(it) }
+                    if (extracted != null) draftJoinCode = extracted
                 }
-            },
-            onScanQr = { screen = Screen.QrScanner },
-            onBack = { screen = Screen.FamilyCircle },
-        )
+            }
+            JoinCircleScreen(
+                modifier = modifier,
+                code = draftJoinCode,
+                onCodeChange = { draftJoinCode = it },
+                onJoin = {
+                    // The share message wraps the code in a sentence; a long-press Copy in a
+                    // messaging app copies the whole thing. Extract the real id rather than
+                    // trusting a bare trim -- see extractCircleId's own doc.
+                    val circleId = extractCircleId(draftJoinCode)
+                    if (circleId != null && !submitting) {
+                        submitting = true
+                        scope.launch {
+                            submitJoinCircle(context, circleId)
+                            draftJoinCode = ""
+                            screen = Screen.FamilyCircle
+                        }
+                    }
+                    // else: leave screen as Screen.JoinCircle -- nothing was submitted, so
+                    // nothing should look like it was.
+                },
+                onScanQr = { screen = Screen.QrScanner },
+                onBack = { screen = Screen.FamilyCircle },
+            )
+        }
 
         Screen.QrScanner -> QrScannerScreen(
             modifier = modifier,
             onResult = { card: CircleJoinCard ->
                 scope.launch { submitJoinCircle(context, card.circleId) }
+                draftJoinCode = ""
                 screen = Screen.FamilyCircle
             },
             onError = { /* error is shown in the scanner screen itself */ },

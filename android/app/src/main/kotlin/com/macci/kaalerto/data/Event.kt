@@ -49,7 +49,7 @@ data class Event(
      * - `sos_false_alarm`, `sos_false_alarm_undo` — `FalseAlarmPayload` (`sos/SosTriage.kt`).
      * - `role_claim`, `role_request`, `role_grant`, `role_revoke` — `RolePayload`
      *   (`identity/RoleEvents.kt`).
-     * - `circle_invite` — `CircleInvitePayload` (`family/CircleEvents.kt`).
+     * - `circle_create` — `CircleCreatePayload`, `circle_join` — `CircleJoinPayload` (`family/CircleEvents.kt`).
      * - `evac_status` — `EvacPayload` (`evac/EvacCentre.kt`): centre, status, occupancy.
      * - `evac_centre` — `EvacCentrePayload` (`evac/EvacCentre.kt`): a shelter an official added or removed.
      * - `flood_report` — `ReportPhotoPayload` (`report/ReportPhoto.kt`), only when a photo

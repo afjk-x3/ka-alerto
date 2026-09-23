@@ -45,6 +45,11 @@ fun QrScannerScreen(
 ) {
     var scanError by remember { mutableStateOf<String?>(null) }
     val notKaAlertoQrError = tr("Hindi ito KaAlerto QR", "Not a KaAlerto QR")
+    // The old pairwise-pairing card used this same prefix family at version 1; a scan
+    // of one of those is genuinely one of ours, just outdated, so it gets its own
+    // message rather than the generic "not a KaAlerto QR" one -- see
+    // `family/CircleQr.kt`'s doc comment and `specs/2026-09-23-circle-create-join-redesign.md`.
+    val outdatedQrError = tr("Lumang QR ito, hindi na suportado", "This QR is outdated and no longer supported")
 
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         // A null result means the camera activity finished with nothing scanned — the
@@ -56,7 +61,7 @@ fun QrScannerScreen(
         val scanned = result.contents ?: run { onCancel(); return@rememberLauncherForActivityResult }
         val card = decodeCircleJoinCard(scanned)
         if (card == null) {
-            scanError = notKaAlertoQrError
+            scanError = if (scanned.startsWith("KAALERTO/CIRCLE/1:")) outdatedQrError else notKaAlertoQrError
             return@rememberLauncherForActivityResult
         }
         scanError = null

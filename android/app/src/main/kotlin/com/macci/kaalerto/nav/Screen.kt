@@ -63,15 +63,17 @@ sealed interface Screen {
     data object AddShelter : Screen
     data object PickShelter : Screen
 
-    /** Build day 11a — a household circle joined by QR, plus the one-tap "Ligtas ako". */
+    /** Build day 11a — a household circle created or joined by a shareable code (typed
+     * or scanned as a QR), plus the one-tap "Ligtas ako". */
     data object FamilyCircle : Screen
 
-    /** QR scanner for family circle pairing. */
+    /** QR scanner for joining a family circle by its code. */
     data object QrScanner : Screen
 
-    /** The other half of pairing — this device's own QR, so a second phone can scan it
-     * instead of the other way around. `myQrContent` was already computed for
-     * [FamilyCircle] and unused until this screen existed to show it. */
+    /** This device's own circle invite — shows the circle's join code as a QR (and a
+     * share-sheet action for the same code as text) so another phone can join it,
+     * either by scanning or by pasting. See `family/MyCircleQrScreen.kt`'s actual
+     * parameters (`circleId`, `circleName`, `onBack`, `onShare`). */
     data object MyCircleQr : Screen
 
     /** Names a new circle and writes its circle_create event. */
