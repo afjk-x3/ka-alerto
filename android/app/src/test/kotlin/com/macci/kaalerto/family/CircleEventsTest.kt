@@ -40,51 +40,62 @@ class CircleEventsTest {
     }
 
     @Test
-    fun `a circle invite carries the target authorId and name in its payload, not a flat column`() {
-        val event = newCircleInviteEvent(identity("local-a1", "Residente A1B2"), targetAuthorId = "local-b2", targetAuthorName = "Residente B2C3", nowMs = now)
+    fun `a circle create event carries its own id and chosen name`() {
+        val event = newCircleCreateEvent(identity("local-a1", "Residente A1B2"), circleId = "circle-xyz", name = "Pamilya Reyes", nowMs = now)
 
-        assertEquals(TYPE_CIRCLE_INVITE, event.type)
-        assertEquals("local-a1", event.authorId) // the inviter
-        val payload = decodeCircleInvitePayload(event.payload)
-        assertEquals("local-b2", payload?.targetAuthorId) // who it's for
-        assertEquals("Residente B2C3", payload?.targetAuthorName)
+        assertEquals(TYPE_CIRCLE_CREATE, event.type)
+        assertEquals("local-a1", event.authorId)
+        val payload = decodeCircleCreatePayload(event.payload)
+        assertEquals("circle-xyz", payload?.circleId)
+        assertEquals("Pamilya Reyes", payload?.name)
+    }
+
+    @Test
+    fun `a circle join event carries only the circleId, not a name`() {
+        val event = newCircleJoinEvent(identity("local-b2", "Residente B2C3"), circleId = "circle-xyz", nowMs = now)
+
+        assertEquals(TYPE_CIRCLE_JOIN, event.type)
+        assertEquals("local-b2", event.authorId)
+        val payload = decodeCircleJoinPayload(event.payload)
+        assertEquals("circle-xyz", payload?.circleId)
     }
 
     @Test
     fun `circle events never carry a featureRef or severity, so the flood reducer never sees them`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = 18.0, lon = 120.0, nowMs = now)
-        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", targetAuthorName = "B", nowMs = now)
+        val create = newCircleCreateEvent(identity("local-a1", "A"), circleId = "circle-1", name = "Test", nowMs = now)
+        val join = newCircleJoinEvent(identity("local-b2", "B"), circleId = "circle-1", nowMs = now)
 
         assertTrue(checkIn.featureRef == null && checkIn.severity == null)
-        assertTrue(invite.featureRef == null && invite.severity == null)
+        assertTrue(create.featureRef == null && create.severity == null)
+        assertTrue(join.featureRef == null && join.severity == null)
     }
 
     @Test
-    fun `a check-in and a circle invite never become a map marker`() {
+    fun `a check-in, a circle create and a circle join never become a map marker`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = 18.0, lon = 120.0, nowMs = now)
-        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", targetAuthorName = "B", nowMs = now)
+        val create = newCircleCreateEvent(identity("local-a1", "A"), circleId = "circle-1", name = "Test", nowMs = now)
+        val join = newCircleJoinEvent(identity("local-b2", "B"), circleId = "circle-1", nowMs = now)
 
-        // featureRef == null is what would let the events past the reducer's own
-        // grouping by construction — this asserts the reducer actually treats them as
-        // invisible, not just that the factory happens to set the right column, mirroring
-        // `sos/SosStateTest.kt`'s `an SOS never becomes a map marker`.
         assertTrue(
-            com.macci.kaalerto.data.Reducer.summarizeAll(listOf(checkIn, invite), now).isEmpty(),
+            com.macci.kaalerto.data.Reducer.summarizeAll(listOf(checkIn, create, join), now).isEmpty(),
         )
     }
 
     @Test
-    fun `an invite outlives a check-in, matching how a role outlives an observation`() {
+    fun `a circle create outlives a check-in, matching how a role outlives an observation`() {
         val checkIn = newCheckInEvent(identity("local-a1", "A"), lat = null, lon = null, nowMs = now)
-        val invite = newCircleInviteEvent(identity("local-a1", "A"), targetAuthorId = "local-b2", targetAuthorName = "B", nowMs = now)
+        val create = newCircleCreateEvent(identity("local-a1", "A"), circleId = "circle-1", name = "Test", nowMs = now)
 
-        assertTrue("invite must outlive check-in", invite.expiresAt - now > checkIn.expiresAt - now)
+        assertTrue("create must outlive check-in", create.expiresAt - now > checkIn.expiresAt - now)
     }
 
     @Test
-    fun `decodeCircleInvitePayload returns null for garbage rather than throwing`() {
-        assertNull(decodeCircleInvitePayload(null))
-        assertNull(decodeCircleInvitePayload("not json"))
-        assertNull(decodeCircleInvitePayload("""{"wrong":"shape"}"""))
+    fun `decode functions return null for garbage rather than throwing`() {
+        assertNull(decodeCircleCreatePayload(null))
+        assertNull(decodeCircleCreatePayload("not json"))
+        assertNull(decodeCircleCreatePayload("""{"wrong":"shape"}"""))
+        assertNull(decodeCircleJoinPayload(null))
+        assertNull(decodeCircleJoinPayload("not json"))
     }
 }

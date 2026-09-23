@@ -8,43 +8,36 @@ import kotlinx.serialization.json.Json
 import java.util.UUID
 
 /*
- * Mesh residual, disclosed rather than fixed — no crypto in this build (ground rule 4),
- * so there is nothing to encrypt it under, same trade-off `sos/SosMeshPolicy.kt` makes
- * for SOS.
+ * Mesh AND Supabase residual, disclosed rather than fixed — no crypto in this build
+ * (ground rule 4), so there is nothing to encrypt it under, same trade-off
+ * `sos/SosMeshPolicy.kt` makes for SOS.
  *
- * Both TYPE_CIRCLE_INVITE and TYPE_CHECKIN ride `mesh/MeshService.kt`'s relay in the
- * clear, type-agnostically — unlike the `sos*` family, nothing here strips or redacts
- * anything on the way out. Circle membership (`effectiveCircle`) and `circleStatuses`
- * filter *for display* on the receiving device; they decide what a phone chooses to
- * *show*, not what it stores or what crossed the air. Any phone in the barangay that
- * relays these events stores them in its own local database and can read straight out of
- * it: who invited whom (a `circle_invite` names both the inviter, in the event's own
- * `authorId`/`authorName`, and the target, in `CircleInvitePayload.targetAuthorId`), and
- * who checked in safe and when (a `family_checkin`'s own `authorId`/`authorName`/
- * `timestampMs`). None of that is limited to the two people actually in the circle.
+ * TYPE_CHECKIN stays mesh-only (never added to sync/SupabaseSync.kt's SYNCED_TYPES).
+ * TYPE_CIRCLE_CREATE and TYPE_CIRCLE_JOIN, unlike the pairwise circle_invite they
+ * replaced, ARE on that allowlist (specs/2026-09-23-circle-create-join-redesign.md) —
+ * a real household's membership and its chosen name now sit in Supabase's
+ * access-control-free table permanently, not just readable off a relaying phone's
+ * local database while mesh-only. This is a genuine step up in exposure from the
+ * old pairwise-edge design, accepted in exchange for a join code that works from
+ * anywhere rather than only within Bluetooth range — stated plainly, not glossed over.
  *
- * **The residual, stated plainly:** a pairing graph and a household's safety status are
- * both readable off any relaying device's local storage, not just the two circle
- * members' own phones. Nothing in this feature hides that from a peer who chooses to
- * look — only who a circle's members *choose to display it to* on their own screens is
- * controlled here. Circle membership is the transitive closure of every `circle_invite`
- * edge a device has seen (`family/CircleStore.kt`'s `effectiveCircle`), so a device
- * holding enough edges can reconstruct an entire household's membership as a set, not
- * just the isolated pairs a one-hop design would have exposed. There is no protocol
- * change that avoids this without a central authority or crypto, both out of scope
- * (ground rule 4) — it is a consequence of solving "unified circle" this way, not a new
- * bug introduced by it.
+ * Circle membership (`family/CircleStore.kt`'s `resolveCircle`) is a fold over every
+ * circle_create/circle_join event a device has seen. Any device holding those events
+ * — a mesh relay, or anyone who extracts the embedded Supabase anon key — can read
+ * the full membership and its chosen name straight out of them.
  */
 
 /** A "Ligtas ako" (I'm safe) presence ping. Carries no payload — the event's own
- * flat columns are enough (see [newCheckInEvent]). Rides the mesh in the clear — see the
- * file-level residual note above. */
+ * flat columns are enough (see [newCheckInEvent]). Rides the mesh in the clear — see
+ * the file-level residual note above. Not on Supabase's sync allowlist. */
 const val TYPE_CHECKIN = "family_checkin"
 
-/** A device that scanned another's QR posting "add this authorId back to your circle
- * too" — the mechanism that makes pairing mutual from one scan. See [newCircleInviteEvent].
- * Rides the mesh in the clear — see the file-level residual note above. */
-const val TYPE_CIRCLE_INVITE = "circle_invite"
+/** Written once, by whoever taps "Gumawa ng Circle" — the entity's own creation
+ * event, same role `evac_centre` plays for a shelter. See [newCircleCreateEvent]. */
+const val TYPE_CIRCLE_CREATE = "circle_create"
+
+/** Written by every device that later joins, by code or QR. See [newCircleJoinEvent]. */
+const val TYPE_CIRCLE_JOIN = "circle_join"
 
 /**
  * A check-in is an observation that ages, the same way a flood report is — "last known
@@ -57,25 +50,27 @@ const val CHECKIN_TTL_MS = 24L * 60 * 60 * 1000
 
 private val circleJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-/**
- * What rides in [Event.payload] for [TYPE_CIRCLE_INVITE]. The event's own `authorId`/
- * `authorName` already identify the inviter (standard rule, same as every other event
- * type) — this payload says who the invite is *for*, plus their own display name.
- * `targetAuthorName` exists for the transitive case: a member reachable only through
- * someone else's edge has no event of their own to supply a name from, so whichever
- * device scans them writes it here, from the QR it just decoded — see
- * `family/CircleStore.kt`'s `effectiveCircle`.
- */
+/** What rides in [Event.payload] for [TYPE_CIRCLE_CREATE]. [circleId] is the only
+ * shared identity every later `circle_join` needs to agree on — it originates from
+ * exactly this one event, so there is no id-agreement protocol to get wrong. */
 @Serializable
-data class CircleInvitePayload(
-    val targetAuthorId: String,
-    val targetAuthorName: String,
-)
+data class CircleCreatePayload(val circleId: String, val name: String)
 
-fun CircleInvitePayload.encode(): String = circleJson.encodeToString(CircleInvitePayload.serializer(), this)
+fun CircleCreatePayload.encode(): String = circleJson.encodeToString(CircleCreatePayload.serializer(), this)
 
-fun decodeCircleInvitePayload(raw: String?): CircleInvitePayload? =
-    raw?.let { runCatching { circleJson.decodeFromString(CircleInvitePayload.serializer(), it) }.getOrNull() }
+fun decodeCircleCreatePayload(raw: String?): CircleCreatePayload? =
+    raw?.let { runCatching { circleJson.decodeFromString(CircleCreatePayload.serializer(), it) }.getOrNull() }
+
+/** What rides in [Event.payload] for [TYPE_CIRCLE_JOIN]. No name field — the event's
+ * own `authorName` column already says who joined, the same standard rule every other
+ * event type in this app follows. */
+@Serializable
+data class CircleJoinPayload(val circleId: String)
+
+fun CircleJoinPayload.encode(): String = circleJson.encodeToString(CircleJoinPayload.serializer(), this)
+
+fun decodeCircleJoinPayload(raw: String?): CircleJoinPayload? =
+    raw?.let { runCatching { circleJson.decodeFromString(CircleJoinPayload.serializer(), it) }.getOrNull() }
 
 /**
  * The check-in itself. `featureRef = null`, same reasoning as the `sos*` family: a
@@ -109,26 +104,18 @@ fun newCheckInEvent(
 )
 
 /**
- * Written by the **scanning** device immediately after it decodes the other party's QR.
- * `lat`/`lon` are the null-island sentinel — who is in a circle is not a fact about where
- * either phone was standing, same reasoning as `identity/RoleEvents.kt`'s role events.
- *
- * The TTL is [ROLE_TTL_MS] (a year), not [CHECKIN_TTL_MS], and that difference is
- * load-bearing: `family/CircleStore.kt`'s `effectiveCircle` walks the full graph of every
- * invite event still in the log on every read, forever — if this event purged on the
- * same short clock as a check-in, a pairing would silently come undone (and, worse,
- * could sever a *third* member's only path back to the rest of the circle) once the
- * invite aged out. Membership is not an observation that goes stale, exactly the same
- * call `identity/RoleEvents.kt` already made for roles.
+ * Written once by the creator. The TTL is [ROLE_TTL_MS] (a year), not [CHECKIN_TTL_MS]
+ * — membership is not an observation that goes stale, the same call
+ * `identity/RoleEvents.kt` already made for roles.
  */
-fun newCircleInviteEvent(
+fun newCircleCreateEvent(
     identity: LocalIdentity.Identity,
-    targetAuthorId: String,
-    targetAuthorName: String,
+    circleId: String,
+    name: String,
     nowMs: Long,
 ): Event = Event(
-    id = "circle-invite-${UUID.randomUUID()}",
-    type = TYPE_CIRCLE_INVITE,
+    id = "circle-create-${UUID.randomUUID()}",
+    type = TYPE_CIRCLE_CREATE,
     lat = 0.0,
     lon = 0.0,
     featureRef = null,
@@ -142,5 +129,30 @@ fun newCircleInviteEvent(
     origin = "local",
     hopCount = 0,
     note = null,
-    payload = CircleInvitePayload(targetAuthorId = targetAuthorId, targetAuthorName = targetAuthorName).encode(),
+    payload = CircleCreatePayload(circleId = circleId, name = name).encode(),
+)
+
+/** Written by a device joining an existing circle, whether the code arrived by text
+ * or QR. Same TTL reasoning as [newCircleCreateEvent]. */
+fun newCircleJoinEvent(
+    identity: LocalIdentity.Identity,
+    circleId: String,
+    nowMs: Long,
+): Event = Event(
+    id = "circle-join-${UUID.randomUUID()}",
+    type = TYPE_CIRCLE_JOIN,
+    lat = 0.0,
+    lon = 0.0,
+    featureRef = null,
+    severity = null,
+    waterLevel = null,
+    authorId = identity.authorId,
+    authorName = identity.authorName,
+    authorRole = identity.authorRole,
+    timestampMs = nowMs,
+    expiresAt = nowMs + ROLE_TTL_MS,
+    origin = "local",
+    hopCount = 0,
+    note = null,
+    payload = CircleJoinPayload(circleId = circleId).encode(),
 )
