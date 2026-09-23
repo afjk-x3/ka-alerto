@@ -77,17 +77,20 @@ import com.macci.kaalerto.identity.RoleViewModel
 import com.macci.kaalerto.nav.NavDrawer
 import com.macci.kaalerto.sos.SosViewModel
 import com.macci.kaalerto.sos.elapsedLabel
-import com.macci.kaalerto.family.CircleCard
+import com.macci.kaalerto.family.CircleJoinCard
+import com.macci.kaalerto.family.CreateCircleScreen
 import com.macci.kaalerto.family.FamilyCircleScreen
+import com.macci.kaalerto.family.JoinCircleScreen
 import com.macci.kaalerto.family.MyCircleQrScreen
 import com.macci.kaalerto.family.QrScannerScreen
 import com.macci.kaalerto.family.circleStatuses
-import com.macci.kaalerto.family.effectiveCircle
 import com.macci.kaalerto.family.myLastCheckInMs
-import com.macci.kaalerto.family.encode
+import com.macci.kaalerto.family.resolveCircle
 import com.macci.kaalerto.family.submitCheckIn
-import com.macci.kaalerto.family.submitCircleInvite
+import com.macci.kaalerto.family.submitCreateCircle
+import com.macci.kaalerto.family.submitJoinCircle
 import kotlinx.coroutines.delay
+import android.content.Intent
 
 /** Root screen switch — see [Screen] for why this isn't a navigation graph. */
 @Composable
@@ -120,6 +123,8 @@ fun KaAlertoApp(
     // navigates to the map and back, and a name typed before that must survive the trip.
     var draftFirstName by remember { mutableStateOf(LocalIdentity.registeredFirstName(appContext)) }
     var draftLastName by remember { mutableStateOf(LocalIdentity.registeredLastName(appContext)) }
+    var draftCircleName by remember { mutableStateOf("") }
+    var draftJoinCode by remember { mutableStateOf("") }
     // Starts blank rather than defaulting to the demo barangay: a name that looks
     // already filled in reads as already detected, when a fresh registration with no
     // GPS fix yet has detected nothing. The geocode-follow effect below fills it once
@@ -827,31 +832,63 @@ fun KaAlertoApp(
         Screen.FamilyCircle -> {
             val events by mapEvents.collectAsStateWithLifecycle()
             val familyIdentity = LocalIdentity.getOrCreate(context)
-            val effective = remember(events, familyIdentity.authorId) {
-                effectiveCircle(events, familyIdentity.authorId)
+            val circle = remember(events, familyIdentity.authorId) {
+                resolveCircle(events, familyIdentity.authorId)
             }
-            val statuses = remember(effective, events) { circleStatuses(events, effective) }
+            val statuses = remember(circle, events) { circleStatuses(events, circle?.members.orEmpty()) }
 
             FamilyCircleScreen(
                 modifier = modifier,
-                myQrContent = remember(familyIdentity.authorId, familyIdentity.authorName) {
-                    CircleCard(familyIdentity.authorId, familyIdentity.authorName).encode()
-                },
+                hasCircle = circle != null,
+                circleName = circle?.name,
                 myLastCheckInMs = remember(events, familyIdentity.authorId) {
                     myLastCheckInMs(events, familyIdentity.authorId)
                 },
                 statuses = statuses,
                 onCheckIn = { scope.launch { submitCheckIn(context, lat = null, lon = null) } },
                 onOpenMenu = { drawerOpen = true },
-                onOpenScanner = { screen = Screen.QrScanner },
-                onShowMyQr = { screen = Screen.MyCircleQr },
+                onCreateCircle = { screen = Screen.CreateCircle },
+                onJoinCircle = { screen = Screen.JoinCircle },
+                onScanQr = { screen = Screen.QrScanner },
+                onInvite = { screen = Screen.MyCircleQr },
             )
         }
 
+        Screen.CreateCircle -> CreateCircleScreen(
+            modifier = modifier,
+            name = draftCircleName,
+            onNameChange = { draftCircleName = it },
+            onCreate = {
+                val name = draftCircleName.trim()
+                scope.launch {
+                    submitCreateCircle(context, name)
+                    draftCircleName = ""
+                    screen = Screen.FamilyCircle
+                }
+            },
+            onBack = { screen = Screen.FamilyCircle },
+        )
+
+        Screen.JoinCircle -> JoinCircleScreen(
+            modifier = modifier,
+            code = draftJoinCode,
+            onCodeChange = { draftJoinCode = it },
+            onJoin = {
+                val circleId = draftJoinCode.trim()
+                scope.launch {
+                    submitJoinCircle(context, circleId)
+                    draftJoinCode = ""
+                    screen = Screen.FamilyCircle
+                }
+            },
+            onScanQr = { screen = Screen.QrScanner },
+            onBack = { screen = Screen.FamilyCircle },
+        )
+
         Screen.QrScanner -> QrScannerScreen(
             modifier = modifier,
-            onResult = { card ->
-                scope.launch { submitCircleInvite(context, card.authorId, card.authorName) }
+            onResult = { card: CircleJoinCard ->
+                scope.launch { submitJoinCircle(context, card.circleId) }
                 screen = Screen.FamilyCircle
             },
             onError = { /* error is shown in the scanner screen itself */ },
@@ -859,16 +896,31 @@ fun KaAlertoApp(
         )
 
         Screen.MyCircleQr -> {
+            val events by mapEvents.collectAsStateWithLifecycle()
             val myIdentity = LocalIdentity.getOrCreate(context)
-            MyCircleQrScreen(
-                modifier = modifier,
-                qrContent = remember(myIdentity.authorId, myIdentity.authorName) {
-                    CircleCard(myIdentity.authorId, myIdentity.authorName).encode()
-                },
-                displayName = myIdentity.authorName,
-                onBack = { screen = Screen.FamilyCircle },
-                onSwitchToScan = { screen = Screen.QrScanner },
-            )
+            val circle = remember(events, myIdentity.authorId) { resolveCircle(events, myIdentity.authorId) }
+            if (circle == null) {
+                // Reached with no circle at all only via a stale back-stack entry
+                // (e.g. process death mid-flow) -- bounce to the empty state rather
+                // than crash on a null circleId.
+                LaunchedEffect(Unit) { screen = Screen.FamilyCircle }
+            } else {
+                val shareLanguage = language
+                MyCircleQrScreen(
+                    modifier = modifier,
+                    circleId = circle.circleId,
+                    circleName = circle.name,
+                    onBack = { screen = Screen.FamilyCircle },
+                    onShare = {
+                        val message = tr(shareLanguage, "Sumali sa aming Circle sa KaAlerto: ", "Join our Circle on KaAlerto: ") + circle.circleId
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, message)
+                        }
+                        context.startActivity(Intent.createChooser(intent, null))
+                    },
+                )
+            }
         }
 
         is Screen.OfficialStatus -> {
