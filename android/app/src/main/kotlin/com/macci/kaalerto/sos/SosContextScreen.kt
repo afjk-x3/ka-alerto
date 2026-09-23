@@ -79,7 +79,7 @@ fun SosContextScreen(
             Spacer(Modifier.size(12.dp))
             Column {
                 Text(
-                    tr("Padala na ang lokasyon mo. Opsyonal lang ito.", "Your location is already going out."),
+                    tr("Padala na ang lokasyon mo. Opsyonal lang ito.", "Your location is already going out. This is optional."),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
                     color = SosColors.PrimaryText,

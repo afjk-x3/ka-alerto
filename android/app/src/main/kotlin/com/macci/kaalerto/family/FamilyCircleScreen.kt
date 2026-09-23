@@ -129,7 +129,7 @@ fun FamilyCircleScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(tr("ANG BILIG MO", "YOUR CIRCLE"), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(tr("ANG BILOG MO", "YOUR CIRCLE"), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         Spacer(Modifier.height(11.dp))
@@ -164,7 +164,7 @@ fun FamilyCircleScreen(
                             color = MaterialTheme.colorScheme.onBackground,
                         )
                         Text(
-                            tr("Magdagdag gamit ang QR sa ibaba", "Add someone using the QR below"),
+                            tr("I-tap ang \"Mag-imbita\" sa ibaba", "Tap \"Invite\" below"),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

@@ -133,7 +133,7 @@ fun AddShelterScreen(
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = nameDescription },
                     )
                     if (draft.name.isEmpty()) {
-                        Text("San Nicolas Central School", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
+                        Text("Mapandan National High School", fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
                     }
                 }
             }
