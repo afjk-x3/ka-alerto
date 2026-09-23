@@ -112,7 +112,9 @@ fun DetailSheet(
     var showDisputeDialog by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    // Opens fully: half-expanded, "Nandiyan ka ba ngayon?" and its Tama / Iba na buttons
+    // sat below the fold, so the one thing the sheet asks of a resident was hidden.
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val language = LocalAppLanguage.current
     val latestReport = summary.events.firstOrNull { it.type == "flood_report" }
 
