@@ -425,6 +425,13 @@ fun MapScreen(
         null
     }
     val showChrome = !pickMode && homeDraft == null
+    // Whether a bottom info panel is floating over the map right now. These panels used to
+    // be plain Column siblings below the map's weighted Box, so the map itself shrank to
+    // whatever height was left over -- normally fine, but stacking two at once (an SOS
+    // focus card plus its own route panel, found 22 Sep 2026) squeezed the map down to an
+    // unreadable sliver. They now float over the map instead (see the Box below), so the
+    // floating corner controls that would otherwise sit underneath them are hidden here.
+    val hasBottomPanel = sosFocus != null || shelterFocus != null || routeUi != null
 
     Column(modifier = modifier.fillMaxSize()) {
         // The pack banner used to *replace* the header, which took the role badge and
@@ -526,7 +533,7 @@ fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            if (showChrome) {
+            if (showChrome && !hasBottomPanel) {
                 Row(
                     modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -550,7 +557,7 @@ fun MapScreen(
                     }
                 }
             }
-            if (showChrome) {
+            if (showChrome && !hasBottomPanel) {
                 val noGps = tr("Walang GPS ngayon", "No GPS right now")
                 val needPermission = tr("Kailangan ng pahintulot sa lokasyon", "Location permission needed")
                 MapCameraControls(
@@ -591,7 +598,7 @@ fun MapScreen(
             // feature two gestures away on the same screen. Nobody looking for an
             // evacuation centre would have found it, and anyone looking for their home
             // radius would have landed here. One word fixes what no icon could.
-            if (showChrome && onOpenEvac != null) {
+            if (showChrome && !hasBottomPanel && onOpenEvac != null) {
                 Row(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
@@ -613,43 +620,49 @@ fun MapScreen(
                     )
                 }
             }
+
+            // Floats over the map instead of sharing the Column below it with the rest of
+            // the chrome — see hasBottomPanel's own comment for why: two of these stacking
+            // used to squeeze the map's weighted Box down to a sliver.
+            if (hasBottomPanel) {
+                Column(modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()) {
+                    if (sosFocus != null) {
+                        SosFocusBanner(
+                            latLng = sosFocus,
+                            onDismiss = { onDismissSosFocus?.invoke() },
+                            onRoutes = { requestRoutes(LatLon(sosFocus.latitude, sosFocus.longitude)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (shelterFocus != null) {
+                        ShelterFocusCard(
+                            state = shelterFocus,
+                            distanceMeters = shelterFocusDistance,
+                            onDismiss = { onDismissShelterFocus?.invoke() },
+                            onRoutes = { requestRoutes(LatLon(shelterFocus.centre.lat, shelterFocus.centre.lon)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    routeUi?.let { ui ->
+                        RoutePanel(
+                            ui = ui,
+                            onPick = { i -> routeUi = ui.copy(active = i) },
+                            onOpenInMaps = { openInMaps(ui.target) },
+                            onClose = {
+                                routeJob?.cancel()
+                                routeUi = null
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
         }
 
         if (showChrome) {
             MapDisclaimer()
         }
 
-        if (sosFocus != null) {
-            SosFocusBanner(
-                latLng = sosFocus,
-                onDismiss = { onDismissSosFocus?.invoke() },
-                onRoutes = { requestRoutes(LatLon(sosFocus.latitude, sosFocus.longitude)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        if (shelterFocus != null) {
-            ShelterFocusCard(
-                state = shelterFocus,
-                distanceMeters = shelterFocusDistance,
-                onDismiss = { onDismissShelterFocus?.invoke() },
-                onRoutes = { requestRoutes(LatLon(shelterFocus.centre.lat, shelterFocus.centre.lon)) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        routeUi?.let { ui ->
-            RoutePanel(
-                ui = ui,
-                onPick = { i -> routeUi = ui.copy(active = i) },
-                onOpenInMaps = { openInMaps(ui.target) },
-                onClose = {
-                    routeJob?.cancel()
-                    routeUi = null
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
         routeDisclosureFor?.let { target ->
             RouteDisclosureDialog(
                 onAccept = {
