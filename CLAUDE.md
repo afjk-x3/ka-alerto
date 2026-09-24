@@ -32,7 +32,7 @@ Offline-first community flood map and rescue channel for Philippine barangays. A
 | — | PRD §9 registration, profile, drawer, EN/FIL toggle, real-hardware fixes (8–9 Sep) | Done |
 | — | **21 Sep upgrades:** shelters added, opened and closed by municipality on phone and dashboard, with a PSGC list and GPS auto-fill; dashboard filters (age, severity, SOS state) + CSV export; home-radius "still flooded? confirm" prompt that opens the report; withdraw your own report (`flood_withdraw`); in-app routes to a report or SOS (OSRM); shelter status synced + read-only Shelters tab on the dashboard | Done; each checked on the Xiaomi (`711c291c`) or the live dashboard. Not proven on hardware: an official's status uploading from a phone, multi-route alternatives on the phone, the SOS-banner route |
 
-**Unmerged local work (15 Sep):** branch `feat/gps-integration` holds the passable-v0 back-port (seed fixes, samples never leave the phone, seeds reload each cold start, plain-language labels, system Back, offline gazetteer, surname required) and GPS integration (map opens on an out-of-area home, "Nasaan ako"/"Demo" jumps, "download here" pack, geocode cache). Progress ledgers: `.worktrees/gps-integration/.superpowers/sdd/*/progress.md`.
+**Branches and releases (cleaned up 24 Sep 2026):** GitHub has only `main`. The passable-v0 back-port and GPS integration are merged into it; the V0 code lives on as tag `stage-3-v0`, v1 as tag `stage-4-v1` (both GitHub releases). The old SDD progress ledgers were archived to `.superpowers/archive/` (gitignored) when the worktrees were removed.
 
 ### Easy to undo by accident — each one was found the hard way
 
@@ -109,7 +109,8 @@ design/        artboards/ (29 .dc.html) · canvas.json · screenshots/ · README
                To render artboards standalone for screenshots: see "Working with design"
 android/       Gradle project — open THIS folder in Android Studio, not the repo root
 dashboard/     LGU web console: Next.js + MapLibre GL JS, light mode only. Tabs: SOS, Flood reports (spots folded by `dashboard/src/lib/reducer.ts`; age/severity/SOS-state filters, CSV export), Shelters (per municipality; add, open, close); routes start from this computer, a saved station, or a map click. Reads Supabase through its own /api/events route, which checks a shared PIN (DASHBOARD_PIN) server-side. See dashboard/.env.local.example
-tools/         render-artboards.js · final-prd.js · ideation.js · check.py · osm-extract/ (day-0 OSM extract fetch + README)
+tools/         render-artboards.js · final-prd.js · ideation.js · check.py · osm-extract/ (day-0 OSM extract fetch + README) · psgc/ · roadgraph/ (offline route graph)
+notes/         development notes kept for the record: handoffs, reviews, setup checklist, specs/ and plans/
 submissions/   one file per gate; doubles as release notes. README has the gate checklist
                Macci-PRD.md (added 5 Sep) is the living, editable twin of docs/02-prd.md —
                unlike docs/, this one IS in git. Update policy: don't edit its content
