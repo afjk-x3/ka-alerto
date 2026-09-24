@@ -111,7 +111,15 @@ fun DetailSheet(
     val colors = LocalKaAlertoColors.current
     var showDisputeDialog by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
-    var submitting by remember { mutableStateOf(false) }
+    // Which button is waiting on its GPS fix: "confirm" or "dispute". Only that one says
+    // "Kinukuha…" — both used to, so nobody could tell which press had registered.
+    var pending by remember { mutableStateOf<String?>(null) }
+    val myAuthorId = remember { LocalIdentity.getOrCreate(context).authorId }
+    // This device's own latest confirm/dispute here, so the sheet says so instead of
+    // offering the same two buttons again as if nothing had been sent.
+    val myVote = summary.events
+        .filter { it.authorId == myAuthorId && (it.type == "confirm" || it.type == "dispute") }
+        .maxByOrNull { it.timestampMs }
     // Opens fully: half-expanded, "Nandiyan ka ba ngayon?" and its Tama / Iba na buttons
     // sat below the fold, so the one thing the sheet asks of a resident was hidden.
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -206,6 +214,26 @@ fun DetailSheet(
                     background = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 )
+            } else if (myVote != null) {
+                ConfidenceSection(summary)
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(colors.safeBg)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CheckIcon(colors.safeFg, Modifier.size(20.dp))
+                    Spacer(Modifier.size(10.dp))
+                    Text(
+                        (if (myVote.type == "confirm") tr("Nakumpirma mo na ito", "You confirmed this") else tr("Sinabi mong iba na", "You said it's different")) +
+                            " · " + ageLabel(System.currentTimeMillis() - myVote.timestampMs, language),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.safeFg,
+                    )
+                }
             } else {
                 ConfidenceSection(summary)
                 Spacer(Modifier.height(16.dp))
@@ -223,15 +251,15 @@ fun DetailSheet(
                         // take seconds. `submitting` used to only block a double-tap; a
                         // button that swallows the press and changes nothing reads as
                         // broken, which is the same failure the SOS button had.
-                        label = if (submitting) tr("Kinukuha…", "Getting…") else tr("Tama", "Correct"),
+                        label = if (pending == "confirm") tr("Kinukuha…", "Getting…") else tr("Tama", "Correct"),
                         icon = { tint -> CheckIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
                             if (onNeedsRegistration != null) return@ActionBar onNeedsRegistration()
-                            if (submitting) return@ActionBar
-                            submitting = true
+                            if (pending != null) return@ActionBar
+                            pending = "confirm"
                             scope.launch {
                                 submitConfirm(context, summary.featureRef, summary.severity)
-                                submitting = false
+                                pending = null
                             }
                         },
                         background = MaterialTheme.colorScheme.primary,
@@ -239,11 +267,11 @@ fun DetailSheet(
                         modifier = Modifier.weight(1f),
                     )
                     ActionBar(
-                        label = if (submitting) tr("Kinukuha…", "Getting…") else tr("Iba na", "It's different"),
+                        label = if (pending == "dispute") tr("Kinukuha…", "Getting…") else tr("Iba na", "It's different"),
                         icon = { tint -> XIcon(tint, Modifier.size(18.dp)) },
                         onClick = {
                             if (onNeedsRegistration != null) onNeedsRegistration()
-                            else showDisputeDialog = true
+                            else if (pending == null) showDisputeDialog = true
                         },
                         background = MaterialTheme.colorScheme.background,
                         contentColor = MaterialTheme.colorScheme.onBackground,
@@ -277,7 +305,7 @@ fun DetailSheet(
                 )
             }
 
-            if (canWithdraw(summary, remember { LocalIdentity.getOrCreate(context).authorId })) {
+            if (canWithdraw(summary, myAuthorId)) {
                 Spacer(Modifier.height(10.dp))
                 ActionBar(
                     label = tr("Bawiin ang ulat ko", "Withdraw my report"),
@@ -325,10 +353,10 @@ fun DetailSheet(
         DisputeReasonDialog(
             onSelect = { reason ->
                 showDisputeDialog = false
-                submitting = true
+                pending = "dispute"
                 scope.launch {
                     submitDispute(context, summary.featureRef, summary.severity, reason)
-                    submitting = false
+                    pending = null
                 }
             },
             onDismiss = { showDisputeDialog = false },
