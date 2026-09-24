@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/copy-maplibre-worker.mjs",
     "dev": "next dev --port 3001",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs",
     "build": "next build",
     "check": "node --experimental-strip-types checks/reducer.check.mts && node --experimental-strip-types checks/focus.check.mts && node --experimental-strip-types checks/evac.check.mts && node --experimental-strip-types checks/dashboardAuth.check.mts",
     "e2e": "playwright test",

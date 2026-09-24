@@ -7,3 +7,6 @@ AGENTS.md
 CLAUDE.md
 playwright-report/
 test-results/
+
+# Copied from node_modules by scripts/copy-maplibre-worker.mjs
+/public/maplibre/

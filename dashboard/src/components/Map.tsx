@@ -52,6 +52,8 @@ export default function EventMap({ items, selectedId, onSelect, routes, origin, 
 
   useEffect(() => {
     if (!containerRef.current) return;
+    // Copied into public/ by scripts/copy-maplibre-worker.mjs — the bundler-relative default 404s.
+    maplibregl.setWorkerUrl('/maplibre/maplibre-gl-worker.mjs');
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: 'https://tiles.openfreemap.org/styles/liberty',
