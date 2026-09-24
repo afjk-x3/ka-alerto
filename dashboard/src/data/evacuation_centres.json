@@ -1,7 +1,7 @@
 {
   "_meta": {
     "demo": true,
-    "area": "Mapandan, Pangasinan (curated) plus Barangay San Juan Bautista, San Nicolas, Ilocos Norte (retained, no longer the curated area — see CLAUDE.md, 22 Sep 2026)",
+    "area": "Mapandan, Pangasinan (curated) plus Barangay San Juan Bautista, San Nicolas, Ilocos Norte (retained, no longer the curated area — see CLAUDE.md, 22 Sep 2026); plus 13 OpenStreetMap-mapped evacuation centres across Pangasinan (added 24 Sep 2026 — OSM has none inside Mapandan; the official MDRRMO list is still to come)",
     "description": "Names and coordinates are real (OSM-confirmed). Capacity figures are illustrative placeholders only — see capacityEstimateSource on each entry."
   },
   "centres": [
@@ -64,6 +64,149 @@
       "capacityEstimate": 200,
       "capacityEstimateSource": "PLACEHOLDER — not verified against any barangay or DepEd figure",
       "osmSource": "OSM node 12368141806, amenity=school, fetched 2026-09-22 via overpass.kumi.systems"
+    },
+    {
+      "id": "evac-osm-node-5930923967",
+      "name": "Diaz Evacuation Center",
+      "lat": 15.7941174,
+      "lon": 120.5082149,
+      "kind": "evacuation_centre",
+      "municipality": "Bautista, Pangasinan",
+      "barangay": "Brgy. Laoac",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM node/5930923967, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-node-6549223189",
+      "name": "Agno MDRRM Evacuation Civic Center",
+      "lat": 16.1120417,
+      "lon": 119.8019347,
+      "kind": "evacuation_centre",
+      "municipality": "Agno, Pangasinan",
+      "barangay": "Brgy. Poblacion East",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM node/6549223189, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-node-9721659543",
+      "name": "Evacuation Center, Poblacion, Lingayen",
+      "lat": 16.0188336,
+      "lon": 120.2281475,
+      "kind": "evacuation_centre",
+      "municipality": "Lingayen, Pangasinan",
+      "barangay": "Brgy. Poblacion",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM node/9721659543, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-node-12832992797",
+      "name": "Pugo Emergency Evacuation Building",
+      "lat": 15.7632312,
+      "lon": 120.45308,
+      "kind": "evacuation_centre",
+      "municipality": "Bayambang, Pangasinan",
+      "barangay": "Brgy. Pugo",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM node/12832992797, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-164448131",
+      "name": "Calasiao Sports Complex",
+      "lat": 16.0100786,
+      "lon": 120.3564231,
+      "kind": "gym",
+      "municipality": "Calasiao, Pangasinan",
+      "barangay": "Brgy. Poblacion West",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/164448131, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-164752110",
+      "name": "Dagupan City National High School",
+      "lat": 16.0362741,
+      "lon": 120.3331573,
+      "kind": "school",
+      "municipality": "Dagupan City, Pangasinan",
+      "barangay": "Brgy. Pogo Grande",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/164752110, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-520560494",
+      "name": "Calasiao Training Center",
+      "lat": 16.0088657,
+      "lon": 120.3563745,
+      "kind": "evacuation_centre",
+      "municipality": "Calasiao, Pangasinan",
+      "barangay": "Brgy. Poblacion West",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/520560494, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-972938836",
+      "name": "San Antonio Evacuation Center",
+      "lat": 15.8619682,
+      "lon": 120.5637671,
+      "kind": "evacuation_centre",
+      "municipality": "Santo Tomas, Pangasinan",
+      "barangay": "Brgy. San Antonio",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/972938836, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-999081612",
+      "name": "Evacuation Center, Dorongan Punta, Mangatarem",
+      "lat": 15.8116794,
+      "lon": 120.3164704,
+      "kind": "evacuation_centre",
+      "municipality": "Mangatarem, Pangasinan",
+      "barangay": "Brgy. Dorongan Punta",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/999081612, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-1016060226",
+      "name": "Aguilar Evacuation Center",
+      "lat": 15.8892864,
+      "lon": 120.2381476,
+      "kind": "evacuation_centre",
+      "municipality": "Aguilar, Pangasinan",
+      "barangay": "Brgy. Pogomboa",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/1016060226, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-1096351846",
+      "name": "Villasis Evacuation Center",
+      "lat": 15.9194685,
+      "lon": 120.5253045,
+      "kind": "evacuation_centre",
+      "municipality": "Villasis, Pangasinan",
+      "barangay": "Brgy. Unzad",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/1096351846, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-1495699225",
+      "name": "Vacante Evacuation Center",
+      "lat": 15.7939321,
+      "lon": 120.4831924,
+      "kind": "evacuation_centre",
+      "municipality": "Bautista, Pangasinan",
+      "barangay": "Brgy. Pogo",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/1495699225, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
+    },
+    {
+      "id": "evac-osm-way-1560831886",
+      "name": "Community Resilience & Evacuation Hub",
+      "lat": 16.0658346,
+      "lon": 120.3234155,
+      "kind": "evacuation_centre",
+      "municipality": "Dagupan City, Pangasinan",
+      "barangay": "Brgy. Sabangan",
+      "capacityEstimateSource": "Not known — OpenStreetMap does not record capacity",
+      "osmSource": "OSM way/1560831886, tagged as an evacuation centre (name or evacuation_center/social_facility=shelter), fetched 2026-09-24; municipality from Nominatim reverse geocode"
     }
   ]
 }

@@ -10,6 +10,7 @@ import type { EvacManage } from './EvacList';
 const STATUS_BUTTONS: { status: EvacStatus; label: string }[] = [
   { status: 'accepting', label: 'Open' },
   { status: 'nearly_full', label: 'Nearly full' },
+  { status: 'full', label: 'Full' },
   { status: 'not_open', label: 'Close' },
 ];
 

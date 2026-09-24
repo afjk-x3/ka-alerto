@@ -11,8 +11,8 @@ import { randomUUID } from 'node:crypto';
 import { checkDashboardPin } from '@/lib/dashboardAuth';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const KINDS = new Set(['school', 'gym', 'barangay_hall', 'church', 'other']);
-const STATUSES = new Set(['accepting', 'nearly_full', 'not_open']);
+const KINDS = new Set(['evacuation_centre', 'school', 'gym', 'barangay_hall', 'church', 'other']);
+const STATUSES = new Set(['accepting', 'nearly_full', 'full', 'not_open']);
 /** The phone's own bound: a shelter definition lives a year, a status a day. */
 const CENTRE_TTL_MS = 365 * DAY_MS;
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     const status = typeof body.status === 'string' && STATUSES.has(body.status) ? body.status : null;
     const occupancy = body.occupancy == null ? null : num(body.occupancy);
     if (!centreId) return bad('centreId is required');
-    if (!status) return bad('status must be accepting, nearly_full or not_open');
+    if (!status) return bad('status must be accepting, nearly_full, full or not_open');
     if (occupancy !== null && (occupancy < 0 || occupancy > 100_000)) return bad('occupancy is out of range');
     id = `dash-status-${randomUUID()}`;
     type = 'evac_status';

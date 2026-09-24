@@ -221,6 +221,9 @@ function SosDetail({ item, routing, onFindRoutes, onPickRoute, originCtl, onAckn
       <dl>
         <Field label="Location"><Coords lat={item.lat} lon={item.lon} /></Field>
         {item.accuracyMeters != null && <Field label="GPS accuracy">± {Math.round(item.accuracyMeters)} m</Field>}
+        {item.locationSource === 'picked' && <Field label="Location">Picked on the map by the requester (no GPS fix)</Field>}
+        {item.locationSource === 'relay' && <Field label="Location">Approximate — where the phone that heard it over Bluetooth was (~50 m)</Field>}
+        {item.locationSource === 'none' && item.homeBarangay && <Field label="Home">{item.homeBarangay} (not their location)</Field>}
         <Field label="Raised">{when(item.startedAtMs)} ({timeAgo(item.startedAtMs)})</Field>
         <Field label="People">{c.people}</Field>
         <Field label="With them">{c.companions?.length ? c.companions.join(', ') : undefined}</Field>

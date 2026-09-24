@@ -73,6 +73,10 @@ export interface SosItem {
   accuracyMeters?: number;
   origin: string;
   hopCount: number;
+  /** Mirrors the phone's SosLocationSource: where lat/lon came from ('none' means 0,0). */
+  locationSource: 'gps' | 'picked' | 'relay' | 'none';
+  /** The requester's home barangay — a hint while the location is unknown, never a location. */
+  homeBarangay?: string;
 }
 
 export interface ReportItem {
@@ -97,6 +101,11 @@ interface Payload {
   accuracyMeters?: number;
   /** A sos_amend that carries a fresh fix in its own lat/lon (the phone's sosLocationEvent). */
   locationUpdate?: boolean;
+  /** On a locationUpdate: tapped on the map by the requester rather than a GPS fix. */
+  locationPicked?: boolean;
+  /** A relay's own position, sent when it heard a location-less request one hop away. */
+  heardNear?: boolean;
+  homeBarangay?: string;
   context?: SosContext;
 }
 
@@ -164,6 +173,8 @@ export function buildItems(events: Event[], now = Date.now()): Item[] {
     let accuracyMeters: number | undefined;
     let lat = request.lat;
     let lon = request.lon;
+    let locationSource: SosItem['locationSource'] = hasLocation(request) ? 'gps' : 'none';
+    let heardNear: Event | undefined;
 
     for (const e of group) {
       const p = parsePayload(e.payload);
@@ -174,7 +185,10 @@ export function buildItems(events: Event[], now = Date.now()): Item[] {
         lat = e.lat;
         lon = e.lon;
         accuracyMeters = p.accuracyMeters;
+        locationSource = p.locationPicked ? 'picked' : 'gps';
       }
+      // The earliest relay's position, used only if the requester never gave one.
+      if (p.heardNear && !heardNear && e.authorId !== request.authorId && hasLocation(e)) heardNear = e;
       if (e.type === 'sos_amend' && p.context) {
         for (const [k, v] of Object.entries(p.context)) {
           if (v != null && !(Array.isArray(v) && v.length === 0)) (context as Record<string, unknown>)[k] = v;
@@ -186,11 +200,20 @@ export function buildItems(events: Event[], now = Date.now()): Item[] {
       }
     }
 
+    if (locationSource === 'none' && heardNear) {
+      lat = heardNear.lat;
+      lon = heardNear.lon;
+      accuracyMeters = undefined;
+      locationSource = 'relay';
+    }
+
     items.push({
       kind: 'sos',
       id: sosId,
       lat,
       lon,
+      locationSource,
+      homeBarangay: parsePayload(request.payload)?.homeBarangay || undefined,
       state,
       closed: CLOSED_STATES.has(state),
       context,

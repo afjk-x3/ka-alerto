@@ -25,16 +25,18 @@ export interface Centre {
   custom: boolean;
 }
 
-export type EvacStatus = 'accepting' | 'nearly_full' | 'not_open';
+export type EvacStatus = 'accepting' | 'nearly_full' | 'full' | 'not_open';
 
 export const EVAC_LABEL: Record<EvacStatus, string> = {
   accepting: 'Accepting',
   nearly_full: 'Nearly full',
+  full: 'Full',
   not_open: 'Not open yet',
 };
 
-export const EVAC_KINDS = ['school', 'gym', 'barangay_hall', 'church', 'other'] as const;
+export const EVAC_KINDS = ['evacuation_centre', 'school', 'gym', 'barangay_hall', 'church', 'other'] as const;
 export const KIND_LABEL: Record<string, string> = {
+  evacuation_centre: 'Evacuation center',
   school: 'School',
   gym: 'Gym',
   barangay_hall: 'Barangay hall',
@@ -151,7 +153,7 @@ export function resolveCentres(events: Event[]): Centre[] {
   return [...CENTRES, ...added];
 }
 
-const isStatus = (s: string | undefined): s is EvacStatus => s === 'accepting' || s === 'nearly_full' || s === 'not_open';
+const isStatus = (s: string | undefined): s is EvacStatus => s === 'accepting' || s === 'nearly_full' || s === 'full' || s === 'not_open';
 
 /**
  * Latest update per shelter wins; a shelter nobody has opened is "not open yet", never "accepting". An update
@@ -172,7 +174,7 @@ export function buildEvacStates(events: Event[], now = Date.now()): EvacState[] 
     latest.set(p.centreId, { e, p });
   }
 
-  const rank: Record<EvacStatus, number> = { accepting: 0, nearly_full: 1, not_open: 2 };
+  const rank: Record<EvacStatus, number> = { accepting: 0, nearly_full: 1, full: 2, not_open: 3 };
   return centres
     .map((centre) => {
       const u = latest.get(centre.id);
