@@ -88,7 +88,7 @@ fun RescueCardScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(SosColors.Critical)
-                .padding(start = 16.dp, end = 16.dp, top = 40.dp, bottom = 14.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 14.dp),
         ) {
             // Deliberately not language-toggled, unlike the rest of this screen: the
             // whole point of the rescue card is to be read by whoever finds the phone —

@@ -88,7 +88,7 @@ fun ProfileScreen(
                 .verticalScroll(rememberScrollState()),
         ) {
             Row(
-                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 8.dp),
+                modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.Top,
             ) {
                 HamburgerButton(onClick = onOpenMenu, modifier = Modifier.padding(end = 12.dp, top = 3.dp))

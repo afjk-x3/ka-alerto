@@ -91,7 +91,7 @@ fun OfficialStatusScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 38.dp, bottom = 11.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 11.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             com.macci.kaalerto.nav.HamburgerButton(

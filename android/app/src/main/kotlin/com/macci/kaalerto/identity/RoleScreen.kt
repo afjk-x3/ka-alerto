@@ -75,7 +75,7 @@ fun RoleScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
             verticalAlignment = Alignment.Top,
         ) {
             com.macci.kaalerto.nav.HamburgerButton(
@@ -417,7 +417,7 @@ fun ManualRoleScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
             verticalAlignment = Alignment.Top,
         ) {
             com.macci.kaalerto.nav.HamburgerButton(

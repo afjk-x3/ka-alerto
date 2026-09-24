@@ -83,7 +83,7 @@ fun SosQueueScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(start = 16.dp, end = 8.dp, top = 38.dp, bottom = 10.dp),
+                .padding(start = 16.dp, end = 8.dp, top = 16.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             com.macci.kaalerto.nav.HamburgerButton(

@@ -104,7 +104,7 @@ fun EvacScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 12.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 12.dp),
             verticalAlignment = androidx.compose.ui.Alignment.Top,
         ) {
             com.macci.kaalerto.nav.HamburgerButton(

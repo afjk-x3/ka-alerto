@@ -40,7 +40,7 @@ fun SosLiveBanner(title: String, subtitle: String, modifier: Modifier = Modifier
         modifier = modifier
             .fillMaxWidth()
             .background(SosColors.Critical)
-            .padding(start = 16.dp, end = 16.dp, top = 44.dp, bottom = 14.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(11.dp).background(SosColors.CardBackground, CircleShape))
