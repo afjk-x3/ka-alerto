@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -81,27 +80,35 @@ fun AdvisoryBanner(advisories: List<AdvisoryPayload>, modifier: Modifier = Modif
     if (open) AdvisoryDialog(advisories) { open = false }
 }
 
-/** The whole text, as PAGASA sent it — not translated, summarised or reworded (FR-3.3). */
+/**
+ * The whole text, as PAGASA sent it — not translated, summarised or reworded (FR-3.3).
+ * One advisory per page, newest first, with Previous / Next when there is more than one.
+ */
 @Composable
 private fun AdvisoryDialog(advisories: List<AdvisoryPayload>, onDismiss: () -> Unit) {
+    var page by remember(advisories) { mutableStateOf(0) }
+    val a = advisories[page.coerceIn(0, advisories.lastIndex)]
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(tr("Abiso ng PAGASA", "PAGASA advisory")) },
+        title = {
+            Text(
+                tr("Abiso ng PAGASA", "PAGASA advisory") +
+                    if (advisories.size > 1) " · ${page + 1}/${advisories.size}" else "",
+            )
+        },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                advisories.forEach { a ->
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(a.event.ifBlank { a.headline }, fontWeight = FontWeight.Bold)
-                        Text(
-                            listOfNotNull(sentLabel(a.sent), untilLabel(a.expires)).joinToString(" · "),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        if (a.areas.isNotEmpty()) Text(a.areas.joinToString(", "), style = MaterialTheme.typography.bodySmall)
-                        if (a.description.isNotBlank()) Text(a.description, style = MaterialTheme.typography.bodyMedium)
-                        if (a.instruction.isNotBlank()) Text(a.instruction, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    }
-                }
+            // Keyed on the page so each advisory opens scrolled to its top.
+            Column(Modifier.verticalScroll(remember(page) { androidx.compose.foundation.ScrollState(0) }), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(a.event.ifBlank { a.headline }, fontWeight = FontWeight.Bold)
+                Text(
+                    listOfNotNull(sentLabel(a.sent), untilLabel(a.expires)).joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (a.areas.isNotEmpty()) Text(a.areas.joinToString(", "), style = MaterialTheme.typography.bodySmall)
+                if (a.description.isNotBlank()) Text(a.description, style = MaterialTheme.typography.bodyMedium)
+                if (a.instruction.isNotBlank()) Text(a.instruction, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.size(10.dp))
                 Text(
                     tr(
                         "Galing mismo sa PAGASA (publicalert.pagasa.dost.gov.ph, CC BY 4.0), hindi binago. Hiwalay ito sa mga ulat ng residente.",
@@ -112,7 +119,15 @@ private fun AdvisoryDialog(advisories: List<AdvisoryPayload>, onDismiss: () -> U
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Isara", "Close")) } },
+        confirmButton = {
+            Row {
+                if (advisories.size > 1) {
+                    TextButton(onClick = { page-- }, enabled = page > 0) { Text(tr("‹ Nauna", "‹ Previous")) }
+                    TextButton(onClick = { page++ }, enabled = page < advisories.lastIndex) { Text(tr("Susunod ›", "Next ›")) }
+                }
+                TextButton(onClick = onDismiss) { Text(tr("Isara", "Close")) }
+            }
+        },
     )
 }
 
