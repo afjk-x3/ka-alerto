@@ -141,7 +141,7 @@ Also excluded: iOS, a resident web application, and any dependency on a hosted b
 
 - **FR-2.1** Submit a report by selecting a location and a depth on the body or vehicle scale; derive severity from depth automatically.
 - **FR-2.2** Write the report to device storage and display it on the author's own map before attempting any transmission.
-- **FR-2.3** Attach an optional photo captured in the application at the time of reporting; the device photo library is not offered as a source.
+- **FR-2.3** Attach an optional photo, taken with the camera from the report screen or picked from the phone's gallery. A gallery photo is not proof it was taken at that spot or time.
 - **FR-2.4** Carry the existence and content hash of a photo in the report event itself, queueing the image separately at the lowest priority, so every device computes the same confidence whether or not the image has arrived. The image itself uploads and downloads by hash through Supabase only, best-effort, when a connection is available; it never travels over the device-to-device relay (FR-4.4).
 - **FR-2.5** Present a report without a photo as less corroborated rather than as doubtful, and never require a photo to submit.
 - **FR-2.6** Record two independent presence signals with each event: asserted position, and relay attestation — how many nearby devices received it directly over short-range radio.
