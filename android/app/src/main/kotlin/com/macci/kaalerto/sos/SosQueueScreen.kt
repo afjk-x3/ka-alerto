@@ -237,12 +237,22 @@ private fun RequestCard(
                     modifier = Modifier.fillMaxWidth().padding(start = 13.dp, end = 13.dp, top = 10.dp),
                 ) {
                     Column(Modifier.weight(1f)) {
+                        // A street a tanod recognises first; the coordinates stay underneath.
+                        val place = com.macci.kaalerto.location.rememberPlaceLabel(request.lat, request.lon, enabled = request.locationKnown)
+                        if (place != null) {
+                            Text(
+                                place,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground,
+                            )
+                        }
                         Text(
                             request.locationLine(),
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontSize = if (place != null) 13.sp else 17.sp,
+                            fontWeight = if (place != null) FontWeight.Normal else FontWeight.Bold,
                             fontFamily = FontFamily.Monospace,
-                            color = MaterialTheme.colorScheme.onBackground,
+                            color = if (place != null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                         )
                         Text(
                             metaLine(request, distanceMeters),

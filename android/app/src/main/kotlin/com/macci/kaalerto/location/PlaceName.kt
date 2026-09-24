@@ -147,3 +147,17 @@ private fun readableName(address: Address): String? {
  * never be the reason somebody waits.
  */
 private const val PLACE_NAME_TIMEOUT_MS = 5_000L
+
+/**
+ * A readable name for a point ("Pandan Avenue, Brgy. Poblacion"), or null while looking
+ * or when nothing names it. Offline inside the demo area (bundled streets), online or
+ * cached elsewhere. For screens that used to lead with bare coordinates.
+ */
+@androidx.compose.runtime.Composable
+fun rememberPlaceLabel(lat: Double, lon: Double, enabled: Boolean = true): String? {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val label = androidx.compose.runtime.produceState<String?>(null, lat, lon, enabled) {
+        value = if (enabled) describePlace(context, lat, lon)?.label else null
+    }
+    return label.value
+}

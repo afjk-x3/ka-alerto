@@ -737,8 +737,9 @@ private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
+            val place = com.macci.kaalerto.location.rememberPlaceLabel(latLng.latitude, latLng.longitude)
             Text(
-                tr("Dito ang hiling ng tulong", "The request is here"),
+                place ?: tr("Dito ang hiling ng tulong", "The request is here"),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
@@ -880,10 +881,12 @@ private fun PickLocationBanner(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                val pickedPlace = pickedLatLng?.let { com.macci.kaalerto.location.rememberPlaceLabel(it.latitude, it.longitude) }
                 Text(
                     when {
                         pickedLatLng == null && forHome -> tr("Tapikin ang mapa para ituro ang bahay mo", "Tap the map to point to your home")
                         pickedLatLng == null -> tr("Tapikin ang mapa para itakda ang lokasyon", "Tap the map to set the location")
+                        pickedPlace != null -> pickedPlace
                         else -> "%.5f, %.5f".format(pickedLatLng.latitude, pickedLatLng.longitude)
                     },
                     style = MaterialTheme.typography.titleSmall,
