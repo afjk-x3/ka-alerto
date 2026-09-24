@@ -118,7 +118,7 @@ internal fun SuggestTextField(
                     .onFocusChanged { focused = it.isFocused }
                     .semantics { contentDescription = description },
             )
-            if (value.isEmpty()) Text(hint, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = colors.border)
+            if (value.isEmpty()) Text(hint, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f))
         }
         if (focused) SuggestionList(suggestions, onPick = { onValueChange(it); keyboard?.hide() })
         }
@@ -142,7 +142,7 @@ internal fun MunicipalitySection(
         value = municipality,
         onValueChange = onMunicipalityChange,
         suggestions = suggestions,
-        hint = "San Nicolas, Ilocos Norte",
+        hint = "Mapandan, Pangasinan",
         description = tr("Bayan o lungsod mo", "Your municipality or city"),
         helper = if (fromLocation) {
             tr("Nakuha sa lokasyon mo — baguhin kung mali.", "Taken from your location — change it if it's wrong.")

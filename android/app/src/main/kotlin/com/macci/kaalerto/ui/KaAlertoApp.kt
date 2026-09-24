@@ -390,6 +390,12 @@ fun KaAlertoApp(
         bars.isAppearanceLightStatusBars = topBar.luminance() > 0.5f
         bars.isAppearanceLightNavigationBars = bottomBar.luminance() > 0.5f
         if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+        // Below Android 15 the system still paints its own bar colours over ours.
+        @Suppress("DEPRECATION")
+        run {
+            window.statusBarColor = android.graphics.Color.TRANSPARENT
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+        }
     }
     Box(Modifier.fillMaxSize()) {
     Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(topBar))
