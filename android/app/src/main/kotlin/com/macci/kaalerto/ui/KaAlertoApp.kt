@@ -1,5 +1,12 @@
 package com.macci.kaalerto.ui
 
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -371,6 +378,22 @@ fun KaAlertoApp(
     // of every screen, rather than per screen, so nothing new can reintroduce the
     // overlap. RescueCardScreen's full-black background still paints edge to edge behind
     // the (now inset) content; only the content itself moves, not the color.
+    // The bars are transparent (edge-to-edge), so what shows through them is painted
+    // here: the same colour as the screen's own top and bottom edge, with icons that
+    // stay readable on it. Without this, the dark SOS screens had a white status strip
+    // and Storm had a grey navigation scrim.
+    val (topBar, bottomBar) = systemBarColors(screen)
+    val rootView = androidx.compose.ui.platform.LocalView.current
+    androidx.compose.runtime.SideEffect {
+        val window = (rootView.context as? android.app.Activity)?.window ?: return@SideEffect
+        val bars = androidx.core.view.WindowCompat.getInsetsController(window, rootView)
+        bars.isAppearanceLightStatusBars = topBar.luminance() > 0.5f
+        bars.isAppearanceLightNavigationBars = bottomBar.luminance() > 0.5f
+        if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+    }
+    Box(Modifier.fillMaxSize()) {
+    Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(topBar))
+    Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter).fillMaxWidth().windowInsetsBottomHeight(WindowInsets.navigationBars).background(bottomBar))
     Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
     when (val current = screen) {
         Screen.Map -> {
@@ -1122,6 +1145,7 @@ fun KaAlertoApp(
     )
     }
     }
+    }
 }
 
 /**
@@ -1137,4 +1161,16 @@ private fun Screen.showsSosShortcut(): Boolean = when (this) {
     Screen.FamilyCircle, Screen.EvacCentres, Screen.AddShelter, Screen.Reports, Screen.Roles -> true
     is Screen.Profile, is Screen.Report, is Screen.OfficialStatus, is Screen.SosNearby -> true
     else -> false
+}
+
+/** Top and bottom system-bar colours for [screen]: its own edge colours, the theme background otherwise. */
+@Composable
+private fun systemBarColors(screen: Screen): Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color> {
+    val background = androidx.compose.material3.MaterialTheme.colorScheme.background
+    return when (screen) {
+        Screen.SosHold -> com.macci.kaalerto.sos.SosColors.HoldBackground to com.macci.kaalerto.sos.SosColors.HoldBackground
+        is Screen.SosAddContext, is Screen.SosStatus -> com.macci.kaalerto.sos.SosColors.Critical to com.macci.kaalerto.sos.SosColors.Background
+        is Screen.SosRescueCard -> com.macci.kaalerto.sos.SosColors.Critical to com.macci.kaalerto.sos.SosColors.CardBackground
+        else -> background to background
+    }
 }
