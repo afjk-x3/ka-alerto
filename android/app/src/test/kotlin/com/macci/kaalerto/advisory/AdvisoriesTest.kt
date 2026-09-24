@@ -50,6 +50,15 @@ class AdvisoriesTest {
     }
 
     @Test
+    fun `an update replaces the alert it references`() {
+        val original = parseCap(fixture("gfa.cap"))!!
+        val update = original.copy(capId = "update-1", msgType = "Update", references = listOf(original.capId))
+        val events = listOfNotNull(advisoryEvent(original), advisoryEvent(update))
+
+        assertEquals(listOf("update-1"), activeAdvisories(events, now, "South Cotabato").map { it.capId })
+    }
+
+    @Test
     fun `a nationwide tropical cyclone alert counts for every province`() {
         val tca = parseCap(fixture("gfa.cap"))!!.copy(areas = listOf("Philippine Area of Responsibility"))
         assertTrue(tca.covers("Pangasinan"))

@@ -25,7 +25,7 @@ const val PAGASA_AUTHOR = "PAGASA"
 @Serializable
 data class AdvisoryPayload(
     val capId: String,
-    /** CAP msgType: Alert, Update or Cancel. A Cancel hides the alerts it [references]. */
+    /** CAP msgType: Alert, Update or Cancel. An Update replaces, and a Cancel hides, the alerts it [references]. */
     val msgType: String = "Alert",
     val references: List<String> = emptyList(),
     /** "General Flood Advisory (Moderate)", "Tropical Cyclone Alert", … */
@@ -124,14 +124,24 @@ fun advisoryEvent(payload: AdvisoryPayload): Event? {
     )
 }
 
-/** Unexpired, uncancelled PAGASA alerts that cover [province], newest first. */
+/**
+ * Unexpired PAGASA alerts that cover [province], newest first. An alert that a later
+ * Update or Cancel references is gone: PAGASA's update replaces it, a cancellation ends it.
+ */
 fun activeAdvisories(events: List<Event>, nowMs: Long, province: String): List<AdvisoryPayload> {
     val advisories = events
         .filter { it.type == TYPE_ADVISORY && it.authorId == PAGASA_AUTHOR && it.expiresAt > nowMs }
         .mapNotNull { e -> decodeAdvisory(e.payload)?.let { e to it } }
-    val cancelled = advisories.filter { it.second.msgType.equals("Cancel", true) }.flatMap { it.second.references }.toSet()
+    // Stored events outlive their expiry by a day, so the chain is read from all of them,
+    // not only the live ones: an expired Update still means its original was replaced.
+    val superseded = events
+        .filter { it.type == TYPE_ADVISORY && it.authorId == PAGASA_AUTHOR }
+        .mapNotNull { decodeAdvisory(it.payload) }
+        .filter { it.msgType.equals("Cancel", true) || it.msgType.equals("Update", true) }
+        .flatMap { it.references }
+        .toSet()
     return advisories
-        .filter { (_, p) -> !p.msgType.equals("Cancel", true) && p.capId !in cancelled && p.covers(province) }
+        .filter { (_, p) -> !p.msgType.equals("Cancel", true) && p.capId !in superseded && p.covers(province) }
         .sortedByDescending { it.first.timestampMs }
         .map { it.second }
 }
