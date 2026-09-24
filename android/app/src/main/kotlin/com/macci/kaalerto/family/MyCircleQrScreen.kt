@@ -32,7 +32,7 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
  * The invite screen for an existing circle: its join code as a QR
  * (`CircleJoinCard(circleId, circleName)`, see `family/CircleQr.kt`), plus a share
  * button that hands the same code to Android's own share sheet — one join mechanism,
- * two delivery paths, per `specs/2026-09-23-circle-create-join-redesign.md`.
+ * two delivery paths, per `notes/specs/2026-09-23-circle-create-join-redesign.md`.
  *
  * [circleName] is null while this device's own `circle_create` event hasn't arrived
  * yet (see `family/CircleStore.kt`'s `resolveCircle`) — the QR still encodes

@@ -160,7 +160,7 @@ Whole path lives in `sos/`: SOSHold → SOSContext → SOSStatus → RescueCard,
 
 **The money demo — hard gate.**
 
-Every step was exercised on one `API34_Test` emulator in airplane mode by injecting a peer's SOS into the store exactly as `MeshService` would have written it — redacted, `origin: mesh`, `hopCount: 2`. What that cannot prove is the radio hop itself; that still needs the phones (`SETUP_CHECKLIST.md`).
+Every step was exercised on one `API34_Test` emulator in airplane mode by injecting a peer's SOS into the store exactly as `MeshService` would have written it — redacted, `origin: mesh`, `hopCount: 2`. What that cannot prove is the radio hop itself; that still needs the phones (`notes/SETUP_CHECKLIST.md`).
 
 - [x] SOS routes over Nearby — it is an `Event`, so days 6-7's anti-entropy exchange carries it with no new transport code. "Highest priority" is **not** implemented: the mesh sends one diff, unordered. Real P0/P1 queueing is `docs/03-architecture.md` §2.5 and is not in this build.
 - [x] Receiving device raises critical alert — `sos/SosAlertNotifier.kt` + `SosAlertWatcher.kt`, own channel, alarm stream, own vibration pattern, red, `CATEGORY_ALARM`. Confirmed posted on device (`channel=sos_nearby importance=4 category=alarm color=0xffc42b2b`). **Full-screen is best-effort**: since API 34 `USE_FULL_SCREEN_INTENT` is auto-granted only to calling/alarm apps, so the code checks `canUseFullScreenIntent()` and degrades to a max-priority heads-up rather than attaching an intent it cannot use.

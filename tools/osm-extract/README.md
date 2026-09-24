@@ -2,7 +2,7 @@
 
 `demo-area.osm.pbf` is a real OpenStreetMap extract clipped to `DemoArea.bounds`
 (`android/app/src/main/kotlin/com/macci/kaalerto/demo/DemoArea.kt`) — the last Day 0
-fixture item (`BUILD_TASKS.md`, `SETUP_CHECKLIST.md`). It's a source input for building
+fixture item (`BUILD_TASKS.md`, `notes/SETUP_CHECKLIST.md`). It's a source input for building
 the bundled-MBTiles fallback in `BUILD_TASKS.md` day 1, not something the app reads
 directly and not something shipped in `assets/` — that's already real point/line JSON
 (`seed_data.json`, `evacuation_centres.json`, `routes/`), which this is not a
@@ -23,7 +23,7 @@ here.
 
 ## How this differs from the original plan
 
-`BUILD_TASKS.md`/`SETUP_CHECKLIST.md` originally called for "Geofabrik PH extract ->
+`BUILD_TASKS.md`/`notes/SETUP_CHECKLIST.md` originally called for "Geofabrik PH extract ->
 clip to `DemoArea.bounds`" via `osmium`/`osmconvert`/`ogr2ogr`, none of which were
 installed on this machine. Those tools clip a whole-country file (the Philippines
 extract is ~600 MB) down to a bounding box.

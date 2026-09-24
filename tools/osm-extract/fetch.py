@@ -2,7 +2,7 @@
 Fetches a real OpenStreetMap extract clipped to DemoArea.bounds (see
 android/app/src/main/kotlin/com/macci/kaalerto/demo/DemoArea.kt) and converts it to
 .osm.pbf for the offline tile-building pipeline (BUILD_TASKS.md day 0 /
-SETUP_CHECKLIST.md).
+notes/SETUP_CHECKLIST.md).
 
 The build plan originally called for "Geofabrik PH extract -> clip to DemoArea.bounds"
 using osmium/osmconvert/ogr2ogr, none of which were installed on this machine. Those

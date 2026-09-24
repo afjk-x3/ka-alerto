@@ -9,7 +9,7 @@ import kotlinx.serialization.json.Json
  * tell the two apart, and `decodeCircleJoinCard` rejects anything that isn't this.
  * Version bumped from `/1:` (the old pairwise-pairing card) to `/2:` (this circle-id
  * card) so a stray old-format QR is rejected cleanly rather than misparsed —
- * see `specs/2026-09-23-circle-create-join-redesign.md`. */
+ * see `notes/specs/2026-09-23-circle-create-join-redesign.md`. */
 const val CIRCLE_QR_PREFIX = "KAALERTO/CIRCLE/2:"
 
 /** What a circle-join QR encodes — enough to write one [TYPE_CIRCLE_JOIN] event for

@@ -22,7 +22,7 @@ import kotlinx.serialization.json.Json
  * redacted first — see [eventsToSync]. `circle_create`/`circle_join`, unlike the
  * pairwise `circle_invite` they replaced, ARE synced — a real circle's membership and
  * chosen name needs to resolve from anywhere a join code was shared, not only within
- * Bluetooth range. See `specs/2026-09-23-circle-create-join-redesign.md`'s privacy
+ * Bluetooth range. See `notes/specs/2026-09-23-circle-create-join-redesign.md`'s privacy
  * residual for what that trades away.
  */
 val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_EVAC_CENTRE, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE, TYPE_CIRCLE_CREATE, TYPE_CIRCLE_JOIN, com.macci.kaalerto.advisory.TYPE_ADVISORY)

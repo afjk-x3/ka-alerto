@@ -26,7 +26,7 @@ private fun circleIdOf(event: Event): String? = when (event.type) {
  * explicit "leave" needed. Membership is everyone else whose own newest create/join
  * event points at that same `circleId`. Pure fold, same shape as
  * `evac/EvacCentre.kt`'s `resolveCentres` — no persisted store, recomputed on every
- * call. See `specs/2026-09-23-circle-create-join-redesign.md`.
+ * call. See `notes/specs/2026-09-23-circle-create-join-redesign.md`.
  */
 fun resolveCircle(allEvents: List<Event>, myAuthorId: String): ResolvedCircle? {
     val relevant = allEvents.filter { it.type == TYPE_CIRCLE_CREATE || it.type == TYPE_CIRCLE_JOIN }

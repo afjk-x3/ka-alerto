@@ -14,7 +14,7 @@ import java.util.UUID
  *
  * TYPE_CHECKIN stays mesh-only (never added to sync/SupabaseSync.kt's SYNCED_TYPES).
  * TYPE_CIRCLE_CREATE and TYPE_CIRCLE_JOIN, unlike the pairwise circle_invite they
- * replaced, ARE on that allowlist (specs/2026-09-23-circle-create-join-redesign.md) —
+ * replaced, ARE on that allowlist (notes/specs/2026-09-23-circle-create-join-redesign.md) —
  * a real household's membership and its chosen name now sit in Supabase's
  * access-control-free table permanently, not just readable off a relaying phone's
  * local database while mesh-only. This is a genuine step up in exposure from the

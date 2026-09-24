@@ -31,7 +31,7 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
  * Names a new circle and writes its one [TYPE_CIRCLE_CREATE] event on submit
  * ([submitCreateCircle]). The creator's own device resolves to a circle of one
  * immediately afterward — no round trip needed, same as any other self-authored event
- * in this app. See `specs/2026-09-23-circle-create-join-redesign.md`.
+ * in this app. See `notes/specs/2026-09-23-circle-create-join-redesign.md`.
  */
 @Composable
 fun CreateCircleScreen(
