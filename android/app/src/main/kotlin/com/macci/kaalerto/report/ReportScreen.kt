@@ -92,7 +92,9 @@ fun ReportScreen(
     var mode by remember { mutableStateOf(ReportMode.BODY) }
     // An index into the current mode's 4 options, not an id: switching between Katawan
     // and Sasakyan keeps "how deep", since both scales are ordered shallow to deep.
-    var selectedIndex by remember { mutableStateOf(0) }
+    // Null until the person picks: a pre-selected "ankle" meant one tap on "Ipadala"
+    // sent a real report of a depth nobody chose.
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
     var severityOverride by remember { mutableStateOf<String?>(null) }
     var showOverrideDialog by remember { mutableStateOf(false) }
     var submitting by remember { mutableStateOf(false) }
@@ -117,10 +119,10 @@ fun ReportScreen(
     }
 
     val levels = levelsFor(mode)
-    val selected = levels[selectedIndex]
-    val derivedSeverity = severityOverride ?: selected.severity
-    val (severityFil, severityEn) = severityTextFor(derivedSeverity)
-    val severityColor = Color(android.graphics.Color.parseColor(SeverityColors.forSeverity(derivedSeverity)))
+    val selected = selectedIndex?.let { levels[it] }
+    val derivedSeverity = severityOverride ?: selected?.severity
+    val (severityFil, severityEn) = severityTextFor(derivedSeverity ?: "S1")
+    val severityColor = Color(android.graphics.Color.parseColor(SeverityColors.forSeverity(derivedSeverity ?: "S1")))
     // S1's amber is too light for white text to sit on legibly — Report-Normal.dc.html
     // itself gives S1 dark text and S2/S3 white, rather than one colour for all three.
     val onSeverityColor = if (derivedSeverity == "S1") Color(0xFF14171A) else Color.White
@@ -215,7 +217,7 @@ fun ReportScreen(
 
         if (mode == ReportMode.BODY) {
             BodyIllustration(
-                levelId = selected.id,
+                levelId = selected?.id,
                 waterColor = severityColor,
                 modifier = Modifier.fillMaxWidth().height(180.dp).padding(horizontal = 64.dp),
             )
@@ -243,7 +245,19 @@ fun ReportScreen(
         Spacer(Modifier.height(16.dp))
 
         // Derived severity — tappable to override (FR-2.1: "derive... automatically", BUILD_TASKS.md day 3: "allow override").
-        Surface(
+        if (derivedSeverity == null) {
+            Surface(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                color = colors.recessedSurface,
+            ) {
+                Text(
+                    tr("Piliin muna ang lalim sa itaas.", "Choose the depth above first."),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(16.dp),
+                )
+            }
+        } else Surface(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clickable { showOverrideDialog = true },
             color = severityColor,
         ) {
@@ -267,7 +281,9 @@ fun ReportScreen(
             }
         }
         Text(
-            if (severityOverride != null) {
+            if (derivedSeverity == null) {
+                ""
+            } else if (severityOverride != null) {
                 tr("Manu-mano itong itinakda. Pindutin para baguhin.", "This was set manually. Tap to change it.")
             } else {
                 tr("Awtomatiko itong nakuha sa lalim. Pindutin para baguhin.", "This was worked out automatically from the depth. Tap to change it.")
@@ -298,22 +314,28 @@ fun ReportScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .clickable(enabled = !submitting) {
+                .clickable(enabled = !submitting && selected != null && derivedSeverity != null) {
+                    val level = selected ?: return@clickable
+                    val severity = derivedSeverity ?: return@clickable
                     submitting = true
                     scope.launch {
-                        val featureRef = submitReport(context, selected, derivedSeverity, initialLat, initialLon, photoHash)
+                        val featureRef = submitReport(context, level, severity, initialLat, initialLon, photoHash)
                         submitting = false
                         onSubmitted(featureRef)
                     }
                 },
-            color = MaterialTheme.colorScheme.primary,
+            color = if (selected != null) MaterialTheme.colorScheme.primary else colors.recessedSurface,
         ) {
             Box(modifier = Modifier.fillMaxWidth().height(64.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    if (submitting) tr("Ipinapadala…", "Sending…") else tr("Ipadala ang ulat", "Send the report"),
+                    when {
+                        submitting -> tr("Ipinapadala…", "Sending…")
+                        selected == null -> tr("Piliin muna ang lalim", "Choose a depth first")
+                        else -> tr("Ipadala ang ulat", "Send the report")
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = if (selected != null) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -341,7 +363,7 @@ fun ReportScreen(
         }
     }
 
-    if (showOverrideDialog) {
+    if (showOverrideDialog && derivedSeverity != null) {
         SeverityOverrideDialog(
             current = derivedSeverity,
             onSelect = { severity ->
