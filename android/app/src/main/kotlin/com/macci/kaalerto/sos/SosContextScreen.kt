@@ -1,5 +1,6 @@
 package com.macci.kaalerto.sos
 
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -192,7 +193,7 @@ fun SosContextScreen(
             modifier = Modifier
                 .padding(bottom = 20.dp)
                 .fillMaxWidth()
-                .height(40.dp)
+                .height(48.dp)
                 .clickable(onClick = onDone),
             contentAlignment = Alignment.Center,
         ) {
@@ -287,7 +288,9 @@ private fun OptionRow(
                     .background(background)
                     .border(1.5.dp, border)
                     .clickable { onTap(option) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 Text(
                     option,

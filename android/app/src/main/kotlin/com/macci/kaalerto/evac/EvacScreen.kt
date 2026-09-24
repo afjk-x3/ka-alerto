@@ -1,5 +1,6 @@
 package com.macci.kaalerto.evac
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -201,7 +202,7 @@ fun EvacScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
-            Box(Modifier.clickable(onClick = onBack).padding(8.dp)) {
+            Box(Modifier.minimumInteractiveComponentSize().clickable(onClick = onBack).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
                 Text(tr("Isara", "Close"), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
             }
         }

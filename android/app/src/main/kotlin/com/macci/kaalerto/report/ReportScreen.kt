@@ -1,5 +1,6 @@
 package com.macci.kaalerto.report
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import android.graphics.Bitmap
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -178,7 +179,7 @@ fun ReportScreen(
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
                     textDecoration = TextDecoration.Underline,
-                    modifier = Modifier.clickable(onClick = onChangeLocation),
+                    modifier = Modifier.minimumInteractiveComponentSize().clickable(onClick = onChangeLocation).padding(horizontal = 4.dp),
                 )
             }
         }
@@ -413,7 +414,7 @@ private fun PhotoRow(
                         .padding(6.dp)
                         .background(Color.Black.copy(alpha = 0.55f))
                         .clickable(onClick = onRemove)
-                        .padding(6.dp),
+                        .padding(15.dp),
                 ) {
                     Icon(Icons.Filled.Close, contentDescription = tr("Alisin ang larawan", "Remove the photo"), tint = Color.White, modifier = Modifier.size(18.dp))
                 }

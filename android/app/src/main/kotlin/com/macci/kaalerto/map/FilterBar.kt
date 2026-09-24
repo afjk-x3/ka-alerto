@@ -1,5 +1,6 @@
 package com.macci.kaalerto.map
 
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.background
@@ -94,7 +95,8 @@ fun FilterBar(
                 modifier = Modifier
                     .border(androidx.compose.foundation.BorderStroke(1.dp, colors.borderEmphasis))
                     .clickable { recencyMenuOpen = true }
-                    .padding(horizontal = 12.dp, vertical = 9.dp),
+                    .heightIn(min = 48.dp)
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(recency.displayLabel(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -134,7 +136,8 @@ private fun FilterPill(
             .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.background)
             .border(androidx.compose.foundation.BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else colors.borderEmphasis))
             .selectable(selected = selected, role = Role.Button, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .heightIn(min = 48.dp)
+            .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (swatchColor != null) {

@@ -1,5 +1,6 @@
 package com.macci.kaalerto.map
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -755,7 +756,7 @@ private fun SosFocusBanner(latLng: LatLng, onDismiss: () -> Unit, onRoutes: () -
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.inverseOnSurface,
-            modifier = Modifier.clickable(onClick = onRoutes).padding(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.minimumInteractiveComponentSize().clickable(onClick = onRoutes).padding(horizontal = 8.dp),
         )
         IconButton(onClick = onDismiss) {
             Icon(Icons.Filled.Close, contentDescription = tr("Isara", "Close"), tint = MaterialTheme.colorScheme.inverseOnSurface)
@@ -831,7 +832,7 @@ private fun ShelterFocusCard(state: EvacState, distanceMeters: Double?, onDismis
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
-                modifier = Modifier.clickable(onClick = onRoutes).padding(vertical = 4.dp, horizontal = 8.dp),
+                modifier = Modifier.minimumInteractiveComponentSize().clickable(onClick = onRoutes).padding(horizontal = 8.dp),
             )
             Text(
                 tr("Buksan sa Maps", "Open in Maps"),
@@ -839,11 +840,12 @@ private fun ShelterFocusCard(state: EvacState, distanceMeters: Double?, onDismis
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.inverseOnSurface,
                 modifier = Modifier
+                    .minimumInteractiveComponentSize()
                     .clickable {
                         val uri = Uri.parse("geo:${centre.lat},${centre.lon}?q=${centre.lat},${centre.lon}")
                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                     }
-                    .padding(vertical = 4.dp, horizontal = 8.dp),
+                    .padding(horizontal = 8.dp),
             )
         }
     }

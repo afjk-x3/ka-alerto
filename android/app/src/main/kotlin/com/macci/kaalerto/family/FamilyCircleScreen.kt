@@ -1,5 +1,6 @@
 package com.macci.kaalerto.family
 
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -233,7 +234,7 @@ fun FamilyCircleScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(onClick = onJoinCircle)
-                    .padding(vertical = 8.dp),
+                    .heightIn(min = 48.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

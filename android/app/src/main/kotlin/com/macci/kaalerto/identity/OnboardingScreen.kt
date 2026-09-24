@@ -1,5 +1,6 @@
 package com.macci.kaalerto.identity
 
+import androidx.compose.foundation.layout.heightIn
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import android.Manifest
@@ -233,7 +234,9 @@ private fun SosEscapeHatch(onSos: () -> Unit) {
             modifier = Modifier
                 .background(SosColors.Critical)
                 .clickable(onClick = onSos)
-                .padding(horizontal = 13.dp, vertical = 8.dp),
+                .heightIn(min = 48.dp)
+                .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center,
         ) {
             Text("SOS", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = SosColors.CardBackground)
         }

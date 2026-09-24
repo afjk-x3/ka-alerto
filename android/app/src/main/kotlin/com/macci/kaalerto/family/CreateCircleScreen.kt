@@ -1,5 +1,6 @@
 package com.macci.kaalerto.family
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,7 +54,7 @@ fun CreateCircleScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(tr("Gumawa ng Circle", "Create a circle"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-            Box(Modifier.clickable(onClick = onBack).padding(8.dp)) {
+            Box(Modifier.minimumInteractiveComponentSize().clickable(onClick = onBack).padding(horizontal = 8.dp), contentAlignment = Alignment.Center) {
                 Text(tr("Isara", "Close"), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
             }
         }

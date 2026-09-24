@@ -1,5 +1,6 @@
 package com.macci.kaalerto.map
 
+import androidx.compose.material3.minimumInteractiveComponentSize
 import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -174,7 +175,7 @@ private fun Failure(text: String, onOpenInMaps: () -> Unit) {
     Text(
         tr("Buksan sa Maps", "Open in Maps"),
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.clickable(onClick = onOpenInMaps).padding(vertical = 8.dp),
+        modifier = Modifier.minimumInteractiveComponentSize().clickable(onClick = onOpenInMaps),
     )
 }
 
