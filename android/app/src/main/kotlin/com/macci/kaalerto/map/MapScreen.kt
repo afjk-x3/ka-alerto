@@ -415,7 +415,7 @@ fun MapScreen(
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
                 meshStatus = meshStatus,
                 stormMode = stormMode,
-                onModeIconClick = onToggleStormMode,
+                onModeIconClick = onToggleStormMode.takeUnless { survivalMode },
                 onOpenMenu = onOpenMenu ?: {},
                 modifier = Modifier.fillMaxWidth(),
             )

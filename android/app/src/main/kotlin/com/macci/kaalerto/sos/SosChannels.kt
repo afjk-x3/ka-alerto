@@ -40,7 +40,8 @@ sealed interface ChannelStatus {
     data class Broadcasting(val peerCount: Int) : ChannelStatus
 
     /** The transport itself is unavailable — radios off, no permission. */
-    data class Unavailable(val reason: String) : ChannelStatus
+    /** [reasonEn] defaults to [reasonFil] for runtime text this app did not author (a mesh radio error). */
+    data class Unavailable(val reasonFil: String, val reasonEn: String = reasonFil) : ChannelStatus
 }
 
 data class SosChannelRow(val channel: SosChannel, val status: ChannelStatus)
@@ -68,7 +69,7 @@ fun List<SosChannelRow>.anyBroadcasting(): Boolean =
 fun sosChannelRows(mesh: MeshStatus, cloudOffline: Boolean = false): List<SosChannelRow> = listOf(
     SosChannelRow(
         SosChannel.SERVER,
-        if (cloudOffline) ChannelStatus.Unavailable("Walang koneksyon sa internet") else ChannelStatus.Uploading,
+        if (cloudOffline) ChannelStatus.Unavailable("Walang koneksyon sa internet", "No internet connection") else ChannelStatus.Uploading,
     ),
     SosChannelRow(SosChannel.SMS, ChannelStatus.NotBuilt("may bayad ang SMS", "SMS is charged")),
     SosChannelRow(
@@ -76,7 +77,7 @@ fun sosChannelRows(mesh: MeshStatus, cloudOffline: Boolean = false): List<SosCha
         when {
             mesh.error != null -> ChannelStatus.Unavailable(mesh.error)
             mesh.running -> ChannelStatus.Broadcasting(mesh.peerCount)
-            else -> ChannelStatus.Unavailable("Hindi tumatakbo ang mesh")
+            else -> ChannelStatus.Unavailable("Hindi tumatakbo ang mesh", "The mesh isn't running")
         },
     ),
 )
@@ -104,8 +105,6 @@ fun ChannelStatus.detail(): String = when (this) {
         } else {
             tr("Naghahanap ng kalapit na phone", "Looking for nearby phones")
         }
-    // A dynamic runtime message (mesh radio error, or the literal fallback in
-    // sosChannelRows()) — left as-is rather than guessing a translation for text
-    // this function did not author.
-    is ChannelStatus.Unavailable -> reason
+    // A mesh radio error arrives as one runtime string and is shown as-is.
+    is ChannelStatus.Unavailable -> tr(reasonFil, reasonEn)
 }

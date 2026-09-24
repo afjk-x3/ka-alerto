@@ -49,7 +49,8 @@ fun MapHeader(
     reportsToday: Int,
     meshStatus: MeshStatus,
     stormMode: Boolean,
-    onModeIconClick: () -> Unit,
+    /** Null hides the Storm/Normal toggle — in Survival mode it would read as the way out of it. */
+    onModeIconClick: (() -> Unit)?,
     onOpenMenu: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -102,33 +103,37 @@ fun MapHeader(
                 )
             }
             MeshStatusLine(meshStatus)
-            SlowConnectionLine()
+            // Only while there is a connection that keeps failing: offline, the line above
+            // already says so, and the advice is moot once Bluetooth is on.
+            if (isOnline && !meshStatus.running) SlowConnectionLine()
         }
         // Day 10 put the acting role here as a badge; moved to the hamburger drawer
         // (nav/NavDrawer.kt already shows it and already routes to the same role
         // screen) after a real-device test found the header too crowded. The drawer is
         // reached via the same hamburger button already in this row, so nothing here
         // lost reachability — it just stopped being duplicated in two places.
-        // Shows what a tap switches TO, with a word, not the current state as a bare icon.
-        val switchTo = if (stormMode) tr("Normal", "Normal") else tr("Storm", "Storm")
-        val switchLabel = tr("Lumipat sa $switchTo mode", "Switch to $switchTo mode")
-        Row(
-            modifier = Modifier
-                .padding(start = 12.dp)
-                .heightIn(min = 48.dp)
-                .border(BorderStroke(1.dp, colors.borderEmphasis))
-                .clickable(onClick = onModeIconClick)
-                .semantics { contentDescription = switchLabel }
-                .padding(horizontal = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            ModeToggleIcon(
-                stormMode = !stormMode,
-                tint = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(Modifier.size(6.dp))
-            Text(switchTo, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+        if (onModeIconClick != null) {
+            // Shows what a tap switches TO, with a word, not the current state as a bare icon.
+            val switchTo = if (stormMode) tr("Normal", "Normal") else tr("Storm", "Storm")
+            val switchLabel = tr("Lumipat sa $switchTo mode", "Switch to $switchTo mode")
+            Row(
+                modifier = Modifier
+                    .padding(start = 12.dp)
+                    .heightIn(min = 48.dp)
+                    .border(BorderStroke(1.dp, colors.borderEmphasis))
+                    .clickable(onClick = onModeIconClick)
+                    .semantics { contentDescription = switchLabel }
+                    .padding(horizontal = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ModeToggleIcon(
+                    stormMode = !stormMode,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+                Text(switchTo, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+            }
         }
     }
 }
