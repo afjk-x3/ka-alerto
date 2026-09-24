@@ -471,8 +471,13 @@ private fun CircleMemberRow(status: CircleMemberStatus) {
         }
 
         // Name + status
+        // Event names carry the role title ("Kagawad pol G.", identity/LocalIdentity.kt's
+        // displayName); in a family list the person comes first and the role is a note.
+        val roleTitle = listOf("Kagawad", "Responder").firstOrNull { status.displayName.startsWith("$it ") }
+        val name = roleTitle?.let { status.displayName.removePrefix("$it ") } ?: status.displayName
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(status.displayName, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+            Text(name, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+            if (roleTitle != null) Text(roleTitle, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(statusText, fontSize = 14.sp, color = statusColor)
         }
 

@@ -2,6 +2,7 @@ package com.macci.kaalerto.family
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CircleSubmitTest {
@@ -27,5 +28,26 @@ class CircleSubmitTest {
     @Test
     fun `empty string returns null`() {
         assertNull(extractCircleId(""))
+    }
+
+    @Test
+    fun `short code is eight digits and stable for one circle`() {
+        val code = shortCircleCode(id)
+        assertTrue(Regex("""\d{4}-\d{4}""").matches(code))
+        assertEquals(code, shortCircleCode(id))
+    }
+
+    @Test
+    fun `a short code finds a circle this phone knows, however it is typed`() {
+        val create = newCircleCreateEvent(
+            com.macci.kaalerto.identity.LocalIdentity.Identity("local-a", "Ana R.", "resident"),
+            id, "Bahay", 1_700_000_000_000L,
+        )
+        val code = shortCircleCode(id)
+        assertEquals(id, resolveJoinCode(code, listOf(create)))
+        assertEquals(id, resolveJoinCode(code.replace("-", ""), listOf(create)))
+        assertEquals(id, resolveJoinCode("Code: ${code.replace("-", " ")}", listOf(create)))
+        assertNull(resolveJoinCode(code, emptyList()))
+        assertEquals(id, resolveJoinCode(id, emptyList()))
     }
 }

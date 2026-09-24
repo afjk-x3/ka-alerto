@@ -254,6 +254,9 @@ private fun RequestCard(
                             fontFamily = FontFamily.Monospace,
                             color = if (place != null) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                         )
+                        request.locationNote()?.let {
+                            Text(it, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = com.macci.kaalerto.ui.theme.LocalKaAlertoColors.current.warningFg)
+                        }
                         Text(
                             metaLine(request, distanceMeters),
                             fontSize = 13.sp,
@@ -308,7 +311,9 @@ private fun RequestCard(
                     // "papunta na", and a request that is seen but unattended is
                     // docs/03-architecture.md §6.5's worst failure mode.
                     if (request.state.rank < SosState.EN_ROUTE.rank) {
-                        AckButton(tr("Papunta na ako", "I'm on my way"), filled = false, onClick = onEnRoute)
+                        Column(Modifier.padding(start = 13.dp, end = 13.dp, bottom = 13.dp)) {
+                            AckButton(tr("Papunta na ako", "I'm on my way"), filled = false, onClick = onEnRoute)
+                        }
                     }
                 } else {
                     Column(

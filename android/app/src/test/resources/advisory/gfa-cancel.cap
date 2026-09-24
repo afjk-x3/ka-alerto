@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<alert xmlns="urn:oasis:names:tc:emergency:cap:1.2"><identifier>eace177c-abb8-4e41-b3fb-37ee71b4ce05</identifier><sender>PAGASA-DOST</sender><sent>2026-09-24T17:53:17+08:00</sent><status>Actual</status><msgType>Cancel</msgType><scope>Public</scope><references>PAGASA-DOST,bbb5652f-397d-4789-8db5-92c1edab762d,2026-09-24T17:36:26+08:00</references><info><category>Met</category><event>General Flood Advisory (Moderate)</event><responseType>Monitor</responseType><urgency>Future</urgency><severity>Moderate</severity><certainty>Possible</certainty><expires>2026-09-24T18:03:17+08:00</expires><senderName>PAGASA-DOST</senderName><headline>General Flood Advisory</headline><description>This is a cancellation of the previous alert.</description><instruction/><web>http://www.pagasa.dost.gov.ph/index.php/26-hydromet/1582-flood-forecast-terms-and-symbols</web><contact>PAGASA-DOST</contact><valueName>layer:Google:Region:0.1</valueName><value>Region 12 (SOCCSKSARGEN)</value><area><areaDesc>Metro Manila</areaDesc><polygon>14.767928533352,121.10203791632 14.520663584434,121.11480109008 14.520506570554,121.11429484768 14.347454023196,121.01386683476 14.473860833486,120.9718174024 14.715097307996,120.9060060923 14.690356994047,120.95842832784 14.690896835939,120.95927039565 14.708989380353,120.94825870029 14.709743389485,120.947946199 14.721820033192,120.93701245881 14.722336465182,120.94787879509 14.726374422426,120.96185209331 14.7296743464,120.96533530454 14.730973681699,120.96633984784 14.73266168728,120.96751760001 14.767928533352,121.10203791632</polygon><geocode><valueName>SAME</valueName><value>130000000</value></geocode></area></info><Signature xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/><DigestValue>BAiK2zS8WzvuqPMEy2CWA1Hn37A=</DigestValue></Reference></SignedInfo><SignatureValue>JIavbArsUeqzy+EMuHv3O6wouBcskCX/WOKDOflh16CdR1VTUoqmo3tf7iDb6+SQ
+mVoDbm0GYezod/8nkpoBUDOz+cI35nXssF/4arpbxJeINxZ8v9PakRjTh9HXmw8N
+rj/Iompqt4jtMnXzvxmFJNnBfNeeD35leNs/hlTjR8NSZv32VL3LjPAab4qPBrNu
+1rdpRvWuEx3jsF5D3v9BbdwfXsrfB5weQro9Qb3kqtWSj3SZOnl2PFQ3QZKIodxk
+AF1yhs9N6Si0+2IDd8G3La/xbPykd6MEze1UBhk2AEK3Ocd6skbt6n57JLIboLZz
+G+fe3PGwWFtwuoMJLclpNTc+hj7Lv6pM8rEaySK6FOEyVs/o3AwSi/48/Z/+vJQj
+sqRjjU1y8vqfwnofmhlQuaq36y8zpNqWhCrFTb00rufeOLy91DH4hgt3EAeLqmqO
+BUBuN+qkEX8g/c4ueNYnGm301l/uj8a6O3XIdN61ufttBebV5HOsFb/Nm9UON69z
++LEprkUp9VOnALk7S7F/avRDNqSqdps8atJBz4MTPfS5c57FU+oW+k/CMStxyjQv
+8Ylchn0zVqTV0roASO2C+4QyKyHeL6GhunVEOA+Lyyk1GdMgIf2SxGgq3pvNgBNj
+nDiYBKKe9anuBDlvqGdC4q33dhZ7d/njK/yC9ra12hI=</SignatureValue><KeyInfo><KeyValue>
+<RSAKeyValue>
+<Modulus>
+1pm7X28TTIESx7uWklHbVIlO0Y+fUBZ7LynhaRQ9w1rMsMhF0dNEvUdYBKVF1xPz
+SGD0IrbU6Uemw8Xb/sOy263ZOkSxqWIh3UEluOW7s6J3Hgv8UMDZkWDgj3+m2qWT
+UTgbNO3drHGvlRBg6liD15iNusSdSMw/kqmHxe/9tnStpsHo/u57rsH3/ROTvuz2
+yHD2t7I7zo0Kv7mfAAHodU4QoL8/7c3u29szxRu13M4SRkiLKwbgrwlsMCvXhkys
+oEKlX8/SnXDL8iSPExAiP7xVpfbmh8TNiGvtbjH7Ro2EYjUsEcv9qC7G5jLu7Klt
+8TkTobHqES26/F5/u42Ra3rIDunTxczbIHF1qoumAzdsJmFCBc9D1IKTTWKR3D2J
+eAZfpuvMeOEcpRxBayYf2jOBx8iD8gag5cIZWl2/62IfUxTk92A00M5QrzTocNkg
+0U5K1gN5WmhObUN/3fa/Ob5uriELGzRdzXJ+3QE8FpPmSPJZFA//UWmpJqsboO7p
+AhbB8efPIV42nxjwQEbJdkxUOlfAyPMRGcp4RhmaAnX7KmB33j4klYeNktH+OeV8
+S9q/nMJoA/d76K1hCbo9PJTa/UxwZJYh0LEs1YnHP/5wgydZJcyNjmcu7P5ur90L
+qyr2FB0fZYAmWi6SEaA0F7yi2Y0uqV4FP7dfcbfOf+E=
+</Modulus>
+<Exponent>
+AQAB
+</Exponent>
+</RSAKeyValue>
+</KeyValue></KeyInfo></Signature></alert>

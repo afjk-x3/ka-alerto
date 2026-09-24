@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -111,19 +112,9 @@ fun OfficialStatusScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Box(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.onBackground)
-                    .padding(horizontal = 9.dp, vertical = 5.dp),
-            ) {
-                Text(
-                    tr("KAGAWAD", "OFFICIAL"),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    color = MaterialTheme.colorScheme.background,
-                )
-            }
+            // The SOS shortcut sits in this corner (ui/KaAlertoApp.kt); "Will post as Kagawad…"
+            // at the bottom already says who is posting, so the old OFFICIAL badge went.
+            Spacer(Modifier.width(84.dp))
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(colors.border))
 

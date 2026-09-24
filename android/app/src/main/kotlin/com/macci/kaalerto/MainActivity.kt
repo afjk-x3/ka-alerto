@@ -53,7 +53,17 @@ class MainActivity : ComponentActivity() {
             // theme itself is chosen at this level.
             var stormMode by remember { mutableStateOf(false) }
 
-            KaAlertoTheme(stormMode = stormMode) {
+            // Survival mode: automatic at low battery, and a switch that overrides it. The
+            // override clears whenever the automatic answer changes, so turning it off at
+            // 14% holds until the phone charges, not forever.
+            val battery by com.macci.kaalerto.ui.rememberBattery()
+            val autoSurvival = com.macci.kaalerto.ui.shouldAutoSurvive(battery)
+            var survivalOverride by remember { mutableStateOf<Boolean?>(null) }
+            androidx.compose.runtime.LaunchedEffect(autoSurvival) { survivalOverride = null }
+            val survivalMode = survivalOverride ?: autoSurvival
+            androidx.compose.runtime.SideEffect { com.macci.kaalerto.ui.SurvivalState.set(survivalMode) }
+
+            KaAlertoTheme(stormMode = stormMode, survivalMode = survivalMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
@@ -61,6 +71,9 @@ class MainActivity : ComponentActivity() {
                     KaAlertoApp(
                         stormMode = stormMode,
                         onToggleStormMode = { stormMode = !stormMode },
+                        survivalMode = survivalMode,
+                        batteryPercent = battery.percent,
+                        onSetSurvivalMode = { survivalOverride = it },
                         openSosId = openSosId,
                         openFeatureRef = openFeatureRef,
                     )

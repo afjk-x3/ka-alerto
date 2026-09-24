@@ -55,8 +55,17 @@ class GeofenceNotifier(private val context: Context) {
                 val currentIds = events.map { it.id }.toSet()
                 val previous = knownIds
                 if (previous != null) {
+                    // A new PAGASA alert for the home province, however it arrived (FR-3.3).
+                    val province = com.macci.kaalerto.advisory.homeProvince(context)
+                    val newIds = currentIds - previous
+                    com.macci.kaalerto.advisory.activeAdvisories(events, System.currentTimeMillis(), province)
+                        .filter { "pagasa-${it.capId}" in newIds }
+                        .forEach { com.macci.kaalerto.advisory.AdvisoryNotifier.notify(context, it) }
+                    // Two alert scopes (PRD FR-3.2): the home radius, and routes the resident
+                    // saved from the route panel. Home wins when a report is in both.
                     val home = HomeLocationStore.get(context)
-                    if (home != null) {
+                    val routes = com.macci.kaalerto.route.SavedRoutes.all(context)
+                    if (home != null || routes.isNotEmpty()) {
                         val now = System.currentTimeMillis()
                         val myAuthorId = LocalIdentity.getOrCreate(context).authorId
                         events
@@ -69,9 +78,13 @@ class GeofenceNotifier(private val context: Context) {
                                     shouldPromptConfirm(it, events, myAuthorId)
                             }
                             .forEach { event ->
-                                val distance = haversineMeters(home.lat, home.lon, event.lat, event.lon)
-                                if (distance <= home.radiusMeters) {
+                                val distance = home?.let { haversineMeters(it.lat, it.lon, event.lat, event.lon) }
+                                if (home != null && distance!! <= home.radiusMeters) {
                                     FloodNotifier.notify(context, event, distance)
+                                } else {
+                                    com.macci.kaalerto.route.savedRouteNear(event.lat, event.lon, routes)?.let { route ->
+                                        FloodNotifier.notify(context, event, 0.0, onRouteTo = route.name)
+                                    }
                                 }
                             }
                     }

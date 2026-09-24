@@ -87,6 +87,17 @@ fun MapLegend(modifier: Modifier = Modifier) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp).widthIn(max = 240.dp),
             )
+            // Long-press is the only way to set a home from the map, and nothing else says so.
+            Text(
+                tr(
+                    "Pindutin nang matagal ang mapa para itakda ang bahay mo.",
+                    "Press and hold the map to set your home.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(top = 6.dp).widthIn(max = 240.dp),
+            )
         }
     }
 }

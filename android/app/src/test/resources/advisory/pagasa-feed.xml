@@ -1,0 +1,366 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes'?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<id>https://publicalert.pagasa.dost.gov.ph/feeds/</id>
+<title type="text">Latest Alerts from Philippine Atmospheric Geophysical and Astronomical Services Administration</title>
+<link rel="hub" href="//alert-hub.appspot.com" />
+<link rel="self" href="https://publicalert.pagasa.dost.gov.ph/feeds/" />
+<rights>Copyright, Philippine Atmospheric Geophysical and Astronomical Services Administration. Licensed under CC BY 4.0.</rights>
+<updated>2026-09-24T17:54:18+08:00</updated>
+<entry>
+  <id>urn:uuid:1e110330-a2a1-4e53-a6a2-2223bb26cce0</id>
+  <title>GFA #1 - Region 12 (SOCCSKSARGEN)</title>
+  <updated>2026-09-24T17:54:18+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/1e110330-a2a1-4e53-a6a2-2223bb26cce0.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:eace177c-abb8-4e41-b3fb-37ee71b4ce05</id>
+  <title>Cancellation of GFA #1 - Region 12 (SOCCSKSARGEN)</title>
+  <updated>2026-09-24T17:53:17+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/eace177c-abb8-4e41-b3fb-37ee71b4ce05.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:5bf8e2d4-32ab-46ac-83ce-602f0270a98f</id>
+  <title>GFA #1 - Region 10 (Northern Mindanao)</title>
+  <updated>2026-09-24T17:50:35+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/5bf8e2d4-32ab-46ac-83ce-602f0270a98f.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:bbb5652f-397d-4789-8db5-92c1edab762d</id>
+  <title>GFA #1 - Region 12 (SOCCSKSARGEN)</title>
+  <updated>2026-09-24T17:36:26+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/bbb5652f-397d-4789-8db5-92c1edab762d.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:40d00e6f-ad48-4418-b6d2-c4d94e24297d</id>
+  <title>GFA #3 - Region 11 (Davao Region)</title>
+  <updated>2026-09-24T17:31:42+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/40d00e6f-ad48-4418-b6d2-c4d94e24297d.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:1a9fdcf4-8ebe-4a40-8e56-60e0434e3429</id>
+  <title>Cancellation of GFA #3 - Region 11 (Davao Region)</title>
+  <updated>2026-09-24T17:29:09+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/1a9fdcf4-8ebe-4a40-8e56-60e0434e3429.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:e7b1817c-3b55-4f49-9ea4-dcccc04fa5ff</id>
+  <title>GFA #3 - Region 13 (Caraga)</title>
+  <updated>2026-09-24T17:22:13+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/e7b1817c-3b55-4f49-9ea4-dcccc04fa5ff.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:fba6fb0a-e9ae-4742-93ff-7e05299f28d0</id>
+  <title>GFA #3 - Region 11 (Davao Region)</title>
+  <updated>2026-09-24T17:18:36+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/fba6fb0a-e9ae-4742-93ff-7e05299f28d0.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:a6ba6cb2-db51-4b4c-afc6-f56413bda228</id>
+  <title>GFA #3 - Region 8 (Eastern Visayas)</title>
+  <updated>2026-09-24T17:15:36+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/a6ba6cb2-db51-4b4c-afc6-f56413bda228.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:1c42f2b5-6de6-4309-9f34-a1e5b7889da9</id>
+  <title>GFA #3 - Region 7 (Central Visayas)</title>
+  <updated>2026-09-24T17:12:47+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/1c42f2b5-6de6-4309-9f34-a1e5b7889da9.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:13de71f9-f651-40e8-87ff-d78aa4c3d736</id>
+  <title>GFA #3 - Region 6 (Western Visayas)</title>
+  <updated>2026-09-24T17:06:40+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/13de71f9-f651-40e8-87ff-d78aa4c3d736.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:7832a9d5-95ad-4dad-8eb5-0bf6e88495dc</id>
+  <title>Tropical Cyclone Alert : Tropical Storm Queenie (SURIGAE)</title>
+  <updated>2026-09-24T16:48:08+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/acp/7832a9d5-95ad-4dad-8eb5-0bf6e88495dc.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:c834ec67-bf51-46a4-9209-d3d02f3e6a8d</id>
+  <title>Tropical Cyclone Alert : Tropical Storm Queenie (SURIGAE)</title>
+  <updated>2026-09-24T11:34:48+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/acp/c834ec67-bf51-46a4-9209-d3d02f3e6a8d.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:badc9875-bef2-423e-b742-7f489b172898</id>
+  <title>GFA #2 - Region 6 (Western Visayas)</title>
+  <updated>2026-09-24T05:17:45+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/badc9875-bef2-423e-b742-7f489b172898.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:2f37b69d-6472-44dc-adcf-d72dc31219f4</id>
+  <title>GFA #2 - Region 7 (Central Visayas)</title>
+  <updated>2026-09-24T05:15:57+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/2f37b69d-6472-44dc-adcf-d72dc31219f4.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:002313e2-6b61-44ae-8451-d0de22f6e576</id>
+  <title>GFA #2 - Region 8 (Eastern Visayas)</title>
+  <updated>2026-09-24T05:12:42+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/002313e2-6b61-44ae-8451-d0de22f6e576.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:0eac5a54-ee90-495c-9eab-ecce940bcab2</id>
+  <title>GFA #2 - Region 11 (Davao Region)</title>
+  <updated>2026-09-24T05:11:34+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/0eac5a54-ee90-495c-9eab-ecce940bcab2.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:4793c407-a7f9-4ed3-88ba-1f64af6bc5e1</id>
+  <title>GFA #2 - Region 13 (Caraga)</title>
+  <updated>2026-09-24T05:10:11+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/4793c407-a7f9-4ed3-88ba-1f64af6bc5e1.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:c9db7f23-4ede-470b-8c36-124be995ba0e</id>
+  <title>GFA #1 - Region 13 (Caraga)</title>
+  <updated>2026-09-23T18:00:42+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/c9db7f23-4ede-470b-8c36-124be995ba0e.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:ddd4d058-4d41-4347-9f65-64ad92ab4c0b</id>
+  <title>GFA #1 - Region 11 (Davao Region)</title>
+  <updated>2026-09-23T17:58:29+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/ddd4d058-4d41-4347-9f65-64ad92ab4c0b.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:644dca0a-0173-4dc8-a0f3-1cec2e8575d7</id>
+  <title>GFA #1 - Region 8 (Eastern Visayas)</title>
+  <updated>2026-09-23T17:57:09+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/644dca0a-0173-4dc8-a0f3-1cec2e8575d7.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:75c58784-ebed-40de-aeb8-e24ba9a9f596</id>
+  <title>GFA #1 - Region 7 (Central Visayas)</title>
+  <updated>2026-09-23T17:53:59+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/75c58784-ebed-40de-aeb8-e24ba9a9f596.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:5056f5dc-cea4-417d-9ee1-c020e15a17fc</id>
+  <title>GFA #1 - Region 6 (Western Visayas)</title>
+  <updated>2026-09-23T17:52:28+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/5056f5dc-cea4-417d-9ee1-c020e15a17fc.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:a16590f6-f1cf-4398-8b71-ebbc89d0c85f</id>
+  <title>GFA #4 (Final) - Region 4-A (CALABARZON)</title>
+  <updated>2026-09-23T05:31:22+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/a16590f6-f1cf-4398-8b71-ebbc89d0c85f.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:a2727c07-72b1-46da-aeef-48b1a4c9468a</id>
+  <title>GFA #2 (Final) - Region 4-B (MIMAROPA)</title>
+  <updated>2026-09-23T05:30:00+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/a2727c07-72b1-46da-aeef-48b1a4c9468a.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:64ef34b0-c8bf-491e-9e42-e0baa47902fe</id>
+  <title>GFA #2 (Final) - Region 3 (Central Luzon)</title>
+  <updated>2026-09-23T05:28:35+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/64ef34b0-c8bf-491e-9e42-e0baa47902fe.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:91e88185-1e92-49ec-a578-599c4ae49444</id>
+  <title>GFA #4 (Final) - Region 8 (Eastern Visayas)</title>
+  <updated>2026-09-23T05:27:09+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/91e88185-1e92-49ec-a578-599c4ae49444.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:be702836-bfad-4d1e-8206-1b43dafd5d07</id>
+  <title>GFA #3 (Final) - Region 10 (Northern Mindanao)</title>
+  <updated>2026-09-23T05:25:30+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/be702836-bfad-4d1e-8206-1b43dafd5d07.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:ad3bb2c9-6376-4ee8-a94f-e77f1487c2c8</id>
+  <title>GFA #3 (Final) - Region 13 (Caraga)</title>
+  <updated>2026-09-23T05:22:47+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/ad3bb2c9-6376-4ee8-a94f-e77f1487c2c8.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:a0f4dd53-53dc-47a3-9a7c-6ccce435c359</id>
+  <title>GFA #2 (Final) - BARMM (Bangsamoro Autonomous Region of Muslim Mindanao)</title>
+  <updated>2026-09-23T05:20:21+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/a0f4dd53-53dc-47a3-9a7c-6ccce435c359.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:df88de61-379f-423f-b8d8-3e582cd2b585</id>
+  <title>GFA #3 (Final) - Region 7 (Central Visayas)</title>
+  <updated>2026-09-23T05:17:35+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/df88de61-379f-423f-b8d8-3e582cd2b585.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:77694288-1f49-45c3-a764-51daa64b2074</id>
+  <title>GFA #2 (Final) - NCR (National Capital Region)</title>
+  <updated>2026-09-23T05:16:10+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/77694288-1f49-45c3-a764-51daa64b2074.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:0eb4f896-6b45-46ff-8aab-8e554db9dcb6</id>
+  <title>GFA #1 - BARMM (Bangsamoro Autonomous Region of Muslim Mindanao)</title>
+  <updated>2026-09-22T17:48:22+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/0eb4f896-6b45-46ff-8aab-8e554db9dcb6.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:8145ead6-6add-4a87-ae65-32ee4d7c060c</id>
+  <title>GFA #2 - Region 7 (Central Visayas)</title>
+  <updated>2026-09-22T17:46:51+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/8145ead6-6add-4a87-ae65-32ee4d7c060c.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:0016f30a-510e-4edf-b2a6-47e42bf2eb3a</id>
+  <title>GFA #2 - Region 13 (Caraga)</title>
+  <updated>2026-09-22T17:44:53+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/0016f30a-510e-4edf-b2a6-47e42bf2eb3a.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:47047ccb-1c33-4c55-83ff-9bfbca0bccbe</id>
+  <title>GFA #2 - Region 10 (Northern Mindanao)</title>
+  <updated>2026-09-22T17:44:03+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/47047ccb-1c33-4c55-83ff-9bfbca0bccbe.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:3bccb385-0a82-451f-b1a2-39d19edbdfbf</id>
+  <title>GFA #3 - Region 8 (Eastern Visayas)</title>
+  <updated>2026-09-22T17:43:18+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/3bccb385-0a82-451f-b1a2-39d19edbdfbf.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:37237261-e41b-4101-a72f-61eeaf67bfc1</id>
+  <title>GFA #2 - Region 7 (Central Visayas)</title>
+  <updated>2026-09-22T17:42:36+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/37237261-e41b-4101-a72f-61eeaf67bfc1.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:4ee42096-149b-47a4-983d-803c8712aa60</id>
+  <title>GFA #1 - Region 3 (Central Luzon)</title>
+  <updated>2026-09-22T17:41:25+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/4ee42096-149b-47a4-983d-803c8712aa60.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:fb8f55d0-c563-476b-aee4-5b18f193d729</id>
+  <title>GFA #1 - NCR (National Capital Region)</title>
+  <updated>2026-09-22T17:39:37+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/fb8f55d0-c563-476b-aee4-5b18f193d729.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:a210f4d5-da18-4a5b-8d9e-093465d3b365</id>
+  <title>GFA #1 - Region 4-B (MIMAROPA)</title>
+  <updated>2026-09-22T17:34:08+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/a210f4d5-da18-4a5b-8d9e-093465d3b365.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:0c636c2c-960b-4e2e-bd43-b0194e1a56bb</id>
+  <title>GFA #3 - Region 4-A (CALABARZON)</title>
+  <updated>2026-09-22T17:33:17+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/0c636c2c-960b-4e2e-bd43-b0194e1a56bb.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:6ac5ac71-362f-4d17-a29b-f746df264c52</id>
+  <title>GFA #2 (Final) - Region 6 (Western Visayas)</title>
+  <updated>2026-09-22T05:29:22+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/6ac5ac71-362f-4d17-a29b-f746df264c52.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:b2622a78-3b2d-46fe-95d2-d3fd3d25518c</id>
+  <title>GFA #1 - Region 7 (Central Visayas)</title>
+  <updated>2026-09-22T05:28:15+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/b2622a78-3b2d-46fe-95d2-d3fd3d25518c.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:72235c35-f463-4080-8ad0-be877a775984</id>
+  <title>GFA #1 - Region 10 (Northern Mindanao)</title>
+  <updated>2026-09-22T05:27:08+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/72235c35-f463-4080-8ad0-be877a775984.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:5267345b-af8b-4e7b-9747-6e7ebd3e91b4</id>
+  <title>GFA #1 - Region 13 (Caraga)</title>
+  <updated>2026-09-22T05:25:44+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/5267345b-af8b-4e7b-9747-6e7ebd3e91b4.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:52054ca4-1ff8-4460-9095-6bbb80dc7d20</id>
+  <title>GFA #2 (Final) - BARMM (Bangsamoro Autonomous Region of Muslim Mindanao)</title>
+  <updated>2026-09-22T05:22:49+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/52054ca4-1ff8-4460-9095-6bbb80dc7d20.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:f122f0be-0889-499d-a7fc-a0bd0c388d23</id>
+  <title>GFA #2 (Final) - Region 9 (Zamboanga Peninsula)</title>
+  <updated>2026-09-22T05:21:37+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/f122f0be-0889-499d-a7fc-a0bd0c388d23.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:24aa4ffb-a64e-4b00-88e0-f06b949f630a</id>
+  <title>GFA #2 - Region 8 (Eastern Visayas)</title>
+  <updated>2026-09-22T05:19:50+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/24aa4ffb-a64e-4b00-88e0-f06b949f630a.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:cb1fa376-cdf4-436a-a0c1-b3ff3b9fd6ab</id>
+  <title>GFA #2 (Final) - Region 6 (Western Visayas)</title>
+  <updated>2026-09-22T05:17:26+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/cb1fa376-cdf4-436a-a0c1-b3ff3b9fd6ab.cap"/>
+</entry>
+<entry>
+  <id>urn:uuid:7442e0a4-1ec1-45cf-bb09-c32422d2faf2</id>
+  <title>GFA #2 - Region 4-A (CALABARZON)</title>
+  <updated>2026-09-22T05:10:46+08:00</updated>
+  <author><name>PAGASA DOST</name></author>
+  <link type="application/cap+xml" href="https://publicalert.pagasa.dost.gov.ph/output/gfa/7442e0a4-1ec1-45cf-bb09-c32422d2faf2.cap"/>
+</entry>
+</feed>

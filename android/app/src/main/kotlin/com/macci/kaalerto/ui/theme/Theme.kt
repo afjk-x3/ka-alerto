@@ -87,6 +87,16 @@ private val StormColorScheme = darkColorScheme(
     scrim = Color.Black,
 )
 
+private val SurvivalColorScheme = StormColorScheme.copy(
+    background = Color.Black,
+    surface = Color.Black,
+    surfaceDim = Color.Black,
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color.Black,
+    inverseOnSurface = Color.Black,
+    onPrimary = Color.Black,
+)
+
 /**
  * @param stormMode A resident- or barangay-declared condition (docs/02-prd.md §6), not
  *   the phone's system dark-mode setting — deliberately not `isSystemInDarkTheme()`.
@@ -94,10 +104,20 @@ private val StormColorScheme = darkColorScheme(
 @Composable
 fun KaAlertoTheme(
     stormMode: Boolean = false,
+    /** PRD §6's Survival mode: Storm's palette on true black, which costs least on an OLED screen. */
+    survivalMode: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (stormMode) StormColorScheme else NormalColorScheme
-    val extraColors = if (stormMode) StormKaAlertoColors else NormalKaAlertoColors
+    val colorScheme = when {
+        survivalMode -> SurvivalColorScheme
+        stormMode -> StormColorScheme
+        else -> NormalColorScheme
+    }
+    val extraColors = when {
+        survivalMode -> StormKaAlertoColors.copy(canvas = Color.Black)
+        stormMode -> StormKaAlertoColors
+        else -> NormalKaAlertoColors
+    }
 
     CompositionLocalProvider(LocalKaAlertoColors provides extraColors) {
         MaterialTheme(

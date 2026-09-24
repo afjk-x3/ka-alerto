@@ -3,6 +3,7 @@ package com.macci.kaalerto.map
 import com.macci.kaalerto.data.FeatureSummary
 import org.maplibre.android.maps.Style
 import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
 import org.maplibre.android.style.layers.PropertyFactory
 import org.maplibre.android.style.layers.SymbolLayer
 import org.maplibre.android.style.sources.GeoJsonSource
@@ -12,6 +13,7 @@ import org.maplibre.geojson.Point
 
 const val EVENTS_SOURCE_ID = "kaalerto-events"
 const val EVENTS_LAYER_ID = "kaalerto-events-symbols"
+const val EVENTS_HALO_LAYER_ID = "kaalerto-events-halo"
 const val FEATURE_REF_PROPERTY = "featureRef"
 private const val MARKER_KIND_PROPERTY = "markerKind"
 
@@ -41,6 +43,18 @@ fun updateEventMarkers(style: Style, summaries: List<FeatureSummary>) {
     }
 
     style.addSource(GeoJsonSource(EVENTS_SOURCE_ID, collection))
+    // A soft white disc under each flood marker, so it stands off the basemap's own
+    // circle-shaped POI icons (see mutePoiIcons). Added first, so it sits underneath.
+    style.addLayer(
+        CircleLayer(EVENTS_HALO_LAYER_ID, EVENTS_SOURCE_ID).withProperties(
+            PropertyFactory.circleRadius(17f),
+            PropertyFactory.circleColor("#FFFFFF"),
+            PropertyFactory.circleOpacity(0.85f),
+            PropertyFactory.circleStrokeWidth(1f),
+            PropertyFactory.circleStrokeColor("#1A1C1E"),
+            PropertyFactory.circleStrokeOpacity(0.25f),
+        ),
+    )
     style.addLayer(
         SymbolLayer(EVENTS_LAYER_ID, EVENTS_SOURCE_ID).withProperties(
             PropertyFactory.iconImage(
@@ -54,7 +68,7 @@ fun updateEventMarkers(style: Style, summaries: List<FeatureSummary>) {
             ),
             PropertyFactory.iconAllowOverlap(true),
             PropertyFactory.iconIgnorePlacement(true),
-            PropertyFactory.iconSize(0.7f),
+            PropertyFactory.iconSize(0.8f),
         ),
     )
 }

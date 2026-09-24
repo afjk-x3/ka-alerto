@@ -37,8 +37,10 @@ data class RouteUi(
     val options: List<RouteOption> = emptyList(),
     val active: Int = 0,
     val origin: LatLon? = null,
+    /** Routed on the phone's bundled road graph because the online router was unreachable. */
+    val offline: Boolean = false,
 ) {
-    enum class Status { LOCATING, LOADING, DONE, NO_CONNECTION, NO_ROUTE, NO_LOCATION, SERVICE_ERROR }
+    enum class Status { LOCATING, LOADING, DONE, NO_CONNECTION, NO_ROUTE, NO_LOCATION, SERVICE_ERROR, OUTSIDE_OFFLINE_MAP }
 }
 
 /**
@@ -87,6 +89,9 @@ fun RoutePanel(
     onOpenInMaps: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Saves the selected route as an alert scope (route/SavedRoutes.kt); null hides the control. */
+    onSave: (() -> Unit)? = null,
+    saved: Boolean = false,
 ) {
     val colors = LocalKaAlertoColors.current
     Column(
@@ -119,7 +124,25 @@ fun RoutePanel(
             )
             RouteUi.Status.NO_ROUTE -> Failure(tr("Walang nakitang ruta sa kalsada papunta roon.", "No road route was found to that spot."), onOpenInMaps)
             RouteUi.Status.SERVICE_ERROR -> Failure(tr("Hindi gumana ang routing server ngayon.", "The routing server didn't respond."), onOpenInMaps)
+            RouteUi.Status.OUTSIDE_OFFLINE_MAP -> Failure(
+                tr(
+                    "Walang internet, at labas ito sa naka-download na mapa ng kalsada (Pangasinan).",
+                    "No internet, and this is outside the downloaded road map (Pangasinan).",
+                ),
+                onOpenInMaps,
+            )
             RouteUi.Status.DONE -> {
+                if (ui.offline) {
+                    Text(
+                        tr(
+                            "Walang internet: ruta mula sa naka-download na mapa ng kalsada. Tantiya lang ang oras.",
+                            "No internet: routed on the downloaded road map. Times are rough.",
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 4.dp),
+                    )
+                }
                 ui.options.forEachIndexed { i, o ->
                     val selected = i == ui.active
                     Row(
@@ -159,6 +182,18 @@ fun RoutePanel(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (onSave != null) {
+                    Text(
+                        if (saved) {
+                            tr("Naka-save · aabisuhan ka kapag may baha sa rutang ito", "Saved · you'll be alerted to floods on this route")
+                        } else {
+                            tr("I-save ang rutang ito para sa alerto", "Save this route for alerts")
+                        },
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (saved) colors.safeFg else MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.minimumInteractiveComponentSize().clickable(enabled = !saved, onClick = onSave),
+                    )
+                }
             }
         }
     }

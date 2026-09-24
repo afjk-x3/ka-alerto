@@ -34,12 +34,23 @@ data class SosSnapshot(
      * volunteering to walk into floodwater for them.
      */
     val claimedByName: String?,
+    /** Where [lat]/[lon] came from. [SosLocationSource.NONE] means they are the 0,0 sentinel. */
+    val locationSource: SosLocationSource = if (isKnownLocation(lat, lon)) SosLocationSource.GPS else SosLocationSource.NONE,
+    /** The requester's home barangay, sent with the request as a hint for when the location is unknown. */
+    val homeBarangay: String? = null,
 ) {
     val isActive: Boolean get() = !state.isClosed
 
-    /** False while the request is still waiting for its first GPS fix — see [isKnownLocation]. */
-    val locationKnown: Boolean get() = isKnownLocation(lat, lon)
+    /** False while nothing places the request yet — see [isKnownLocation] and [locationSource]. */
+    val locationKnown: Boolean get() = locationSource != SosLocationSource.NONE
 }
+
+/**
+ * How a request's position was found, best first. GPS and a hand-picked spot come from
+ * the requester; RELAY is the position of the phone that heard it over Bluetooth, which
+ * is only within radio range of the requester and is shown as approximate.
+ */
+enum class SosLocationSource { GPS, PICKED, RELAY, NONE }
 
 /**
  * The same shape as day 4's [com.macci.kaalerto.data.Reducer]: a pure fold from the
@@ -68,6 +79,8 @@ object SosReducer {
         var lat = request.lat
         var lon = request.lon
         var accuracyMeters = requestPayload.accuracyMeters
+        var source = if (isKnownLocation(lat, lon)) SosLocationSource.GPS else SosLocationSource.NONE
+        var heardNear: Event? = null
 
         for ((event, payload) in events) {
             // Only the requester's own phone can say where the requester is.
@@ -75,6 +88,11 @@ object SosReducer {
                 lat = event.lat
                 lon = event.lon
                 accuracyMeters = payload.accuracyMeters
+                source = if (payload.locationPicked) SosLocationSource.PICKED else SosLocationSource.GPS
+            }
+            // The earliest relay wins: it heard the request first, so was nearest when it did.
+            if (payload.heardNear && heardNear == null && event.authorId != request.authorId && isKnownLocation(event.lat, event.lon)) {
+                heardNear = event
             }
             when (event.type) {
                 TYPE_SOS_STATE -> payload.state?.let { incoming ->
@@ -92,6 +110,13 @@ object SosReducer {
             }
         }
 
+        if (source == SosLocationSource.NONE) heardNear?.let {
+            lat = it.lat
+            lon = it.lon
+            accuracyMeters = null
+            source = SosLocationSource.RELAY
+        }
+
         return SosSnapshot(
             sosId = sosId,
             startedAtMs = request.timestampMs,
@@ -106,6 +131,8 @@ object SosReducer {
             arrivedByMesh = request.origin == "mesh",
             hopCount = request.hopCount,
             claimedByName = claimedByName,
+            locationSource = source,
+            homeBarangay = requestPayload.homeBarangay,
         )
     }
 

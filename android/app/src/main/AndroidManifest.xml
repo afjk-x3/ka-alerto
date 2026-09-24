@@ -61,6 +61,8 @@
          only surfaces once something actually builds against this permission. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- The rescue card's flashlight strobe (sos/SosStrobe.kt); a phone without one still flashes the screen. -->
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
 
     <application
         android:name=".KaAlertoApplication"

@@ -42,6 +42,7 @@ private data class EvacFile(val centres: List<EvacCentre> = emptyList())
 enum class EvacStatus(val key: String, val fil: String, val en: String) {
     ACCEPTING("accepting", "Tumatanggap", "Accepting"),
     NEARLY_FULL("nearly_full", "Halos puno", "Nearly full"),
+    FULL("full", "Puno na", "Full"),
     NOT_OPEN("not_open", "Hindi pa bukas", "Not open yet"),
     ;
 
@@ -70,7 +71,7 @@ data class EvacPayload(
 )
 
 /** Shelter kinds an official can pick when adding one. */
-val EVAC_KINDS = listOf("school", "gym", "barangay_hall", "church", "other")
+val EVAC_KINDS = listOf("evacuation_centre", "school", "gym", "barangay_hall", "church", "other")
 
 /**
  * An official adding, or removing, a shelter — the `evac_centre` event. Later events for the same

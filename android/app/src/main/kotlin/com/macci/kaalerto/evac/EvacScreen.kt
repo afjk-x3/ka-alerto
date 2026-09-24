@@ -3,6 +3,7 @@ package com.macci.kaalerto.evac
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,7 +23,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -84,15 +84,18 @@ fun EvacScreen(
     val colors = LocalKaAlertoColors.current
     var editing by remember { mutableStateOf<String?>(null) }
 
-    // A resident sees every centre, open ones first and closed ones greyed below them:
-    // hiding closed ones left a fresh install with an empty list until an official
-    // opened something, when knowing where the shelters are is useful before they open.
+    // A resident sees every centre, nearest first (evacStates sorts by distance), closed
+    // ones greyed: hiding closed ones left a fresh install with an empty list until an
+    // official opened something, when knowing where the shelters are is useful before
+    // they open. The province and municipality filters narrow it; unset, they show all.
     // An official sees the ones their municipality manages, open or not, because "not
     // open" is exactly the state they're here to change (OfficialControls below).
+    var province by remember { mutableStateOf<String?>(null) }
+    var town by remember { mutableStateOf<String?>(null) }
     val visibleStates = if (isOfficial) {
         states.filter { canManage(municipality, it.centre) }
     } else {
-        states.sortedBy { it.status == EvacStatus.NOT_OPEN }
+        states.filter { (province == null || provinceOf(it.centre) == province) && (town == null || it.centre.municipality == town) }
     }
     val noneOpen = states.isNotEmpty() && states.all { it.status == EvacStatus.NOT_OPEN }
 
@@ -141,6 +144,34 @@ fun EvacScreen(
                     onAddShelter = onAddShelter,
                     onOpenProfile = onOpenProfile,
                 )
+            }
+            if (!isOfficial && states.isNotEmpty()) {
+                val provinces = states.mapNotNull { provinceOf(it.centre) }.distinct().sorted()
+                val towns = states.filter { province == null || provinceOf(it.centre) == province }
+                    .mapNotNull { it.centre.municipality }.distinct().sorted()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterDropdown(
+                        label = province ?: tr("Lahat ng probinsya", "All provinces"),
+                        active = province != null,
+                        options = provinces,
+                        optionLabel = { it },
+                        allLabel = tr("Lahat ng probinsya", "All provinces"),
+                        onPick = { province = it; town = null },
+                        modifier = Modifier.weight(1f),
+                    )
+                    FilterDropdown(
+                        label = town?.substringBefore(",") ?: tr("Lahat ng bayan", "All towns"),
+                        active = town != null,
+                        options = towns,
+                        optionLabel = { it.substringBefore(",") },
+                        allLabel = tr("Lahat ng bayan", "All towns"),
+                        onPick = { town = it },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                if (visibleStates.isEmpty()) {
+                    Text(tr("Walang silungan dito.", "No shelters here."), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
             if (states.isEmpty()) {
                 Text(
@@ -209,6 +240,52 @@ fun EvacScreen(
     }
 }
 
+/** "Mapandan, Pangasinan" → "Pangasinan". Municipalities are stored PSGC-style as "Town, Province". */
+internal fun provinceOf(centre: EvacCentre): String? =
+    centre.municipality?.substringAfter(", ", "")?.takeIf { it.isNotBlank() }
+
+/** A filter chip that opens a list; the first entry clears it. */
+@Composable
+private fun FilterDropdown(
+    label: String,
+    active: Boolean,
+    options: List<String>,
+    optionLabel: (String) -> String,
+    allLabel: String,
+    onPick: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalKaAlertoColors.current
+    var open by remember { mutableStateOf(false) }
+    Box(modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .background(if (active) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background)
+                .border(1.5.dp, if (active) MaterialTheme.colorScheme.onBackground else colors.borderEmphasis)
+                .clickable { open = true }
+                .padding(horizontal = 12.dp),
+            contentAlignment = Alignment.CenterStart,
+        ) {
+            Text(
+                "$label  ▾",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                color = if (active) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
+            )
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            androidx.compose.material3.DropdownMenuItem(text = { Text(allLabel) }, onClick = { open = false; onPick(null) })
+            options.forEach { option ->
+                androidx.compose.material3.DropdownMenuItem(text = { Text(optionLabel(option)) }, onClick = { open = false; onPick(option) })
+            }
+        }
+    }
+}
+
 @Composable
 private fun CentreCard(
     state: EvacState,
@@ -254,6 +331,14 @@ private fun CentreCard(
                 if (where.isNotEmpty()) {
                     Text(where, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                // The whole card is tappable; this says so.
+                Text(
+                    tr("Tingnan sa mapa ›", "See on the map ›"),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
             }
             Box(
                 modifier = Modifier
@@ -323,42 +408,40 @@ private fun CentreCard(
 
         if (isOfficial) {
             var confirmRemove by remember { mutableStateOf(false) }
+            var showQr by remember { mutableStateOf(false) }
+            // One control for the status: Update opens the four statuses, the head count and
+            // Save together. The old separate Open/Close toggle contradicted it.
             Row(
                 modifier = Modifier.padding(top = 12.dp).fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // One tap to open or close; nearly-full and the head count stay under the button beside it.
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
-                        .background(if (open) colors.recessedSurface else MaterialTheme.colorScheme.onBackground)
-                        .clickable { onUpdate(if (open) EvacStatus.NOT_OPEN else EvacStatus.ACCEPTING, state.occupancy) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        if (open) tr("Isara", "Close it") else tr("Buksan", "Open it"),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (open) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .border(1.5.dp, colors.borderEmphasis)
+                        .background(if (editing) colors.recessedSurface else MaterialTheme.colorScheme.onBackground)
                         .clickable(onClick = onToggleEdit),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        if (editing) tr("Tapos na", "Done") else tr("I-update ang status", "Update the status"),
+                        if (editing) tr("Kanselahin", "Cancel") else tr("I-update ang status", "Update the status"),
                         fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        color = if (editing) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background,
                     )
                 }
+                Box(
+                    modifier = Modifier
+                        .height(48.dp)
+                        .border(1.5.dp, colors.borderEmphasis)
+                        .clickable { showQr = true }
+                        .padding(horizontal = 18.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("QR", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                }
             }
+            if (showQr) ShelterQrDialog(state.centre.name) { showQr = false }
             if (editing) OfficialControls(state, onUpdate)
             if (state.centre.custom) {
                 Text(
@@ -390,86 +473,96 @@ private fun CentreCard(
 }
 
 /**
- * The official's update. Occupancy steps rather than a keyboard: an official doing this
- * in a flood is standing in a doorway counting people, not typing a precise figure, and
- * a number field is one more thing to fumble.
+ * The official's update: pick one of the four statuses, type how many people are there
+ * now, then Save. Nothing is sent until Save, so a mis-tap on a status costs nothing.
  */
 @Composable
 private fun OfficialControls(state: EvacState, onUpdate: (EvacStatus, Int?) -> Unit) {
     val colors = LocalKaAlertoColors.current
-    var occupancy by remember(state.centre.id) { mutableIntStateOf(state.occupancy ?: 0) }
-    val step = 10
+    var status by remember(state.centre.id) { mutableStateOf(state.status) }
+    var count by remember(state.centre.id) { mutableStateOf(state.occupancy?.toString().orEmpty()) }
 
     Column(
         modifier = Modifier.padding(top = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            StepButton("−$step") { occupancy = (occupancy - step).coerceAtLeast(0) }
-            Spacer(Modifier.size(10.dp))
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    occupancy.toString(),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(tr("tao ngayon", "people now"), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        EvacStatus.values().toList().chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { option ->
+                    val selected = option == status
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp)
+                            .background(if (selected) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.background)
+                            .border(1.5.dp, if (selected) MaterialTheme.colorScheme.onBackground else colors.borderEmphasis)
+                            .clickable { status = option },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            option.label(),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (selected) MaterialTheme.colorScheme.background else MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                }
             }
-            Spacer(Modifier.size(10.dp))
-            StepButton("+$step") { occupancy += step }
         }
-
-        EvacStatus.values().forEach { status ->
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(46.dp)
-                    .background(
-                        if (status == state.status) colors.recessedSurface else MaterialTheme.colorScheme.background,
-                    )
-                    .border(1.5.dp, colors.borderEmphasis)
-                    .clickable { onUpdate(status, occupancy.takeIf { status != EvacStatus.NOT_OPEN }) },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    status.label(),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-            }
+        if (status != EvacStatus.NOT_OPEN) {
+            androidx.compose.material3.OutlinedTextField(
+                value = count,
+                onValueChange = { count = it.filter(Char::isDigit).take(5) },
+                label = { Text(tr("Ilang tao ngayon", "People there now")) },
+                singleLine = true,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+                .background(MaterialTheme.colorScheme.onBackground)
+                .clickable { onUpdate(status, count.toIntOrNull().takeIf { status != EvacStatus.NOT_OPEN }) },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(tr("I-save", "Save"), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.background)
         }
     }
 }
 
+/**
+ * The shelter's QR, for printing at its door. It points at a fixed placeholder link for now
+ * (the user's choice, 24 Sep 2026); head counts stay typed by the official.
+ */
+private const val SHELTER_QR_LINK = "https://www.youtube.com/watch?v=OUjprWAg1A8&list=RDOUjprWAg1A8&start_radio=1"
+
 @Composable
-private fun StepButton(label: String, onClick: () -> Unit) {
-    val colors = LocalKaAlertoColors.current
-    Box(
-        modifier = Modifier
-            .size(52.dp)
-            .border(1.5.dp, colors.borderEmphasis)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-    }
+private fun ShelterQrDialog(name: String, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(name) },
+        text = {
+            Box(Modifier.fillMaxWidth().background(androidx.compose.ui.graphics.Color.White).padding(12.dp), contentAlignment = Alignment.Center) {
+                com.macci.kaalerto.sos.QrCode(content = SHELTER_QR_LINK, modifier = Modifier.size(240.dp))
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(tr("Isara", "Close")) } },
+    )
 }
 
 private fun statusAccent(status: EvacStatus, safe: Color, warning: Color, muted: Color): Color = when (status) {
     EvacStatus.ACCEPTING -> safe
     EvacStatus.NEARLY_FULL -> warning
+    EvacStatus.FULL -> warning
     EvacStatus.NOT_OPEN -> muted
 }
 
 private fun statusChipBackground(status: EvacStatus, safeBg: Color, warningBg: Color, muted: Color): Color = when (status) {
     EvacStatus.ACCEPTING -> safeBg
     EvacStatus.NEARLY_FULL -> warningBg
+    EvacStatus.FULL -> warningBg
     EvacStatus.NOT_OPEN -> muted
 }
 

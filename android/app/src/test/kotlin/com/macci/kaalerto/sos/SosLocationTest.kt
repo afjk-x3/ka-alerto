@@ -97,4 +97,63 @@ class SosLocationTest {
         val groups = groupNearby(snapshots, SAME_INCIDENT_RADIUS_M)
         assertEquals(2, groups.size)
     }
+
+    @Test
+    fun `a spot picked on the map places the request and says so`() {
+        val request = newSosEvent(me, null, null, null, now)
+        val picked = sosLocationEvent(request.id, me, 16.0265, 120.4216, null, now + 20_000, picked = true)
+
+        val snapshot = SosReducer.snapshot(request.id, listOf(request, picked), me.authorId)!!
+        assertEquals(SosLocationSource.PICKED, snapshot.locationSource)
+        assertTrue(snapshot.locationKnown)
+    }
+
+    @Test
+    fun `a relay's position is used only while the requester has given none`() {
+        val request = newSosEvent(me, null, null, null, now)
+        val relay = sosHeardNearEvent(request.id, stranger, 16.0270, 120.4220, 10f, now + 10_000)
+
+        val approx = SosReducer.snapshot(request.id, listOf(request, relay), stranger.authorId)!!
+        assertEquals(SosLocationSource.RELAY, approx.locationSource)
+        assertEquals(16.0270, approx.lat, 0.0)
+
+        val gps = sosLocationEvent(request.id, me, 16.0265, 120.4216, 8f, now + 30_000)
+        val fixed = SosReducer.snapshot(request.id, listOf(request, relay, gps), stranger.authorId)!!
+        assertEquals(SosLocationSource.GPS, fixed.locationSource)
+        assertEquals(16.0265, fixed.lat, 0.0)
+    }
+
+    @Test
+    fun `the requester cannot pass off a position as a relay's`() {
+        val request = newSosEvent(me, null, null, null, now)
+        val selfRelay = sosHeardNearEvent(request.id, me, 16.0270, 120.4220, 10f, now + 10_000)
+
+        val snapshot = SosReducer.snapshot(request.id, listOf(request, selfRelay), me.authorId)!!
+        assertEquals(SosLocationSource.NONE, snapshot.locationSource)
+    }
+
+    @Test
+    fun `only a phone one hop from the requester answers with its position`() {
+        val request = newSosEvent(me, null, null, null, now)
+        fun heardAt(hops: Int) = SosReducer.snapshot(
+            request.id,
+            listOf(request.copy(origin = "mesh", hopCount = hops)),
+            stranger.authorId,
+        )!!
+
+        assertEquals(listOf(request.id), requestsNeedingHeardNear(listOf(heardAt(1))))
+        assertTrue(requestsNeedingHeardNear(listOf(heardAt(2))).isEmpty())
+        // Via Supabase: no radio range to speak of.
+        val viaCloud = SosReducer.snapshot(request.id, listOf(request.copy(origin = "server")), stranger.authorId)!!
+        assertTrue(requestsNeedingHeardNear(listOf(viaCloud)).isEmpty())
+    }
+
+    @Test
+    fun `the home barangay rides with the request as a hint`() {
+        val request = newSosEvent(me, null, null, null, now, homeBarangay = "Brgy. Poblacion, Mapandan")
+
+        val snapshot = SosReducer.snapshot(request.id, listOf(request), me.authorId)!!
+        assertEquals("Brgy. Poblacion, Mapandan", snapshot.homeBarangay)
+        assertFalse(snapshot.locationKnown)
+    }
 }

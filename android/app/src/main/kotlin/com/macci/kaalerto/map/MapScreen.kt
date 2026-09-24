@@ -87,6 +87,7 @@ import com.macci.kaalerto.ui.theme.LocalKaAlertoColors
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
@@ -137,6 +138,12 @@ fun MapScreen(
     onOpenEvac: (() -> Unit)? = null,
     /** Opens the "Mga ulat" list; the "Listahan" chip next to the legend. */
     onOpenReports: (() -> Unit)? = null,
+    /** Survival mode (ui/Survival.kt): reporting is shown paused and a banner says what is off. */
+    survivalMode: Boolean = false,
+    batteryPercent: Int? = null,
+    onSurvivalOff: (() -> Unit)? = null,
+    /** Active PAGASA alerts for the home province (advisory/Advisories.kt), shown under the header. */
+    advisories: List<com.macci.kaalerto.advisory.AdvisoryPayload> = emptyList(),
     onOpenOfficialStatus: ((featureRef: String) -> Unit)? = null,
     /**
      * Day 9's rescue queue. Non-null only for a responder or an official — and without
@@ -209,8 +216,18 @@ fun MapScreen(
             }
             val from = LatLon(here.latitude, here.longitude)
             routeUi = RouteUi(target, RouteUi.Status.LOADING, origin = from)
-            routeUi = when (val result = fetchRoutes(from, target, floodPoints(featureSummaries))) {
-                is RoutesResult.Ok -> RouteUi(target, RouteUi.Status.DONE, result.options, 0, from)
+            val floods = floodPoints(featureSummaries)
+            var result = fetchRoutes(from, target, floods)
+            // No internet, or the public router is down: search the bundled road graph instead
+            // (route/OfflineRouter.kt). Nothing leaves the phone on this path.
+            if (result == RoutesResult.NoConnection || result is RoutesResult.ServiceError) {
+                result = com.macci.kaalerto.route.BundledRoadGraph.get(context)
+                    ?.let { graph -> withContext(kotlinx.coroutines.Dispatchers.Default) { com.macci.kaalerto.route.offlineRoutes(graph, from, target, floods) } }
+                    ?: result
+            }
+            routeUi = when (result) {
+                is RoutesResult.Ok -> RouteUi(target, RouteUi.Status.DONE, result.options, 0, from, offline = result.offline)
+                RoutesResult.OutsideOfflineMap -> RouteUi(target, RouteUi.Status.OUTSIDE_OFFLINE_MAP, origin = from)
                 RoutesResult.NoConnection -> RouteUi(target, RouteUi.Status.NO_CONNECTION, origin = from)
                 RoutesResult.NoRoute -> RouteUi(target, RouteUi.Status.NO_ROUTE, origin = from)
                 is RoutesResult.ServiceError -> RouteUi(target, RouteUi.Status.SERVICE_ERROR, origin = from)
@@ -403,6 +420,8 @@ fun MapScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
+        if (survivalMode && !pickMode) SurvivalBanner(batteryPercent, onSurvivalOff)
+        if (!pickMode) com.macci.kaalerto.advisory.AdvisoryBanner(advisories)
         if (packState !is PackState.Ready) {
             PackStatusBanner(
                 state = packState,
@@ -588,8 +607,19 @@ fun MapScreen(
                         )
                     }
                     routeUi?.let { ui ->
+                        // Saved as an alert scope under the destination's place name (FR-3.2).
+                        var routeSaved by remember(ui.target, ui.active) { mutableStateOf(false) }
+                        val targetName = com.macci.kaalerto.location.rememberPlaceLabel(ui.target.lat, ui.target.lon)
+                            ?: "%.4f, %.4f".format(ui.target.lat, ui.target.lon)
                         RoutePanel(
                             ui = ui,
+                            onSave = ui.options.getOrNull(ui.active)?.let { option ->
+                                {
+                                    com.macci.kaalerto.route.SavedRoutes.save(context, targetName, option.coords)
+                                    routeSaved = true
+                                }
+                            },
+                            saved = routeSaved,
                             onPick = { i -> routeUi = ui.copy(active = i) },
                             onOpenInMaps = { openInMaps(ui.target) },
                             onClose = {
@@ -649,7 +679,12 @@ fun MapScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
             onStartReport != null -> MapActionBar(
-                label = if (locatingReport) tr("Kinukuha ang lokasyon…", "Getting location…") else tr("Mag-ulat", "Report"),
+                label = when {
+                    survivalMode -> tr("Mag-ulat · naka-pause", "Report · paused")
+                    locatingReport -> tr("Kinukuha ang lokasyon…", "Getting location…")
+                    else -> tr("Mag-ulat", "Report")
+                },
+                paused = survivalMode,
                 sosActive = sosActive,
                 onSos = onStartSos?.let { start ->
                     {
@@ -661,7 +696,7 @@ fun MapScreen(
                     }
                 },
                 onClick = {
-                    if (locatingReport) return@MapActionBar
+                    if (locatingReport || survivalMode) return@MapActionBar
                     // Same as SOS above: asked for on demand, never awaited -- a decline
                     // (or a not-yet-answered system dialog) still lands on the map-tap
                     // fallback via the null case below, exactly as it did with no permission at all.
@@ -779,6 +814,7 @@ private fun ShelterFocusCard(state: EvacState, distanceMeters: Double?, onDismis
     val accent = when (state.status) {
         EvacStatus.ACCEPTING -> colors.safeFg
         EvacStatus.NEARLY_FULL -> colors.warningFg
+        EvacStatus.FULL -> colors.criticalFg
         EvacStatus.NOT_OPEN -> MaterialTheme.colorScheme.inverseOnSurface
     }
     val where = listOfNotNull(centre.barangay, centre.municipality).joinToString(", ").ifEmpty { null }
@@ -974,6 +1010,8 @@ private fun MapActionBar(
     onSos: (() -> Unit)?,
     sosActive: Boolean,
     modifier: Modifier = Modifier,
+    /** Survival mode: the report bar stays in place but reads as switched off. */
+    paused: Boolean = false,
 ) {
     Row(
         modifier = modifier
@@ -984,19 +1022,20 @@ private fun MapActionBar(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable(onClick = onClick)
+                .background(if (paused) LocalKaAlertoColors.current.recessedSurface else MaterialTheme.colorScheme.primary)
+                .clickable(enabled = !paused, onClick = onClick)
                 .padding(vertical = 20.dp),
             horizontalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(Icons.Filled.LocationOn, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+            val barText = if (paused) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onPrimary
+            Icon(Icons.Filled.LocationOn, contentDescription = null, tint = barText)
             Spacer(Modifier.size(10.dp))
             Text(
                 label,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = barText,
             )
         }
         if (onSos != null) {
@@ -1161,6 +1200,7 @@ private fun MapLibreMapView(
         val map = maplibreMap ?: return@LaunchedEffect
         map.setStyle(DemoArea.STYLE_URL) { style ->
             applyStormTint(style, stormMode)
+            mutePoiIcons(style)
             if (!cameraPlaced) {
                 map.moveCamera(
                     CameraUpdateFactory.newLatLngZoom(
@@ -1321,7 +1361,12 @@ private fun MapLibreMapView(
             // reloaded when Storm toggles, and the `update` block runs on every
             // recomposition.
             if (maplibreMap == null) {
-                view.getMapAsync { map -> maplibreMap = map }
+                view.getMapAsync { map ->
+                    // Bottom-left sat under the "Kahulugan" chip; the map's top corners are free.
+                    map.uiSettings.logoGravity = android.view.Gravity.TOP or android.view.Gravity.START
+                    map.uiSettings.attributionGravity = android.view.Gravity.TOP or android.view.Gravity.END
+                    maplibreMap = map
+                }
             }
         },
     )
@@ -1406,4 +1451,45 @@ private fun rememberTrackedPackState(pack: OfflineMapPack?): PackState {
     DisposableEffect(pack) { onDispose { pack.release() } }
     val state by pack.state.collectAsStateWithLifecycle()
     return state
+}
+
+/**
+ * Survival mode's notice under the map header: why it is on, what is paused, and the one
+ * tap that turns it off. Paused features are named, not hidden (PRD §6).
+ */
+@Composable
+private fun SurvivalBanner(batteryPercent: Int?, onOff: (() -> Unit)?) {
+    val colors = LocalKaAlertoColors.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.recessedSurface)
+            .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                tr("Survival mode", "Survival mode") + (batteryPercent?.let { " · $it%" } ?: ""),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = colors.warningFg,
+            )
+            Text(
+                tr(
+                    "Mapa at SOS lang. Naka-pause: pag-ulat, silungan, listahan, pamilya, profile at cloud sync. Bukas pa rin ang Bluetooth relay.",
+                    "Map and SOS only. Paused: reporting, shelters, list, family, profile and cloud sync. The Bluetooth relay stays on.",
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (onOff != null) {
+            Box(
+                Modifier.minimumInteractiveComponentSize().clickable(onClick = onOff).padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(tr("I-off", "Turn off"), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            }
+        }
+    }
 }

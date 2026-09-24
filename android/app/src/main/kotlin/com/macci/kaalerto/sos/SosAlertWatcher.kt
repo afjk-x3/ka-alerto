@@ -5,6 +5,7 @@ import com.macci.kaalerto.data.EventRepository
 import com.macci.kaalerto.data.KaAlertoDatabase
 import com.macci.kaalerto.geofence.HomeLocationStore
 import com.macci.kaalerto.identity.LocalIdentity
+import com.macci.kaalerto.location.fetchCurrentLocation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -50,6 +51,7 @@ class SosAlertWatcher(private val context: Context) {
         val repository = EventRepository(KaAlertoDatabase.getInstance(context).eventDao())
         val identity = LocalIdentity.getOrCreate(context)
 
+        val heardNearTried = mutableSetOf<String>()
         scope.launch {
             var alerted: Set<String>? = null
             repository.observeAll()
@@ -76,6 +78,18 @@ class SosAlertWatcher(private val context: Context) {
                     // Baseline covers every request seen so far, closed ones included, so
                     // a request that closes and is later amended cannot re-alert.
                     alerted = snapshots.map { it.sosId }.toSet()
+
+                    // A request heard straight from a requester whose phone has no fix:
+                    // answer with this phone's own position (sosHeardNearEvent). One try
+                    // per request per run; the fold ignores it once the requester has one.
+                    requestsNeedingHeardNear(snapshots).filter { heardNearTried.add(it) }.forEach { sosId ->
+                        launch {
+                            val fix = fetchCurrentLocation(context) ?: return@launch
+                            repository.insert(
+                                sosHeardNearEvent(sosId, LocalIdentity.getOrCreate(context), fix.latitude, fix.longitude, fix.accuracy, System.currentTimeMillis()),
+                            )
+                        }
+                    }
                 }
         }
     }

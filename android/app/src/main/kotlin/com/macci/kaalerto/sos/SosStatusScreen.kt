@@ -3,6 +3,7 @@ package com.macci.kaalerto.sos
 import android.bluetooth.BluetoothAdapter
 import android.content.Intent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +57,8 @@ fun SosStatusScreen(
     elapsedLabel: String,
     onMarkSafe: () -> Unit,
     onShowRescueCard: () -> Unit,
+    /** Opens the map so the requester can tap where they are — only offered without a GPS fix. */
+    onPickOnMap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Closing a live request stops the broadcast rescuers may be following, so one stray
@@ -116,6 +119,10 @@ fun SosStatusScreen(
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
             )
 
+            if (snapshot.isActive && snapshot.locationSource != SosLocationSource.GPS) {
+                NoFixPanel(snapshot, onPickOnMap, Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp))
+            }
+
             // §6.4.3: the rescue card is a state, not a tap — it opens on its own at
             // UNREACHABLE. This button exists anyway, because a rescuer may be at the
             // window before the threshold elapses and "wait 30 seconds" is not an
@@ -170,6 +177,55 @@ fun SosStatusScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             )
+        }
+    }
+}
+
+/**
+ * Without a GPS fix the requester has two ways to help rescuers find them: turn location
+ * on (SosViewModel keeps looking and sends the fix), or tap the spot on the offline map.
+ */
+@Composable
+private fun NoFixPanel(snapshot: SosSnapshot, onPickOnMap: () -> Unit, modifier: Modifier = Modifier) {
+    val turnOnLocation = com.macci.kaalerto.location.rememberTurnOnLocation {}
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.5.dp, SosColors.Warning)
+            .padding(horizontal = 15.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            if (snapshot.locationSource == SosLocationSource.PICKED) {
+                tr("Ginagamit ang itinuro mo sa mapa", "Using the spot you picked on the map")
+            } else {
+                tr("Hindi pa alam ng GPS kung nasaan ka", "GPS has not found you yet")
+            },
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = SosColors.Warning,
+        )
+        snapshot.locationNote()?.let { Text(it, fontSize = 13.sp, color = SosColors.SecondaryText) }
+        Text(
+            tr(
+                "Buksan ang lokasyon, o ituro sa mapa kung nasaan ka. Papalitan ito ng GPS kapag nakuha na.",
+                "Turn on location, or tap where you are on the map. GPS replaces it once it has a fix.",
+            ),
+            fontSize = 13.sp,
+            color = SosColors.SecondaryText,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            TurnOnLocationButton(turnOnLocation, Modifier.weight(1f))
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .border(1.5.dp, SosColors.Border)
+                    .clickable(onClick = onPickOnMap),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(tr("Ituro sa mapa", "Pick on the map"), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = SosColors.PrimaryText)
+            }
         }
     }
 }

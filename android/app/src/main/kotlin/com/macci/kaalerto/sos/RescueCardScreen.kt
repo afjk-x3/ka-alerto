@@ -64,6 +64,10 @@ fun RescueCardScreen(
     val scope = rememberCoroutineScope()
     val alarm = remember { SosAlarm() }
     var sounding by remember { mutableStateOf(false) }
+    val strobe = remember { SosStrobe(context) }
+    var strobing by remember { mutableStateOf(false) }
+    // Dark half of each flash: the card is covered in black, then shown again.
+    var dark by remember { mutableStateOf(false) }
     val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
 
     // §6.4.3's "readable through a window" is a brightness claim as much as a contrast
@@ -76,11 +80,13 @@ fun RescueCardScreen(
         onDispose {
             if (previous != null) window.setBrightness(previous)
             alarm.stop()
+            strobe.stop()
         }
     }
 
+    Box(modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(SosColors.CardBackground),
     ) {
@@ -161,6 +167,9 @@ fun RescueCardScreen(
                     color = SosColors.CardMuted,
                     modifier = Modifier.padding(top = 5.dp),
                 )
+            }
+            snapshot.locationNote()?.let {
+                Text(it, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = SosColors.CardInk, modifier = Modifier.padding(top = 5.dp))
             }
         }
         Divider()
@@ -286,11 +295,33 @@ fun RescueCardScreen(
                     color = SosColors.CardBackground,
                 )
             }
-            // The artboard's second control here is "Kumurap" (strobe). It is not built:
-            // BUILD_TASKS.md day 8's cut list is "cut strobe and context screen; keep
-            // the QR card", and a button that flashes nothing is worse than no button.
-            // "Bumalik" takes its place so the card is escapable without the system back
-            // gesture, which is not obvious on a screen with no chrome.
+            // The artboard's "Kumurap": flashlight and screen flash together (SosStrobe).
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(64.dp)
+                    .background(if (strobing) SosColors.Critical else SosColors.CardInk)
+                    .clickable {
+                        if (strobing) {
+                            strobe.stop()
+                            strobing = false
+                            dark = false
+                        } else {
+                            strobing = true
+                            strobe.start(scope) { lit -> dark = !lit }
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    if (strobing) tr("Itigil", "Stop") else tr("Kumurap", "Flash"),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = SosColors.CardBackground,
+                )
+            }
+            // "Bumalik" keeps the card escapable without the system back gesture, which is
+            // not obvious on a screen with no chrome.
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -302,6 +333,20 @@ fun RescueCardScreen(
                 Text(tr("Bumalik", "Back"), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = SosColors.CardInk)
             }
         }
+    }
+    // The dark half of each flash covers the whole card; a tap on it stops the flashing.
+    if (dark) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(androidx.compose.ui.graphics.Color.Black)
+                .clickable {
+                    strobe.stop()
+                    strobing = false
+                    dark = false
+                },
+        )
+    }
     }
 }
 

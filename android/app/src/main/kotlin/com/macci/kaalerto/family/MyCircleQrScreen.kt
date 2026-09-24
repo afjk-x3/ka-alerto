@@ -3,6 +3,7 @@ package com.macci.kaalerto.family
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,6 +84,31 @@ fun MyCircleQrScreen(
             }
             Spacer(Modifier.size(18.dp))
             Text(circleName ?: tr("Circle", "Circle"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+            Spacer(Modifier.size(12.dp))
+            // Short enough to read out over a call (family/CircleSubmit.kt's shortCircleCode).
+            val code = remember(circleId) { shortCircleCode(circleId) }
+            val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+            androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    code,
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                    letterSpacing = 2.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.size(12.dp))
+                Box(
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .border(1.5.dp, colors.borderEmphasis)
+                        .clickable { clipboard.setText(androidx.compose.ui.text.AnnotatedString(code)) }
+                        .padding(horizontal = 14.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(tr("Kopyahin", "Copy"), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                }
+            }
             Spacer(Modifier.size(6.dp))
             Text(
                 tr(

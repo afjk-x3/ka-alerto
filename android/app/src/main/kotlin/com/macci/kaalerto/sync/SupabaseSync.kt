@@ -25,7 +25,7 @@ import kotlinx.serialization.json.Json
  * Bluetooth range. See `specs/2026-09-23-circle-create-join-redesign.md`'s privacy
  * residual for what that trades away.
  */
-val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_EVAC_CENTRE, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE, TYPE_CIRCLE_CREATE, TYPE_CIRCLE_JOIN)
+val SYNCED_TYPES = setOf("flood_report", "confirm", "dispute", "official_status", TYPE_FLOOD_WITHDRAW, TYPE_EVAC_STATUS, TYPE_EVAC_CENTRE, TYPE_SOS, TYPE_SOS_AMEND, TYPE_SOS_STATE, TYPE_CIRCLE_CREATE, TYPE_CIRCLE_JOIN, com.macci.kaalerto.advisory.TYPE_ADVISORY)
 
 /**
  * Every locally-held event worth pushing — mesh-received ones included, not just

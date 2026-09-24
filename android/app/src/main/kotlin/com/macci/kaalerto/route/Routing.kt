@@ -42,7 +42,10 @@ data class RouteOption(
 
 /** What [fetchRoutes] can come back with; a failure is a value so the UI never sees an exception. */
 sealed interface RoutesResult {
-    data class Ok(val options: List<RouteOption>) : RoutesResult
+    /** [offline]: searched on the phone's own road graph (OfflineRouter.kt), not the online router. */
+    data class Ok(val options: List<RouteOption>, val offline: Boolean = false) : RoutesResult
+    /** No internet, and an end of the trip lies outside the bundled Pangasinan road graph. */
+    data object OutsideOfflineMap : RoutesResult
     /** No connection, or the routing service was unreachable. */
     data object NoConnection : RoutesResult
     data object NoRoute : RoutesResult
@@ -95,12 +98,14 @@ private fun distToSegmentM(p: LatLon, a: Pair<Double, Double>, b: Pair<Double, D
     return hypot(ax + t * dx, ay + t * dy)
 }
 
-private fun nearRoute(p: FloodPoint, coords: List<Pair<Double, Double>>): Boolean {
-    val at = LatLon(p.lat, p.lon)
-    for (i in 1 until coords.size) {
-        if (distToSegmentM(at, coords[i - 1], coords[i]) <= NEAR_M) return true
-    }
-    return false
+private fun nearRoute(p: FloodPoint, coords: List<Pair<Double, Double>>): Boolean =
+    distanceToLineM(LatLon(p.lat, p.lon), coords) <= NEAR_M
+
+/** Shortest distance in metres from [p] to a (lon, lat) polyline; infinite for fewer than two points. */
+internal fun distanceToLineM(p: LatLon, coords: List<Pair<Double, Double>>): Double {
+    var best = Double.POSITIVE_INFINITY
+    for (i in 1 until coords.size) best = min(best, distToSegmentM(p, coords[i - 1], coords[i]))
+    return best
 }
 
 private fun score(r: RouteOption) = r.s3 * 3 + r.s2 * 2 + r.sx

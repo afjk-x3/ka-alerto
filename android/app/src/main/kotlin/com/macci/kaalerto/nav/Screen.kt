@@ -19,6 +19,9 @@ sealed interface Screen {
     data object SosHold : Screen
     data class SosAddContext(val sosId: String) : Screen
     data class SosStatus(val sosId: String) : Screen
+
+    /** The requester tapping where they are because GPS has no fix; returns to [SosStatus]. */
+    data class PickSosLocation(val sosId: String) : Screen
     data class SosRescueCard(val sosId: String) : Screen
 
     /** Day 9 — the receiving half. A resident's coarse view, and the responder queue. */

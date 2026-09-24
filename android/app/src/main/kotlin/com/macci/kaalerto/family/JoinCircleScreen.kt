@@ -67,7 +67,7 @@ fun JoinCircleScreen(
         }
         Spacer(Modifier.size(18.dp))
         Text(
-            tr("I-paste ang code na ibinigay sa iyo.", "Paste the code you were given."),
+            tr("I-type ang 8-digit na code (hal. 4821-0937), o i-paste ang mensahe.", "Type the 8-digit code (e.g. 4821-0937), or paste the message."),
             fontSize = 14.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -84,8 +84,8 @@ fun JoinCircleScreen(
         if (invalid) {
             Text(
                 tr(
-                    "Walang code ng Circle dito. Kopyahin ang buong mensahe o ang code na nagsisimula sa \"circle-\".",
-                    "There's no circle code in this. Copy the whole message, or the code that starts with \"circle-\".",
+                    "Walang Circle na tugma sa code na ito. Tingnan ang mga numero, o kumonekta sa internet para makuha ang Circle, at subukan ulit.",
+                    "No circle matches this code. Check the digits, or connect to the internet so the circle can arrive, then try again.",
                 ),
                 fontSize = 13.sp,
                 color = colors.criticalFg,

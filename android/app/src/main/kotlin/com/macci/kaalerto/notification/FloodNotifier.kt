@@ -23,7 +23,8 @@ import com.macci.kaalerto.i18n.tr
 const val EXTRA_FEATURE_REF = "com.macci.kaalerto.extra.FEATURE_REF"
 
 object FloodNotifier {
-    fun notify(context: Context, event: Event, distanceMeters: Double) {
+    /** [onRouteTo]: the report is on a saved route (route/SavedRoutes.kt), not near home. */
+    fun notify(context: Context, event: Event, distanceMeters: Double, onRouteTo: String? = null) {
         val severity = event.severity ?: return
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
@@ -52,11 +53,17 @@ object FloodNotifier {
         val notification = NotificationCompat.Builder(context, channel)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(severityLabel)
-            .setContentText(tr(
-                    language,
-                    "${distanceMeters.toInt()} m mula sa bahay mo · Baha pa ba rito? I-tap para kumpirmahin",
-                    "${distanceMeters.toInt()} m from your home · Still flooded? Tap to confirm",
-                ))
+            .setContentText(
+                if (onRouteTo != null) {
+                    tr(language, "Sa naka-save mong ruta papunta sa $onRouteTo · I-tap para tingnan", "On your saved route to $onRouteTo · Tap to see it")
+                } else {
+                    tr(
+                        language,
+                        "${distanceMeters.toInt()} m mula sa bahay mo · Baha pa ba rito? I-tap para kumpirmahin",
+                        "${distanceMeters.toInt()} m from your home · Still flooded? Tap to confirm",
+                    )
+                },
+            )
             .setPriority(priority)
             .setAutoCancel(true)
             .setContentIntent(contentIntent)

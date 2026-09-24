@@ -45,6 +45,12 @@ class SupabaseSyncLoop(private val context: Context) {
         scope.launch {
             var consecutiveFailures = 0
             while (isActive) {
+                // Survival mode (ui/Survival.kt) pauses the periodic full cycle to save
+                // battery; observeAndPushImmediately still sends anything new, SOS included.
+                if (com.macci.kaalerto.ui.SurvivalState.active.value) {
+                    delay(nextSyncDelayMs(0))
+                    continue
+                }
                 val pushed = runCatching { pushAll(repository) }
                     .onFailure { Log.w(TAG, "push cycle failed", it) }.isSuccess
                 val pulled = runCatching { pullAll(repository) }
@@ -55,8 +61,49 @@ class SupabaseSyncLoop(private val context: Context) {
                     consecutiveFailures++
                 }
                 SupabaseSyncState.setSlow(consecutiveFailures >= SLOW_THRESHOLD)
-                delay(nextSyncDelayMs(consecutiveFailures))
+                waitForNextCycle(consecutiveFailures)
             }
+        }
+    }
+
+    private var lastSeenCount: Long? = null
+
+    /**
+     * Waits out [nextSyncDelayMs], but while sync is healthy it asks the table for its row
+     * count every [PROBE_INTERVAL_MS] (a header, not the rows) and ends the wait early when
+     * the count moved. Another phone's SOS then lands in about 5 s instead of up to 30 s,
+     * without pulling the whole table every 5 s. The full pull itself stays cursorless.
+     */
+    private suspend fun waitForNextCycle(consecutiveFailures: Int) {
+        val total = nextSyncDelayMs(consecutiveFailures)
+        if (consecutiveFailures >= SLOW_THRESHOLD) return delay(total)
+        lastSeenCount = runCatching { countRows() }.getOrNull() ?: lastSeenCount
+        var waited = 0L
+        while (waited < total) {
+            delay(PROBE_INTERVAL_MS)
+            waited += PROBE_INTERVAL_MS
+            val count = runCatching { countRows() }.getOrNull() ?: continue
+            if (count != lastSeenCount) {
+                lastSeenCount = count
+                return
+            }
+        }
+    }
+
+    private suspend fun countRows(): Long? = withContext(Dispatchers.IO) {
+        val connection = URL("${buildEventsUrl(SupabaseConfig.URL)}?select=id").openConnection() as HttpURLConnection
+        try {
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = CONNECT_TIMEOUT_MS
+            connection.readTimeout = READ_TIMEOUT_MS
+            connection.setRequestProperty("apikey", SupabaseConfig.ANON_KEY)
+            connection.setRequestProperty("Authorization", "Bearer ${SupabaseConfig.ANON_KEY}")
+            connection.setRequestProperty("Prefer", "count=exact")
+            connection.setRequestProperty("Range", "0-0")
+            // "0-0/121", or "*/0" for an empty table.
+            connection.getHeaderField("Content-Range")?.substringAfter('/')?.toLongOrNull()
+        } finally {
+            connection.disconnect()
         }
     }
 
@@ -173,6 +220,7 @@ class SupabaseSyncLoop(private val context: Context) {
     companion object {
         private const val CONNECT_TIMEOUT_MS = 10_000
         private const val READ_TIMEOUT_MS = 10_000
+        private const val PROBE_INTERVAL_MS = 5_000L
         private const val TAG = "SupabaseSync"
     }
 }

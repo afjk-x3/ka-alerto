@@ -94,7 +94,12 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
      * happens, before a fix is refined and before any screen asks for context.
      */
     fun raise(lat: Double?, lon: Double?, accuracyMeters: Float?, onRaised: (String) -> Unit) {
-        val event = newSosEvent(identity, lat, lon, accuracyMeters, System.currentTimeMillis())
+        val app = getApplication<android.app.Application>()
+        val homeHint = listOf(
+            LocalIdentity.homeBarangay(app).takeIf { it.isNotBlank() }?.let { LocalIdentity.homeBarangayTitle(app) },
+            LocalIdentity.homeMunicipality(app).takeIf { it.isNotBlank() },
+        ).filterNotNull().joinToString(", ")
+        val event = newSosEvent(identity, lat, lon, accuracyMeters, System.currentTimeMillis(), homeBarangay = homeHint)
         viewModelScope.launch {
             repository.insert(event)
             onRaised(event.id)
@@ -104,12 +109,13 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Keeps asking for a fix after a request went out without one, and sends the first
-     * one it gets as a location update. Stops once the request closes.
+     * one it gets as a location update. Stops once the request closes or has a GPS fix —
+     * a hand-picked spot or a relay's position is still replaced by GPS when it comes.
      */
     private suspend fun followUpLocation(sosId: String) {
         repeat(LOCATION_RETRIES) {
             val snapshot = snapshotOf(sosId)
-            if (snapshot != null && (!snapshot.isActive || snapshot.locationKnown)) return
+            if (snapshot != null && (!snapshot.isActive || snapshot.locationSource == SosLocationSource.GPS)) return
             val fix = fetchCurrentLocation(getApplication())
             if (fix != null) {
                 repository.insert(
@@ -118,6 +124,13 @@ class SosViewModel(application: Application) : AndroidViewModel(application) {
                 return
             }
             delay(LOCATION_RETRY_MS)
+        }
+    }
+
+    /** The requester tapped where they are on the map, because GPS has not found them. */
+    fun pickLocation(sosId: String, lat: Double, lon: Double) {
+        viewModelScope.launch {
+            repository.insert(sosLocationEvent(sosId, identity, lat, lon, null, System.currentTimeMillis(), picked = true))
         }
     }
 

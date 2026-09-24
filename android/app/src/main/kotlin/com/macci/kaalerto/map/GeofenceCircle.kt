@@ -75,9 +75,11 @@ fun updateGeofenceCircle(style: Style, center: Pair<Double, Double>?, radiusMete
     // Keep the geofence under the report markers so a marker near the edge stays
     // legible; addLayerBelow needs the target to already exist, which it will by the
     // time a user has gotten as far as long-pressing to set a home location.
-    if (style.getLayer(EVENTS_LAYER_ID) != null) {
-        style.addLayerBelow(fillLayer, EVENTS_LAYER_ID)
-        style.addLayerBelow(lineLayer, EVENTS_LAYER_ID)
+    // Below the markers' halo too, which sits just under the markers themselves.
+    val below = listOf(EVENTS_HALO_LAYER_ID, EVENTS_LAYER_ID).firstOrNull { style.getLayer(it) != null }
+    if (below != null) {
+        style.addLayerBelow(fillLayer, below)
+        style.addLayerBelow(lineLayer, below)
     } else {
         style.addLayer(fillLayer)
         style.addLayer(lineLayer)

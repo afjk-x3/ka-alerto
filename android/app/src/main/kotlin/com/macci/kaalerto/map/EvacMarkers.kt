@@ -88,6 +88,7 @@ private fun renderEvacIcon(status: EvacStatus): Bitmap {
         when (status) {
             EvacStatus.ACCEPTING -> "#2E7D4F"
             EvacStatus.NEARLY_FULL -> "#E4682B"
+            EvacStatus.FULL -> "#C62828"
             EvacStatus.NOT_OPEN -> "#8A939B"
         },
     )

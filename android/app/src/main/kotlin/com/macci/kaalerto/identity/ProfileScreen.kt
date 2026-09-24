@@ -2,6 +2,7 @@ package com.macci.kaalerto.identity
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -143,6 +144,7 @@ fun ProfileScreen(
                     barangayFromLocation = barangayFromLocation,
                     suggestions = barangaySuggestions,
                 )
+                SavedRoutesSection()
                 NameVisibilityDisclosure()
                 Spacer(Modifier.size(8.dp))
             }
@@ -169,6 +171,48 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(tr("Kanselahin", "Cancel"), fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+/**
+ * Routes saved from the map's route panel as alert scopes (route/SavedRoutes.kt, PRD FR-3.2).
+ * Shown here so they can be removed; nothing when there are none.
+ */
+@Composable
+private fun SavedRoutesSection() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var routes by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(com.macci.kaalerto.route.SavedRoutes.all(context)) }
+    if (routes.isEmpty()) return
+    androidx.compose.foundation.layout.Column {
+        Text(
+            tr("MGA NAKA-SAVE NA RUTA (MAY ALERTO)", "SAVED ROUTES (ALERTS ON)"),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        routes.forEach { route ->
+            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Text(
+                    tr("Papunta sa ${route.name}", "To ${route.name}"),
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    tr("Alisin", "Remove"),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .clickable {
+                            com.macci.kaalerto.route.SavedRoutes.remove(context, route.id)
+                            routes = com.macci.kaalerto.route.SavedRoutes.all(context)
+                        }
+                        .padding(horizontal = 8.dp),
+                )
             }
         }
     }

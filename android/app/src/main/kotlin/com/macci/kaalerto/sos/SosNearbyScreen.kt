@@ -79,7 +79,8 @@ fun SosNearbyScreen(
                 onClick = onOpenMenu,
                 modifier = Modifier.padding(end = 12.dp, top = 3.dp),
             )
-            Column {
+            // End padding keeps the title clear of the SOS shortcut in this corner (ui/KaAlertoApp.kt).
+            Column(Modifier.weight(1f).padding(end = 84.dp)) {
                 Text(
                     tr("May humihingi ng tulong", "Someone is requesting help"),
                     fontSize = 24.sp,

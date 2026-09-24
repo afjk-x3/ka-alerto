@@ -94,6 +94,8 @@ import com.macci.kaalerto.family.MyCircleQrScreen
 import com.macci.kaalerto.family.QrScannerScreen
 import com.macci.kaalerto.family.circleStatuses
 import com.macci.kaalerto.family.extractCircleId
+import com.macci.kaalerto.family.resolveJoinCode
+import com.macci.kaalerto.family.shortCircleCode
 import com.macci.kaalerto.family.myLastCheckInMs
 import com.macci.kaalerto.family.resolveCircle
 import com.macci.kaalerto.family.submitCheckIn
@@ -108,6 +110,10 @@ fun KaAlertoApp(
     modifier: Modifier = Modifier,
     stormMode: Boolean = false,
     onToggleStormMode: (() -> Unit)? = null,
+    /** PRD §6's Survival mode (ui/Survival.kt): map and SOS only, the rest shown as paused. */
+    survivalMode: Boolean = false,
+    batteryPercent: Int? = null,
+    onSetSurvivalMode: (Boolean) -> Unit = {},
     /** Set when the activity was opened by tapping day 9's nearby-SOS alert. */
     openSosId: String? = null,
     /** Set when it was opened by tapping the home-radius flood alert. */
@@ -233,6 +239,11 @@ fun KaAlertoApp(
             }
             else -> pendingCircleSwitch = circleId to current.name
         }
+    }
+
+    // Survival mode pauses everything but the map and SOS (PRD §6).
+    LaunchedEffect(survivalMode) {
+        if (survivalMode && screen.pausedInSurvival()) screen = Screen.Map
     }
 
     // Tapping the alert lands on the request it was about, not on the map. A responder
@@ -365,6 +376,7 @@ fun KaAlertoApp(
         Screen.PickShelter -> Screen.AddShelter
         is Screen.SosAddContext -> Screen.SosStatus(current.sosId)
         is Screen.SosRescueCard -> Screen.SosStatus(current.sosId)
+        is Screen.PickSosLocation -> Screen.SosStatus(current.sosId)
         Screen.QrScanner, Screen.MyCircleQr, Screen.CreateCircle, Screen.JoinCircle -> Screen.FamilyCircle
         else -> Screen.Map
     }
@@ -403,6 +415,10 @@ fun KaAlertoApp(
     Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
     when (val current = screen) {
         Screen.Map -> {
+        val advisoryEvents by mapEvents.collectAsStateWithLifecycle()
+        val advisories = remember(advisoryEvents) {
+            com.macci.kaalerto.advisory.activeAdvisories(advisoryEvents, System.currentTimeMillis(), com.macci.kaalerto.advisory.homeProvince(context))
+        }
         // remember, not a live read: the map's own native init is slow enough that a plain `val` read
         // here would still be seeing the OLD (correct) value when this LaunchedEffect nulls the state
         // below, but the recomposition it triggers hands MapScreen the NEW (null) value before its
@@ -436,8 +452,13 @@ fun KaAlertoApp(
             onStartSos = { screen = sosEntry(activeSos) },
             sosActive = activeSos != null,
             role = role,
-            onOpenEvac = { screen = Screen.EvacCentres },
-            onOpenReports = { screen = Screen.Reports },
+            // Paused in Survival mode; the banner on the map says so.
+            onOpenEvac = if (survivalMode) null else ({ screen = Screen.EvacCentres }),
+            onOpenReports = if (survivalMode) null else ({ screen = Screen.Reports }),
+            survivalMode = survivalMode,
+            batteryPercent = batteryPercent,
+            onSurvivalOff = { onSetSurvivalMode(false) },
+            advisories = advisories,
             onOpenOfficialStatus = { featureRef -> screen = Screen.OfficialStatus(featureRef) },
             // The rescue queue's only other way in is an incoming SOS alert, so without
             // this a responder with no live emergency cannot reach the screen their role
@@ -453,7 +474,7 @@ fun KaAlertoApp(
                 }
             },
             focusFeatureRef = reopenFeatureRef,
-            stormMode = stormMode,
+            stormMode = stormMode || survivalMode,
             onToggleStormMode = onToggleStormMode,
             onOpenMenu = { drawerOpen = true },
         )
@@ -534,9 +555,21 @@ fun KaAlertoApp(
                         screen = Screen.Map
                     },
                     onShowRescueCard = { screen = Screen.SosRescueCard(current.sosId) },
+                    onPickOnMap = { screen = Screen.PickSosLocation(current.sosId) },
                 )
             }
         }
+
+        is Screen.PickSosLocation -> MapScreen(
+            modifier = modifier,
+            pickMode = true,
+            pickSubtitle = tr("Ituro kung nasaan ka ngayon — para sa SOS mo", "Tap where you are now — for your SOS"),
+            onLocationPicked = { latLng ->
+                sosViewModel.pickLocation(current.sosId, latLng.latitude, latLng.longitude)
+                screen = Screen.SosStatus(current.sosId)
+            },
+            onCancelPick = { screen = Screen.SosStatus(current.sosId) },
+        )
 
         is Screen.SosNearby -> {
             val snapshot = snapshotFor(current.sosId)
@@ -925,7 +958,9 @@ fun KaAlertoApp(
                         context.getSystemService(android.content.ClipboardManager::class.java)
                             ?.primaryClip?.getItemAt(0)?.text?.toString()
                     }.getOrNull()
-                    val extracted = clip?.let { extractCircleId(it) }
+                    // A short code is pre-filled only when it matches a circle this phone knows,
+                    // so a random number on the clipboard is never pasted in.
+                    val extracted = clip?.let { extractCircleId(it) ?: resolveJoinCode(it, mapEvents.value)?.let(::shortCircleCode) }
                     if (extracted != null) draftJoinCode = extracted
                 }
             }
@@ -941,7 +976,7 @@ fun KaAlertoApp(
                     // The share message wraps the code in a sentence; a long-press Copy in a
                     // messaging app copies the whole thing. Extract the real id rather than
                     // trusting a bare trim -- see extractCircleId's own doc.
-                    val circleId = extractCircleId(draftJoinCode)
+                    val circleId = resolveJoinCode(draftJoinCode, mapEvents.value)
                     when {
                         circleId == null -> joinInvalid = true
                         !submitting -> {
@@ -984,7 +1019,14 @@ fun KaAlertoApp(
                     circleName = circle.name,
                     onBack = { screen = Screen.FamilyCircle },
                     onShare = {
-                        val message = tr(shareLanguage, "Sumali sa aming Circle sa KaAlerto: ", "Join our Circle on KaAlerto: ") + circle.circleId
+                        // The short code to read out, and the full id, which works even on a
+                        // phone that has not received this circle yet.
+                        val code = shortCircleCode(circle.circleId)
+                        val message = tr(
+                            shareLanguage,
+                            "Sumali sa aming Circle sa KaAlerto. Code: $code\n(buong code: ${circle.circleId})",
+                            "Join our Circle on KaAlerto. Code: $code\n(full code: ${circle.circleId})",
+                        )
                         val intent = Intent(Intent.ACTION_SEND).apply {
                             type = "text/plain"
                             putExtra(Intent.EXTRA_TEXT, message)
@@ -1143,6 +1185,8 @@ fun KaAlertoApp(
         onOpenFamily = { screen = Screen.FamilyCircle },
         onOpenEvac = { screen = Screen.EvacCentres },
         onOpenReports = { screen = Screen.Reports },
+        survivalMode = survivalMode,
+        onSetSurvivalMode = onSetSurvivalMode,
         currentLanguage = language,
         onSetLanguage = { lang ->
             language = lang
@@ -1162,6 +1206,14 @@ fun KaAlertoApp(
  */
 private fun sosEntry(active: com.macci.kaalerto.sos.SosSnapshot?): Screen =
     active?.let { Screen.SosStatus(it.sosId) } ?: Screen.SosHold
+
+/** What Survival mode pauses: everything but the map, SOS and the screens SOS needs. */
+private fun Screen.pausedInSurvival(): Boolean = when (this) {
+    Screen.FamilyCircle, Screen.EvacCentres, Screen.AddShelter, Screen.PickShelter, Screen.Reports, Screen.Roles -> true
+    Screen.QrScanner, Screen.MyCircleQr, Screen.CreateCircle, Screen.JoinCircle, Screen.PickLocation -> true
+    is Screen.Profile, is Screen.Report, is Screen.OfficialStatus -> true
+    else -> false
+}
 
 private fun Screen.showsSosShortcut(): Boolean = when (this) {
     Screen.FamilyCircle, Screen.EvacCentres, Screen.AddShelter, Screen.Reports, Screen.Roles -> true

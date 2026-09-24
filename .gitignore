@@ -44,3 +44,6 @@ graphify-out/
 /tmp/
 /scratch/
 *.log
+
+# Raw Overpass download for tools/roadgraph/build.py
+tools/roadgraph/*.cache.json

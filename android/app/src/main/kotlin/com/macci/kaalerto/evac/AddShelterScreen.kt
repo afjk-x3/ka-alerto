@@ -55,6 +55,7 @@ data class ShelterDraft(
 /** Shared with the map's shelter-focus card, so the two screens never drift on wording. */
 @Composable
 internal fun kindLabel(kind: String): String = when (kind) {
+    "evacuation_centre" -> tr("Evacuation center", "Evacuation center")
     "school" -> tr("Paaralan", "School")
     "gym" -> tr("Gym", "Gym")
     "barangay_hall" -> tr("Barangay hall", "Barangay hall")
@@ -184,19 +185,14 @@ fun AddShelterScreen(
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 FieldLabel(tr("KAPASIDAD (TANTIYA, OPSYONAL)", "CAPACITY (ESTIMATE, OPTIONAL)"))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StepBox("−10") { onDraftChange(draft.copy(capacity = (draft.capacity - 10).coerceAtLeast(0))) }
-                    Spacer(Modifier.size(12.dp))
-                    Text(
-                        if (draft.capacity == 0) "—" else draft.capacity.toString(),
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.weight(1f),
-                    )
-                    StepBox("+10") { onDraftChange(draft.copy(capacity = draft.capacity + 10)) }
-                }
+                androidx.compose.material3.OutlinedTextField(
+                    value = if (draft.capacity == 0) "" else draft.capacity.toString(),
+                    onValueChange = { typed -> onDraftChange(draft.copy(capacity = typed.filter(Char::isDigit).take(5).toIntOrNull() ?: 0)) },
+                    placeholder = { Text(tr("Ilang tao ang kasya", "How many people it holds")) },
+                    singleLine = true,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -245,17 +241,6 @@ fun AddShelterScreen(
             }
         }
 
-    }
-}
-
-@Composable
-private fun StepBox(label: String, onClick: () -> Unit) {
-    val colors = LocalKaAlertoColors.current
-    Box(
-        modifier = Modifier.size(width = 64.dp, height = 48.dp).border(1.5.dp, colors.borderEmphasis).clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
     }
 }
 

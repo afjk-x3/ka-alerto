@@ -90,6 +90,20 @@ fun applyStormTint(style: Style, storm: Boolean) {
 }
 
 /**
+ * The basemap's own POI icons (shops, schools, churches) are circles with a glyph, the
+ * same shape as a flood marker, so in normal mode they compete with the floods. Fade them
+ * and their labels in both modes; street and place names are left alone. Ours start with
+ * [OURS_PREFIX] and are never touched.
+ */
+fun mutePoiIcons(style: Style) {
+    style.layers.forEach { layer ->
+        if (layer is SymbolLayer && !layer.id.startsWith(OURS_PREFIX) && (layer.id.startsWith("poi") || layer.id == "airport")) {
+            runCatching { layer.setProperties(PropertyFactory.iconOpacity(0.35f), PropertyFactory.textOpacity(0.6f)) }
+        }
+    }
+}
+
+/**
  * Category is guessed from the layer id, because a vector style's own paint is usually a
  * data-driven expression rather than a colour we could darken arithmetically. The
  * fallback is land, which is the safe wrong answer: an unrecognised fill reads as ground

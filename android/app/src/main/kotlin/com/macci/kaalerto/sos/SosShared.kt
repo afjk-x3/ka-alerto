@@ -64,6 +64,44 @@ fun SosSnapshot.locationLine(): String =
     else com.macci.kaalerto.i18n.tr("lokasyon: hinahanap pa", "location: still finding")
 
 /**
+ * What a responder should know about how good the location is, or null for a GPS fix:
+ * a hand-picked spot, a relay's position (within Bluetooth range), or — with nothing at
+ * all — the requester's home barangay, which is where they live, not where they are.
+ */
+@Composable
+fun SosSnapshot.locationNote(): String? = when (locationSource) {
+    SosLocationSource.GPS -> null
+    SosLocationSource.PICKED -> com.macci.kaalerto.i18n.tr("Itinuro sa mapa ng humihingi", "Picked on the map by the requester")
+    SosLocationSource.RELAY -> com.macci.kaalerto.i18n.tr(
+        "Tantiya lang — kung nasaan ang phone na nakasagap (~50 m)",
+        "Approximate — where the phone that heard it was (~50 m)",
+    )
+    SosLocationSource.NONE -> homeBarangay?.let {
+        com.macci.kaalerto.i18n.tr("Tirahan: $it (hindi ito ang lokasyon)", "Home: $it (not their location)")
+    }
+}
+
+/** "Buksan ang lokasyon" — see location/TurnOnLocation.kt. */
+@Composable
+fun TurnOnLocationButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .background(SosColors.Warning)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            com.macci.kaalerto.i18n.tr("Buksan ang lokasyon", "Turn on location"),
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = SosColors.HoldBackground,
+        )
+    }
+}
+
+/**
  * The SOS control on screens other than the map, which has its own 88 dp button — so a
  * request is one tap away from anywhere in the app, not only after navigating back.
  */
@@ -88,13 +126,13 @@ fun SosShortcut(active: Boolean, onClick: () -> Unit, modifier: Modifier = Modif
     }
 }
 
-/** "mm:ss" for the first hour, then "N min". What the banner counts up. */
+/** "mm:ss" for the first hour, "N h M min" for the first day, then "N h". What the banner counts up. */
 fun elapsedLabel(startedAtMs: Long, nowMs: Long): String {
     val seconds = ((nowMs - startedAtMs).coerceAtLeast(0)) / 1000
-    return if (seconds < 3_600) {
-        "%d:%02d".format(seconds / 60, seconds % 60)
-    } else {
-        "${seconds / 60} min"
+    return when {
+        seconds < 3_600 -> "%d:%02d".format(seconds / 60, seconds % 60)
+        seconds < 86_400 -> "${seconds / 3_600} h ${seconds % 3_600 / 60} min"
+        else -> "${seconds / 3_600} h"
     }
 }
 

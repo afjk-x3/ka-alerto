@@ -53,6 +53,8 @@ class KaAlertoApplication : Application() {
         CircleCheckInNotifier(this).start(applicationScope)
         // Phone-to-cloud sync; a no-op until SupabaseConfig is filled in. See sync/SupabaseSyncLoop.kt.
         SupabaseSyncLoop(this).start(applicationScope)
+        // PAGASA alerts for the home province, stored verbatim so the relay can carry them (FR-3.3).
+        com.macci.kaalerto.advisory.AdvisoryFetcher(this).start(applicationScope)
         // Same push, but survives the app being closed — see SupabaseSyncWorker.
         SupabaseSyncWorker.schedule(this)
         // Day 8. Advances an active SOS's state machine from what is actually

@@ -126,6 +126,8 @@ fun NavDrawer(
     onOpenFamily: () -> Unit,
     onOpenEvac: () -> Unit,
     onOpenReports: () -> Unit,
+    survivalMode: Boolean = false,
+    onSetSurvivalMode: (Boolean) -> Unit = {},
     currentLanguage: AppLanguage,
     onSetLanguage: (AppLanguage) -> Unit,
 ) {
@@ -188,12 +190,19 @@ fun NavDrawer(
             modifier = Modifier.padding(vertical = 6.dp),
             verticalArrangement = Arrangement.spacedBy(0.dp),
         ) {
+            // In Survival mode everything but the map is shown paused, not hidden (PRD §6).
+            val paused = survivalMode
             DrawerRow(tr("Mapa", "Map"), onClick = { onDismiss(); onOpenMap() })
-            DrawerRow(tr("Mga ulat", "Reports"), onClick = { onDismiss(); onOpenReports() })
-            DrawerRow(tr("Papel mo sa barangay", "Your role in the barangay"), onClick = { onDismiss(); onOpenRoles() })
-            DrawerRow(tr("Ang profile ko", "My profile"), onClick = { onDismiss(); onOpenProfile() })
-            DrawerRow(tr("Aking Pamilya", "My Family"), onClick = { onDismiss(); onOpenFamily() })
-            DrawerRow(tr("Mga silungan", "Evacuation centres"), onClick = { onDismiss(); onOpenEvac() })
+            DrawerRow(tr("Mga ulat", "Reports"), paused = paused, onClick = { onDismiss(); onOpenReports() })
+            DrawerRow(tr("Papel mo sa barangay", "Your role in the barangay"), paused = paused, onClick = { onDismiss(); onOpenRoles() })
+            DrawerRow(tr("Ang profile ko", "My profile"), paused = paused, onClick = { onDismiss(); onOpenProfile() })
+            DrawerRow(tr("Aking Pamilya", "My Family"), paused = paused, onClick = { onDismiss(); onOpenFamily() })
+            DrawerRow(tr("Mga silungan", "Evacuation centres"), paused = paused, onClick = { onDismiss(); onOpenEvac() })
+            DrawerRow(
+                if (survivalMode) tr("Survival mode: naka-on · i-off", "Survival mode: on · turn off")
+                else tr("Survival mode (tipid sa baterya)", "Survival mode (save battery)"),
+                onClick = { onDismiss(); onSetSurvivalMode(!survivalMode) },
+            )
         }
         Box(
             Modifier
@@ -262,18 +271,18 @@ private fun LanguageOption(label: String, selected: Boolean, onClick: () -> Unit
 }
 
 @Composable
-private fun DrawerRow(label: String, onClick: () -> Unit) {
+private fun DrawerRow(label: String, onClick: () -> Unit, paused: Boolean = false) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable(enabled = !paused, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 13.dp),
     ) {
         Text(
-            label,
+            if (paused) label + " · " + tr("naka-pause", "paused") else label,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = if (paused) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
         )
     }
 }

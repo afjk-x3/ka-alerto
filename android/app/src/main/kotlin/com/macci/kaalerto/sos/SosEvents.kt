@@ -51,6 +51,17 @@ data class SosPayload(
      * already had, so only these may move it.
      */
     val locationUpdate: Boolean = false,
+    /** On a [locationUpdate]: the requester tapped the spot on the map rather than GPS finding it. */
+    val locationPicked: Boolean = false,
+    /**
+     * A `sos_amend` written by a phone that received the request straight from the
+     * requester over Bluetooth (one hop), carrying *that* phone's own position — the
+     * requester is within Bluetooth range of it. Used only while the requester's own
+     * location is unknown. See [sosHeardNearEvent].
+     */
+    val heardNear: Boolean = false,
+    /** The requester's registered home barangay — a hint while the location is unknown, never a location. */
+    val homeBarangay: String? = null,
 )
 
 /**
@@ -77,6 +88,7 @@ fun newSosEvent(
     lon: Double?,
     accuracyMeters: Float?,
     nowMs: Long,
+    homeBarangay: String? = null,
 ): Event {
     val sosId = "sos-${UUID.randomUUID()}"
     val known = lat != null && lon != null
@@ -99,12 +111,35 @@ fun newSosEvent(
         origin = "local",
         hopCount = 0,
         note = null,
-        payload = SosPayload(sosId = sosId, accuracyMeters = if (known) accuracyMeters else null).encode(),
+        payload = SosPayload(
+            sosId = sosId,
+            accuracyMeters = if (known) accuracyMeters else null,
+            homeBarangay = homeBarangay?.takeIf { it.isNotBlank() },
+        ).encode(),
     )
 }
 
 /** The requester's own phone reporting a fix it did not have (or had worse) when the request went out. */
 fun sosLocationEvent(
+    sosId: String,
+    identity: LocalIdentity.Identity,
+    lat: Double,
+    lon: Double,
+    accuracyMeters: Float?,
+    nowMs: Long,
+    picked: Boolean = false,
+): Event = sosFollowUp(
+    sosId = sosId,
+    type = TYPE_SOS_AMEND,
+    identity = identity,
+    lat = lat,
+    lon = lon,
+    nowMs = nowMs,
+    payload = SosPayload(sosId = sosId, accuracyMeters = accuracyMeters, locationUpdate = true, locationPicked = picked),
+)
+
+/** A relaying phone's own position, written when it heard a location-less request directly. */
+fun sosHeardNearEvent(
     sosId: String,
     identity: LocalIdentity.Identity,
     lat: Double,
@@ -118,7 +153,7 @@ fun sosLocationEvent(
     lat = lat,
     lon = lon,
     nowMs = nowMs,
-    payload = SosPayload(sosId = sosId, accuracyMeters = accuracyMeters, locationUpdate = true),
+    payload = SosPayload(sosId = sosId, accuracyMeters = accuracyMeters, heardNear = true),
 )
 
 fun sosAmendEvent(
@@ -185,3 +220,13 @@ private fun sosFollowUp(
     note = null,
     payload = payload.encode(),
 )
+
+/**
+ * The requests this phone should answer with its own position: someone else's, still
+ * open, placed by nothing yet, and heard straight from the requester's phone over
+ * Bluetooth (one hop, so within radio range of them). Once any relay answers, the fold
+ * uses that position and the request drops out of this list.
+ */
+fun requestsNeedingHeardNear(snapshots: List<SosSnapshot>): List<String> = snapshots
+    .filter { !it.isMine && it.isActive && it.locationSource == SosLocationSource.NONE && it.arrivedByMesh && it.hopCount == 1 }
+    .map { it.sosId }

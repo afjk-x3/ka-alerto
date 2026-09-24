@@ -89,10 +89,13 @@ fun SosHoldScreen(
     // SosViewModel keeps looking.
     var fix by remember { mutableStateOf<android.location.Location?>(null) }
     var locating by remember { mutableStateOf(true) }
-    LaunchedEffect(Unit) {
+    var lookAgain by remember { mutableStateOf(0) }
+    LaunchedEffect(lookAgain) {
+        locating = true
         fix = com.macci.kaalerto.location.fetchCurrentLocation(context)
         locating = false
     }
+    val turnOnLocation = com.macci.kaalerto.location.rememberTurnOnLocation { lookAgain++ }
     val latestFix by androidx.compose.runtime.rememberUpdatedState(fix)
     fun complete() = latestFix.let { onHoldComplete(it?.latitude, it?.longitude, it?.accuracy) }
 
@@ -198,6 +201,7 @@ fun SosHoldScreen(
         OutgoingPanel(
             fix = fix,
             locating = locating,
+            onTurnOnLocation = turnOnLocation,
             modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 18.dp),
         )
 
@@ -287,7 +291,12 @@ internal fun holdPlaceLine(placeLabel: String?, lat: Double, lon: Double): Strin
 
 /** SOSHold.dc.html's "Ipapadala agad" panel — what leaves the phone the instant the hold lands. */
 @Composable
-private fun OutgoingPanel(fix: android.location.Location?, locating: Boolean, modifier: Modifier = Modifier) {
+private fun OutgoingPanel(
+    fix: android.location.Location?,
+    locating: Boolean,
+    onTurnOnLocation: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     val timeFormat = remember { SimpleDateFormat("h:mm a", Locale.getDefault()) }
     val lat = fix?.latitude
@@ -363,6 +372,7 @@ private fun OutgoingPanel(fix: android.location.Location?, locating: Boolean, mo
                             color = SosColors.MutedText,
                             modifier = Modifier.padding(top = 2.dp),
                         )
+                        TurnOnLocationButton(onTurnOnLocation, Modifier.padding(top = 8.dp))
                     }
                 }
             }

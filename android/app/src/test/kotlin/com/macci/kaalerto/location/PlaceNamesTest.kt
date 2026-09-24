@@ -31,7 +31,7 @@ class PlaceNamesTest {
             ),
             streets.map { it.name }.toSet(),
         )
-        assertEquals(5, parseLandmarks(File("src/main/assets/evacuation_centres.json").readText()).size)
+        assertEquals(18, parseLandmarks(File("src/main/assets/evacuation_centres.json").readText()).size)
     }
 
     @Test

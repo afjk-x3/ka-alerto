@@ -11,7 +11,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.IconButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -83,13 +86,18 @@ fun MapHeader(
                 val statusText = if (isOnline) {
                     tr("May koneksyon · $reportsToday ulat ngayong araw", "Online · $reportsToday reports today")
                 } else {
-                    tr("Walang signal — gumagana pa rin · $reportsToday ulat", "Offline — still works · $reportsToday reports")
+                    // Says *what* still works: the map, reports and SOS all run on this
+                    // phone and travel by Bluetooth mesh until internet comes back.
+                    tr(
+                        "Walang internet — gumagana pa rin ang mapa, ulat at SOS",
+                        "No internet — map, reports and SOS still work",
+                    )
                 }
                 Text(
                     statusText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
@@ -101,20 +109,26 @@ fun MapHeader(
         // screen) after a real-device test found the header too crowded. The drawer is
         // reached via the same hamburger button already in this row, so nothing here
         // lost reachability — it just stopped being duplicated in two places.
-        Box(
+        // Shows what a tap switches TO, with a word, not the current state as a bare icon.
+        val switchTo = if (stormMode) tr("Normal", "Normal") else tr("Storm", "Storm")
+        val switchLabel = tr("Lumipat sa $switchTo mode", "Switch to $switchTo mode")
+        Row(
             modifier = Modifier
                 .padding(start = 12.dp)
-                .size(48.dp)
-                .border(BorderStroke(1.dp, colors.borderEmphasis)),
-            contentAlignment = Alignment.Center,
+                .heightIn(min = 48.dp)
+                .border(BorderStroke(1.dp, colors.borderEmphasis))
+                .clickable(onClick = onModeIconClick)
+                .semantics { contentDescription = switchLabel }
+                .padding(horizontal = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onModeIconClick, modifier = Modifier.size(48.dp)) {
-                ModeToggleIcon(
-                    stormMode = stormMode,
-                    tint = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
+            ModeToggleIcon(
+                stormMode = !stormMode,
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(20.dp),
+            )
+            Spacer(Modifier.size(6.dp))
+            Text(switchTo, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
         }
     }
 }
