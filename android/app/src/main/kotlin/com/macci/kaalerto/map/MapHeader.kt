@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.Canvas
-import com.macci.kaalerto.demo.DemoArea
 import com.macci.kaalerto.i18n.tr
 import com.macci.kaalerto.detail.MeshIcon
 import com.macci.kaalerto.mesh.MeshStatus
@@ -41,6 +40,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
  */
 @Composable
 fun MapHeader(
+    /** The person's own registered barangay, not the demo area's. */
+    barangayName: String,
     isOnline: Boolean,
     reportsToday: Int,
     meshStatus: MeshStatus,
@@ -63,7 +64,7 @@ fun MapHeader(
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                DemoArea.BARANGAY_NAME,
+                barangayName,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,

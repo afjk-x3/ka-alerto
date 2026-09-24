@@ -392,6 +392,7 @@ fun MapScreen(
         // beneath it says the map has not; stacking them is both honest and navigable.
         if (onToggleStormMode != null) {
             MapHeader(
+                barangayName = remember { com.macci.kaalerto.identity.LocalIdentity.homeBarangayTitle(context) },
                 isOnline = isOnline,
                 reportsToday = reportsToday(featureSummaries, System.currentTimeMillis()),
                 meshStatus = meshStatus,

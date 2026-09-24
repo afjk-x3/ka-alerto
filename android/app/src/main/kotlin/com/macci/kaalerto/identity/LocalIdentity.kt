@@ -110,6 +110,15 @@ object LocalIdentity {
     fun homeBarangay(context: Context): String =
         prefs(context).getString(KEY_HOME_BARANGAY, null).orEmpty()
 
+    /**
+     * The registered barangay as a title ("Brgy. Poblacion"), for headers that name where
+     * this person is. Falls back to the demo barangay only before registration.
+     */
+    fun homeBarangayTitle(context: Context): String {
+        val name = homeBarangay(context).trim().ifBlank { return com.macci.kaalerto.demo.DemoArea.BARANGAY_NAME }
+        return if (name.startsWith("Brgy", ignoreCase = true) || name.startsWith("Barangay", ignoreCase = true)) name else "Brgy. $name"
+    }
+
     fun homeMunicipality(context: Context): String =
         prefs(context).getString(KEY_HOME_MUNICIPALITY, null).orEmpty()
 

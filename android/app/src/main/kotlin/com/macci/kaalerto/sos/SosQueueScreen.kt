@@ -98,7 +98,7 @@ fun SosQueueScreen(
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    "${tr(if (isOfficial) "Kagawad" else "Responder", if (isOfficial) "Official" else "Responder")} · ${com.macci.kaalerto.demo.DemoArea.BARANGAY_NAME}",
+                    "${tr(if (isOfficial) "Kagawad" else "Responder", if (isOfficial) "Official" else "Responder")} · ${com.macci.kaalerto.identity.LocalIdentity.homeBarangayTitle(androidx.compose.ui.platform.LocalContext.current)}",
                     fontSize = 14.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
